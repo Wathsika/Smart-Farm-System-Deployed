@@ -12,7 +12,7 @@ dbConnection();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => res.send("hello world"));
+app.get("/", (req, res) => res.send(`server running in port ${port}`));
 
-const port = 3000;
+const port = 3001;
 app.listen(port, () => console.log(`server running in port ${port}`));
