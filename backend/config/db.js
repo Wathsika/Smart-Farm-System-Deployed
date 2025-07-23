@@ -1,19 +1,18 @@
-const { default: mongoose } = require('mongoose');
-const mongo = require('mongoose');
-const dbURI = "mongodb+srv://savinduweerarathna:0x4kYld24S32cKrZ@smartfarmsystem.52kl2bz.mongodb.net/?retryWrites=true&w=majority&appName=SmartFarmSystem";
+const mongoose = require('mongoose');
 
-
-mongoose.set("strictQuery", true, "useNewUrlParser", true);
+mongoose.set("strictQuery", true);
 
 const connectDB = async () => {
-try {
-    mongoose.connect(dbURI);
-    console.log("MongoDB connected successfully");
- } catch(e){
-    console.error("MongoDB connection failed", e);
-    process.exit();
-}
-};
+  try {
+    // This line reads the variable from your .env file
+    await mongoose.connect(process.env.MONGO_URI);
+    
+    console.log("MongoDB connected successfully to Atlas!");
 
+  } catch (error) {
+    console.error("MongoDB connection FAILED:", error.message);
+    process.exit(1); 
+  }
+};
 
 module.exports = connectDB;
