@@ -10,6 +10,9 @@ const ContactUs = () => {
     message: ''
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -17,12 +20,20 @@ const ContactUs = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     console.log('Form submitted:', formData);
-    // Add form submission logic here
-    alert('Thank you for your message! We will get back to you soon.');
+    setShowAlert(true);
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    setIsSubmitting(false);
+    
+    // Hide alert after 5 seconds
+    setTimeout(() => setShowAlert(false), 5000);
   };
 
   // Animation variants
@@ -71,79 +82,69 @@ const ContactUs = () => {
     }
   };
 
-  const scaleIn = {
-    initial: { opacity: 0, scale: 0.8 },
-    animate: { 
-      opacity: 1, 
-      scale: 1,
-      transition: { 
-        duration: 0.6, 
-        ease: "easeOut"
-      }
-    }
-  };
-
-  const cardHover = {
-    y: -8,
-    scale: 1.02,
-    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
-    transition: { duration: 0.3, ease: "easeOut" }
-  };
-
-  const buttonHover = {
-    y: -3,
-    scale: 1.05,
-    boxShadow: "0 10px 25px rgba(5, 150, 105, 0.3)",
-    transition: { duration: 0.3, ease: "easeOut" }
-  };
-
   const contactInfo = [
     {
       icon: "fas fa-map-marker-alt",
       title: "Visit Our Farm",
       details: ["244/9, Dines Place, Kaduwela Rd", "Malabe, Sri Lanka"],
       color: "text-red-600",
-      bgColor: "bg-red-100"
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      badge: "Location",
+      badgeColor: "bg-red-100 text-red-800"
     },
     {
-      icon: "fas fa-phone",
+      icon: "fas fa-phone-alt",
       title: "Call Us",
       details: ["(555) 123-4567", "Available 7 days a week"],
       color: "text-blue-600",
-      bgColor: "bg-blue-100"
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      badge: "Phone",
+      badgeColor: "bg-blue-100 text-blue-800"
     },
     {
-      icon: "fas fa-envelope",
+      icon: "fas fa-envelope-open",
       title: "Email Us",
       details: ["info@greenleaffarm.com", "We reply within 24 hours"],
       color: "text-green-600",
-      bgColor: "bg-green-100"
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      badge: "Email",
+      badgeColor: "bg-green-100 text-green-800"
     },
     {
-      icon: "fas fa-clock",
+      icon: "fas fa-business-time",
       title: "Farm Hours",
       details: ["Mon-Sat: 7AM - 6PM", "Sunday: 8AM - 4PM"],
       color: "text-purple-600",
-      bgColor: "bg-purple-100"
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      badge: "Hours",
+      badgeColor: "bg-purple-100 text-purple-800"
     }
   ];
 
   const faqData = [
     {
       question: "Can I visit the farm without an appointment?",
-      answer: "While we welcome visitors, we recommend scheduling in advance to ensure someone is available to show you around and answer your questions."
+      answer: "While we welcome visitors, we recommend scheduling in advance to ensure someone is available to show you around and answer your questions.",
+      icon: "fas fa-user-friends"
     },
     {
       question: "Do you offer wholesale pricing for restaurants?",
-      answer: "Yes! We work with local restaurants and businesses. Contact us to discuss wholesale pricing and regular delivery schedules."
+      answer: "Yes! We work with local restaurants and businesses. Contact us to discuss wholesale pricing and regular delivery schedules.",
+      icon: "fas fa-handshake"
     },
     {
       question: "Are your products certified organic?",
-      answer: "Yes, we are certified organic and follow strict guidelines to ensure all our products meet organic standards."
+      answer: "Yes, we are certified organic and follow strict guidelines to ensure all our products meet organic standards.",
+      icon: "fas fa-seedling"
     },
     {
       question: "What's the best time to visit the farm?",
-      answer: "Early morning (8-10 AM) or late afternoon (4-6 PM) are ideal times when the farm is most active and the lighting is perfect for photos."
+      answer: "Early morning (8-10 AM) or late afternoon (4-6 PM) are ideal times when the farm is most active and the lighting is perfect for photos.",
+      icon: "fas fa-sun"
     }
   ];
 
@@ -168,8 +169,8 @@ const ContactUs = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <i className="fas fa-envelope text-white text-2xl sm:text-3xl"></i>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <i className="fas fa-envelope-open-text text-white text-2xl sm:text-3xl"></i>
               </div>
             </motion.div>
             
@@ -208,7 +209,7 @@ const ContactUs = () => {
             variants={fadeInUp}
           >
             <motion.h2 
-              className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4"
+              className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -231,7 +232,6 @@ const ContactUs = () => {
             {contactInfo.map((info, index) => (
               <motion.div
                 key={index}
-                className="bg-white rounded-xl p-6 sm:p-8 shadow-lg transition-all duration-300 text-center"
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ 
@@ -239,44 +239,33 @@ const ContactUs = () => {
                   delay: index * 0.2
                 }}
                 viewport={{ once: false, amount: 0.3 }}
-                whileHover={cardHover}
               >
-                <motion.div 
-                  className={`w-12 h-12 sm:w-16 sm:h-16 ${info.bgColor} rounded-full flex items-center justify-center mb-4 sm:mb-6 mx-auto`}
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ 
-                    duration: 0.6, 
-                    delay: 0.2 + index * 0.2
-                  }}
-                  viewport={{ once: false }}
-                  whileHover={{ 
-                    scale: 1.1,
-                    transition: { duration: 0.3 }
-                  }}
-                >
-                  <i className={`${info.icon} ${info.color} text-xl sm:text-2xl`}></i>
-                </motion.div>
-                <motion.h3 
-                  className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4"
-                  initial={{ opacity: 0, y: -20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 + index * 0.2 }}
-                  viewport={{ once: false }}
-                >
-                  {info.title}
-                </motion.h3>
-                <motion.div 
-                  className="text-gray-600 text-sm sm:text-base"
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.6 + index * 0.2 }}
-                  viewport={{ once: false }}
-                >
-                  {info.details.map((detail, detailIndex) => (
-                    <p key={detailIndex} className="mb-1">{detail}</p>
-                  ))}
-                </motion.div>
+                <div className="h-full bg-white rounded-xl border-2 border-gray-200 p-6 sm:p-8 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer group">
+                  <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <span className={`${info.badgeColor} text-xs font-semibold px-3 py-1 rounded-full`}>
+                        {info.badge}
+                      </span>
+                    </div>
+                    <motion.div 
+                      className={`w-12 h-12 sm:w-16 sm:h-16 ${info.bgColor} ${info.borderColor} border-2 rounded-full flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform duration-300`}
+                      whileHover={{ 
+                        scale: 1.1,
+                        transition: { duration: 0.3 }
+                      }}
+                    >
+                      <i className={`${info.icon} ${info.color} text-xl sm:text-2xl`}></i>
+                    </motion.div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+                      {info.title}
+                    </h3>
+                    <div className="text-gray-600 text-sm sm:text-base space-y-1">
+                      {info.details.map((detail, detailIndex) => (
+                        <p key={detailIndex}>{detail}</p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -297,221 +286,244 @@ const ContactUs = () => {
             {/* Contact Form */}
             <motion.div 
               variants={slideInLeft}
-              className="bg-white rounded-xl p-6 sm:p-8 shadow-lg"
             >
-              <motion.h3 
-                className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: false }}
-              >
-                Send us a <span className="text-green-600">Message</span>
-              </motion.h3>
-              
-              <div className="space-y-6">
-                <motion.div 
-                  className="grid sm:grid-cols-2 gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  viewport={{ once: false }}
-                >
-                  <div>
-                    <div className="block text-gray-700 font-semibold mb-2">Name *</div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Your full name"
-                    />
+              <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                    <i className="fas fa-paper-plane text-green-600 text-xl"></i>
+                    Send us a <span className="text-green-600">Message</span>
+                  </h3>
+                  <div className="mt-4 h-px bg-gray-200"></div>
+                </div>
+                <div className="p-6">
+                  {showAlert && (
+                    <div className="mb-6 p-4 border border-green-200 bg-green-50 rounded-lg flex items-center gap-3">
+                      <i className="fas fa-check-circle text-green-600 text-lg"></i>
+                      <p className="text-green-800 font-medium">
+                        Thank you for your message! We'll get back to you within 24 hours.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-6">
+                    <motion.div 
+                      className="grid sm:grid-cols-2 gap-4"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
+                      viewport={{ once: false }}
+                    >
+                      <div className="space-y-2">
+                        <label htmlFor="name" className="text-sm font-medium text-gray-700">Name *</label>
+                        <input
+                          id="name"
+                          name="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Your full name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone</label>
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="Your phone number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                        />
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div
+                      className="space-y-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.3 }}
+                      viewport={{ once: false }}
+                    >
+                      <label htmlFor="email" className="text-sm font-medium text-gray-700">Email *</label>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="your.email@example.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                        required
+                      />
+                    </motion.div>
+                    
+                    <motion.div
+                      className="space-y-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.4 }}
+                      viewport={{ once: false }}
+                    >
+                      <label htmlFor="subject" className="text-sm font-medium text-gray-700">Subject *</label>
+                      <select
+                        id="subject"
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                        required
+                      >
+                        <option value="">Select a subject</option>
+                        <option value="farm-visit">Farm Visit Inquiry</option>
+                        <option value="product-inquiry">Product Information</option>
+                        <option value="wholesale">Wholesale Orders</option>
+                        <option value="partnership">Partnership Opportunity</option>
+                        <option value="general">General Question</option>
+                      </select>
+                    </motion.div>
+                    
+                    <motion.div
+                      className="space-y-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.5 }}
+                      viewport={{ once: false }}
+                    >
+                      <label htmlFor="message" className="text-sm font-medium text-gray-700">Message *</label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
+                        onChange={handleInputChange}
+                        rows={5}
+                        placeholder="Tell us more about your inquiry..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 resize-none"
+                        required
+                      />
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.6 }}
+                      viewport={{ once: false }}
+                    >
+                      <button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white text-lg font-semibold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        {isSubmitting ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Sending...
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2">
+                            <i className="fas fa-paper-plane"></i>
+                            Send Message
+                          </div>
+                        )}
+                      </button>
+                    </motion.div>
                   </div>
-                  <div>
-                    <div className="block text-gray-700 font-semibold mb-2">Phone</div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Your phone number"
-                    />
-                  </div>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  viewport={{ once: false }}
-                >
-                  <div className="block text-gray-700 font-semibold mb-2">Email *</div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                    placeholder="your.email@example.com"
-                  />
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  viewport={{ once: false }}
-                >
-                  <div className="block text-gray-700 font-semibold mb-2">Subject *</div>
-                  <select
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
-                  >
-                    <option value="">Select a subject</option>
-                    <option value="farm-visit">Farm Visit Inquiry</option>
-                    <option value="product-inquiry">Product Information</option>
-                    <option value="wholesale">Wholesale Orders</option>
-                    <option value="partnership">Partnership Opportunity</option>
-                    <option value="general">General Question</option>
-                  </select>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                  viewport={{ once: false }}
-                >
-                  <div className="block text-gray-700 font-semibold mb-2">Message *</div>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    rows="5"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 resize-vertical"
-                    placeholder="Tell us more about your inquiry..."
-                  ></textarea>
-                </motion.div>
-                
-                <motion.button
-                  onClick={handleSubmit}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.6 }}
-                  viewport={{ once: false }}
-                  whileHover={buttonHover}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <i className="fas fa-paper-plane mr-2"></i>
-                  Send Message
-                </motion.button>
+                </div>
               </div>
             </motion.div>
 
             {/* Map Section */}
             <motion.div 
               variants={slideInRight}
-              className="bg-white rounded-xl p-6 sm:p-8 shadow-lg"
             >
-              <motion.h3 
-                className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: false }}
-              >
-                Find <span className="text-green-600">Our Farm</span>
-              </motion.h3>
-              
-              <motion.div 
-                className="mb-6"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                viewport={{ once: false }}
-              >
-                <p className="text-gray-600 mb-4">
-                  <i className="fas fa-map-marker-alt text-green-600 mr-2"></i>
-                  244/9, Dines Place, Kaduwela Rd, Malabe, Sri Lanka
-                </p>
-                <p className="text-gray-600 mb-4">
-                  Located in Malabe, our farm is easily accessible and welcomes visitors throughout the week.
-                </p>
-              </motion.div>
-
-              {/* Interactive Map */}
-              <motion.div 
-                className="w-full h-96 bg-gray-200 rounded-lg overflow-hidden shadow-lg relative"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                viewport={{ once: false }}
-              >
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.798225099747!2d79.97315631477394!3d6.914742594993306!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae256db1a6771c5%3A0x2c63e344ab9a7536!2sMalabe%2C%20Sri%20Lanka!5e0!3m2!1sen!2s!4v1649880373164!5m2!1sen!2s"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="GreenLeaf Farm Location - Malabe"
-                  className="rounded-lg"
-                ></iframe>
-                
-                {/* Map overlay with farm info */}
-                <motion.div 
-                  className="absolute top-4 left-4 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg backdrop-blur-sm"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                  viewport={{ once: false }}
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center mr-3">
-                      <i className="fas fa-tractor text-white text-sm"></i>
+              <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                    <i className="fas fa-map-marked-alt text-green-600 text-xl"></i>
+                    Find <span className="text-green-600">Our Farm</span>
+                  </h3>
+                  <div className="mt-4 h-px bg-gray-200"></div>
+                </div>
+                <div className="p-6">
+                  <motion.div 
+                    className="mb-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    viewport={{ once: false }}
+                  >
+                    <div className="flex items-start gap-3 mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                      <i className="fas fa-map-pin text-green-600 text-lg flex-shrink-0 mt-1"></i>
+                      <div>
+                        <p className="font-semibold text-gray-900">244/9, Dines Place, Kaduwela Rd</p>
+                        <p className="text-gray-600">Malabe, Sri Lanka</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800 text-sm">GreenLeaf Farm</h4>
-                      <p className="text-gray-600 text-xs">Organic & Sustainable</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
+                    <p className="text-gray-600 leading-relaxed">
+                      Located in Malabe, our farm is easily accessible and welcomes visitors throughout the week.
+                    </p>
+                  </motion.div>
 
-              {/* Directions and Additional Info */}
-              <motion.div 
-                className="mt-6 grid sm:grid-cols-2 gap-4"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                viewport={{ once: false }}
-              >
-                <motion.a
-                  href="https://maps.google.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300"
-                  whileHover={{ y: -2, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <i className="fas fa-directions mr-2"></i>
-                  Get Directions
-                </motion.a>
-                <motion.button
-                  className="flex items-center justify-center bg-green-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
-                  whileHover={{ y: -2, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <i className="fas fa-calendar-alt mr-2"></i>
-                  Schedule Visit
-                </motion.button>
-              </motion.div>
+                  {/* Interactive Map */}
+                  <motion.div 
+                    className="w-full h-96 bg-gray-200 rounded-lg overflow-hidden shadow-lg relative mb-6"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    viewport={{ once: false }}
+                  >
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.798225099747!2d79.97315631477394!3d6.914742594993306!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae256db1a6771c5%3A0x2c63e344ab9a7536!2sMalabe%2C%20Sri%20Lanka!5e0!3m2!1sen!2s!4v1649880373164!5m2!1sen!2s"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen=""
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="GreenLeaf Farm Location - Malabe"
+                      className="rounded-lg"
+                    ></iframe>
+                    
+                    {/* Map overlay with farm info */}
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm shadow-lg border-2 border-gray-200 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                          <i className="fas fa-tractor text-white text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-sm">GreenLeaf Farm</h4>
+                          <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block">
+                            Organic & Sustainable
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Action Buttons */}
+                  <motion.div 
+                    className="grid sm:grid-cols-2 gap-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    viewport={{ once: false }}
+                  >
+                    <button
+                      onClick={() => window.open('https://maps.google.com', '_blank')}
+                      className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md font-semibold transition-all duration-300 hover:shadow-md"
+                    >
+                      <i className="fas fa-route"></i>
+                      🧭 Get Directions
+                    </button>
+                    <button className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold transition-all duration-300 hover:shadow-md">
+                      <i className="fas fa-calendar-check"></i>
+                      📅 Schedule Visit
+                    </button>
+                  </motion.div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -531,7 +543,7 @@ const ContactUs = () => {
             variants={fadeInUp}
           >
             <motion.h2 
-              className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4"
+              className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -554,18 +566,21 @@ const ContactUs = () => {
             {faqData.map((faq, index) => (
               <motion.div
                 key={index}
-                className="bg-white rounded-xl p-6 shadow-lg"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: false, amount: 0.3 }}
-                whileHover={cardHover}
               >
-                <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                  <i className="fas fa-question-circle text-green-600 mr-3"></i>
-                  {faq.question}
-                </h4>
-                <p className="text-gray-600 leading-relaxed pl-8">{faq.answer}</p>
+                <div className="bg-white rounded-xl border-2 border-gray-200 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer group">
+                  <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-full border-2 border-green-200 flex items-center justify-center bg-green-50">
+                      <i className={`${faq.icon} text-green-600 text-sm`}></i>
+                    </span>
+                    {faq.question}
+                  </h4>
+                  <div className="my-3 h-px bg-gray-200"></div>
+                  <p className="text-gray-600 leading-relaxed pl-13">{faq.answer}</p>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -606,31 +621,14 @@ const ContactUs = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             viewport={{ once: false }}
           >
-            <motion.button
-              className="bg-white text-green-600 px-6 py-3 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg transition-all duration-300"
-              whileHover={{
-                y: -3,
-                scale: 1.05,
-                boxShadow: "0 15px 35px rgba(255, 255, 255, 0.3)",
-                transition: { duration: 0.3 }
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <i className="fas fa-phone mr-2"></i>
-              Call Now: (555) 123-4567
-            </motion.button>
-            <motion.button
-              className="border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:text-green-600 transition-all duration-300"
-              whileHover={{
-                y: -3,
-                scale: 1.05,
-                transition: { duration: 0.3 }
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <i className="fas fa-envelope mr-2"></i>
-              Send Email
-            </motion.button>
+            <button className="bg-white text-green-600 hover:bg-gray-50 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg shadow-lg transition-all duration-300 hover:shadow-xl">
+              <i className="fas fa-phone-volume mr-2"></i>
+              📞 Call Now: (555) 123-4567
+            </button>
+            <button className="border-2 border-white text-white hover:bg-white hover:text-green-600 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg transition-all duration-300">
+              <i className="fas fa-envelope-open mr-2"></i>
+              ✉️ Send Email
+            </button>
           </motion.div>
         </div>
       </motion.section>
