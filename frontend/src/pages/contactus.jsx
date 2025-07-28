@@ -623,7 +623,7 @@ const ContactUs = () => {
           >
             <button className="bg-white text-green-600 hover:bg-gray-50 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg shadow-lg transition-all duration-300 hover:shadow-xl">
               <i className="fas fa-phone-volume mr-2"></i>
-              📞 Call Now: (555) 123-4567
+               Call Now: (555) 123-4567
             </button>
             <button className="border-2 border-white text-white hover:bg-white hover:text-green-600 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg transition-all duration-300">
               <i className="fas fa-envelope-open mr-2"></i>
