@@ -1,17 +1,22 @@
-import React from 'react';
-import Header from './Header';
-import Footer from './Footer';
+// src/components/common/Layout.jsx (The fix)
 
-const Layout = ({ children }) => {
+import React from "react";
+import { Outlet } from "react-router-dom"; // Just Outlet is enough
+import Header from "./Header";
+import Footer from "./Footer";
+// Make sure Header.jsx and Footer.jsx exist in the same folder and use: export default function Header() { ... }
+// ... (other imports)
+
+export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    // Correct structure: just the JSX elements and the Outlet
+    <div>
       <Header />
-      <main className="flex-grow">
-        {children}
+      <main>
+        {/* The Outlet is where the child routes will render */}
+        <Outlet />
       </main>
       <Footer />
     </div>
   );
-};
-
-export default Layout;
+}
