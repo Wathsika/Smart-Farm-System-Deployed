@@ -1,175 +1,123 @@
-// controllers/admin.controller.js
 import Product from "../models/Product.js";
-import Inventory from "../models/Inventory.js";
-import Order from "../models/Order.js";
+// Since we have removed the Order model for now, we won't import it.
 
-// Cards + quick lists (for dashboard landing)
-export const getOverview = async (_req, res, next) => {
-  try {
-    const [productCount, lowStockCount, orderCount, revenueTodayAgg, recentOrders, recentProducts] =
-      await Promise.all([
-        Product.countDocuments({}),
-        Inventory.countDocuments({ $expr: { $lt: ["$stock", "$lowStockThreshold"] } }),
-        Order.countDocuments({}),
-        // revenue today (PAID)
-        Order.aggregate([
-          { $match: { status: "PAID", createdAt: { $gte: startOfToday() } } },
-          { $group: { _id: null, total: { $sum: "$total" } } },
-        ]),
-        Order.find({}).sort({ createdAt: -1 }).limit(5).select("total status createdAt").lean(),
-        Product.find({}).sort({ createdAt: -1 }).limit(5).select("name price createdAt").lean(),
-      ]);
-
-    // inventory value = sum(price * stock)
-    const inventoryValueAgg = await Inventory.aggregate([
-      { $lookup: { from: "products", localField: "product", foreignField: "_id", as: "p" } },
-      { $unwind: "$p" },
-      { $group: { _id: null, value: { $sum: { $multiply: ["$stock", "$p.price"] } } } },
-    ]);
-
-    const data = {
-      cards: {
-        productCount,
-        lowStockCount,
-        orderCount,
-        revenueToday: revenueTodayAgg[0]?.total || 0,
-        inventoryValue: inventoryValueAgg[0]?.value || 0,
-      },
-      lists: {
-        recentOrders,
-        recentProducts,
-        lowStockPreview: await Inventory.find({
-          $expr: { $lt: ["$stock", "$lowStockThreshold"] },
-        })
-          .populate("product", "name price")
-          .limit(5)
-          .lean(),
-      },
-    };
-
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Charts: last 30 days sales (PAID orders)
-export const getSalesLast30Days = async (_req, res, next) => {
-  try {
-    const since = daysAgo(30);
-    const rows = await Order.aggregate([
-      { $match: { status: "PAID", createdAt: { $gte: since } } },
-      {
-        $group: {
-          _id: { $dateToString: { date: "$createdAt", format: "%Y-%m-%d" } },
-          orders: { $sum: 1 },
-          revenue: { $sum: "$total" },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Charts: inventory value by category
-export const getInventoryByCategory = async (_req, res, next) => {
-  try {
-    const rows = await Inventory.aggregate([
-      { $lookup: { from: "products", localField: "product", foreignField: "_id", as: "p" } },
-      { $unwind: "$p" },
-      {
-        $group: {
-          _id: "$p.category",
-          value: { $sum: { $multiply: ["$stock", "$p.price"] } },
-          stock: { $sum: "$stock" },
-        },
-      },
-      { $sort: { value: -1 } },
-    ]);
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Tables: low stock (full list, paginated)
-export const getLowStockTable = async (req, res, next) => {
-  try {
-    const page = Number(req.query.page || 1);
-    const limit = Number(req.query.limit || 20);
-    const skip = (page - 1) * limit;
-
-    const [items, total] = await Promise.all([
-      Inventory.find({ $expr: { $lt: ["$stock", "$lowStockThreshold"] } })
-        .populate("product", "name sku price category")
-        .sort({ stock: 1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Inventory.countDocuments({ $expr: { $lt: ["$stock", "$lowStockThreshold"] } }),
-    ]);
-
-    res.json({ items, total, page, pages: Math.ceil(total / limit) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Tables: recent orders (paginated)
-export const getRecentOrdersTable = async (req, res, next) => {
-  try {
-    const page = Number(req.query.page || 1);
-    const limit = Number(req.query.limit || 20);
-    const skip = (page - 1) * limit;
-
-    const [items, total] = await Promise.all([
-      Order.find({})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .select("total status customerEmail createdAt")
-        .lean(),
-      Order.countDocuments({}),
-    ]);
-
-    res.json({ items, total, page, pages: Math.ceil(total / limit) });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Store card summary (products, orders, customers, revenue)
-export const getStoreSummary = async (_req, res, next) => {
-  try {
-    const [productCount, orderCount, customerAgg, revenueAgg] = await Promise.all([
-      Product.countDocuments({}),
-      Order.countDocuments({}),
-      Order.aggregate([{ $group: { _id: "$customerEmail" } }, { $count: "customers" }]),
-      Order.aggregate([{ $match: { status: "PAID" } }, { $group: { _id: null, revenue: { $sum: "$total" } } }]),
-    ]);
-
-    res.json({
-      productCount,
-      orderCount,
-      customers: customerAgg[0]?.customers || 0,
-      revenueAllTime: revenueAgg[0]?.revenue || 0,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/** helpers */
+// --- HELPER FUNCTIONS ---
+// These are useful for date-based queries, which you can use later.
 function startOfToday() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
 function daysAgo(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return d;
 }
+
+
+// --- 1. DASHBOARD OVERVIEW: Cards + Quick Lists ---
+// Provides the main statistics for the primary admin dashboard.
+export const getOverview = async (req, res, next) => {
+  try {
+    // --- Card Statistics ---
+    const productCount = await Product.countDocuments({});
+    
+    // Count products where stock is low or out.
+    const lowStockCount = await Product.countDocuments({ 
+        $expr: { $lte: ["$stock.qty", "$stock.lowStockThreshold"] } 
+    });
+
+    // --- List Previews ---
+    // Get a preview of up to 5 low-stock products.
+    const lowStockPreview = await Product.find({
+        $expr: { $lte: ["$stock.qty", "$stock.lowStockThreshold"] }
+    }).limit(5).sort({ 'stock.qty': 1 });
+
+    // --- Placeholders for Future Data (when you have an Order model) ---
+    const orderCount = 0; 
+    const revenueToday = 0; 
+    const recentOrders = [];
+
+
+    res.status(200).json({
+      cards: {
+        productCount,
+        lowStockCount,
+        orderCount,
+        revenueToday,
+      },
+      lists: {
+        lowStockPreview,
+        recentOrders,
+      },
+    });
+
+  } catch (err) {
+    console.error("Error fetching overview data:", err);
+    // Pass the error to your centralized error handler
+    next(err);
+  }
+};
+
+
+// --- 2. STORE SUMMARY: Cards for the "Store" section ---
+// Provides general stats related to e-commerce functionality.
+export const getStoreSummary = async (req, res, next) => {
+    try {
+        const productCount = await Product.countDocuments({});
+
+        // --- Placeholders for Future Data (when you have Order/User models) ---
+        const orderCount = 0;
+        const customers = 0;
+        const revenueAllTime = 0;
+
+        res.status(200).json({
+            productCount,
+            orderCount,
+            customers,
+            revenueAllTime,
+        });
+    } catch (err) {
+        console.error("Error fetching store summary:", err);
+        next(err);
+    }
+};
+
+
+// --- 3. CHARTS: Sales for the Last 30 Days ---
+// This requires an Order model. For now, it returns an empty array to prevent frontend errors.
+export const getSalesLast30Days = async (req, res, next) => {
+  try {
+    // When you have an Order model, your query will go here.
+    // const rows = await Order.aggregate([...]);
+    res.status(200).json([]); // Return empty data
+  } catch (err) {
+    console.error("Error fetching sales chart data:", err);
+    next(err);
+  }
+};
+
+
+// --- 4. CHARTS: Inventory Value by Category ---
+// Calculates the total monetary value and stock count for each product category.
+export const getInventoryByCategory = async (req, res, next) => {
+  try {
+    const rows = await Product.aggregate([
+      {
+        $group: {
+          _id: "$category", // Group by the product's category field
+          // For each category, calculate the total value by multiplying stock quantity by price
+          value: { $sum: { $multiply: ["$stock.qty", "$price"] } }, 
+          // Also calculate the total number of items in stock for that category
+          stock: { $sum: "$stock.qty" },
+        },
+      },
+      { $sort: { value: -1 } }, // Sort by the highest value category
+    ]);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error("Error fetching inventory by category:", err);
+    next(err);
+  }
+};

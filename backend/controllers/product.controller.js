@@ -1,125 +1,103 @@
-// controllers/product.controller.js
-import Product from "../models/Product.js";
-import Inventory from "../models/Inventory.js";
+import Product from '../models/Product.js';
+import { uploadToCloudinary } from '../config/cloudinary.config.js'; // Import the REAL uploader
 
-// POST /api/products
-export const createProduct = async (req, res, next) => {
-  try {
-    const {
-      name,
-      sku,
-      price,
-      description,
-      category,
-      tags = [],
-      images = [],
-      isOrganic = false,
-      stock = 0,
-      lowStockThreshold = 10,
-      status = "ACTIVE",
-    } = req.body;
+// --- GET ALL PRODUCTS (with Pagination) ---
+export const getAllProducts = async (req, res) => {
+    try {
+        const page = Number(req.query.page) || 1;
+        const pageSize = 10;
+        const count = await Product.countDocuments();
+        const products = await Product.find({})
+            .sort({ createdAt: -1 })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1));
 
-    const product = await Product.create({
-      name,
-      sku,
-      price,
-      description,
-      category,
-      tags,
-      images,
-      isOrganic,
-      status,
-    });
-
-    // create inventory row paired to product
-    await Inventory.create({
-      product: product._id,
-      stock,
-      lowStockThreshold,
-    });
-
-    res.status(201).json(product);
-  } catch (err) {
-    next(err);
-  }
+        res.status(200).json({ items: products, page, pages: Math.ceil(count / pageSize), total: count });
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json({ message: "Server error while fetching products." });
+    }
 };
 
-// GET /api/products
-// Filters: q, category, tag, min, max | sort | pagination
-export const listProducts = async (req, res, next) => {
-  try {
-    const {
-      q,
-      category,
-      tag,
-      min = 0,
-      max = 1e9,
-      page = 1,
-      limit = 12,
-      sort = "-createdAt",
-      status = "ACTIVE",
-    } = req.query;
+// --- CREATE A NEW PRODUCT ---
+export const createProduct = async (req, res) => {
+    try {
+        const { name, category, price, unit, description, stock, sku } = req.body;
+        
+        if (!name || !price || !stock || stock.qty === undefined) {
+            return res.status(400).json({ message: "Name, price, and stock quantity are required fields." });
+        }
 
-    const filter = {
-      status,
-      price: { $gte: Number(min), $lte: Number(max) },
-      ...(category ? { category } : {}),
-      ...(tag ? { tags: tag } : {}),
-      ...(q ? { name: { $regex: q, $options: "i" } } : {}),
-    };
+        let imageUrl = null;
+        if (req.file) {
+            imageUrl = await uploadToCloudinary(req.file.buffer, 'smart_farm_products');
+        }
 
-    const skip = (Number(page) - 1) * Number(limit);
+        const productData = {
+            name, sku, category, unit, description,
+            price: Number(price),
+            stock: {
+                qty: Number(stock.qty),
+                lowStockThreshold: Number(stock.lowStockThreshold) || 10
+            },
+            images: imageUrl ? [imageUrl] : [],
+        };
 
-    const [items, total] = await Promise.all([
-      Product.find(filter).sort(sort).skip(skip).limit(Number(limit)),
-      Product.countDocuments(filter),
-    ]);
+        const newProduct = new Product(productData);
+        const savedProduct = await newProduct.save();
+        res.status(201).json(savedProduct);
 
-    res.json({
-      items,
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / Number(limit)),
-    });
-  } catch (err) {
-    next(err);
-  }
+    } catch (error) {
+        console.error("Error creating product:", error);
+        if (error.code === 11000) return res.status(409).json({ message: "A product with this SKU already exists." });
+        res.status(500).json({ message: "Server error while creating product.", error: error.message });
+    }
 };
 
-// GET /api/products/:id
-export const getProduct = async (req, res, next) => {
-  try {
-    const item = await Product.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: "Product not found" });
-    res.json(item);
-  } catch (err) {
-    next(err);
-  }
+// --- UPDATE AN EXISTING PRODUCT ---
+export const updateProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ message: "Product not found" });
+
+        const { name, category, price, unit, description, stock, sku } = req.body;
+        
+        if (!product.stock) product.stock = {}; // Safety check for old data
+
+        if (stock) {
+            if (stock.qty !== undefined) product.stock.qty = Number(stock.qty);
+            if (stock.lowStockThreshold !== undefined) product.stock.lowStockThreshold = Number(stock.lowStockThreshold);
+        }
+        
+        product.name = name || product.name;
+        product.sku = sku !== undefined ? sku : product.sku;
+        product.category = category || product.category;
+        product.price = price !== undefined ? Number(price) : product.price;
+        product.unit = unit || product.unit;
+        product.description = description || product.description;
+
+        if (req.file) {
+            const newImageUrl = await uploadToCloudinary(req.file.buffer, 'smart_farm_products');
+            product.images = [newImageUrl];
+        }
+
+        const updatedProduct = await product.save();
+        res.status(200).json(updatedProduct);
+
+    } catch (error) {
+        console.error("Error updating product:", error);
+        res.status(500).json({ message: "Server error while updating product.", error: error.message });
+    }
 };
 
-// PUT /api/products/:id
-export const updateProduct = async (req, res, next) => {
-  try {
-    const updated = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Product not found" });
-    res.json(updated);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// DELETE /api/products/:id
-export const deleteProduct = async (req, res, next) => {
-  try {
-    const prod = await Product.findByIdAndDelete(req.params.id);
-    if (!prod) return res.status(404).json({ message: "Product not found" });
-    await Inventory.findOneAndDelete({ product: prod._id });
-    res.json({ ok: true });
-  } catch (err) {
-    next(err);
-  }
+// --- DELETE A PRODUCT ---
+export const deleteProduct = async (req, res) => {
+    try {
+        const product = await Product.findByIdAndDelete(req.params.id);
+        if (!product) return res.status(404).json({ message: "Product not found" });
+        res.status(200).json({ message: "Product removed successfully" });
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        res.status(500).json({ message: "Server error while deleting product.", error: error.message });
+    }
 };
