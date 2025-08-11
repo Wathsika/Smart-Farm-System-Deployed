@@ -1,66 +1,87 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'; // 1. Import useCallback
 
-// 1. Create the context
+// Create the context
 const CartContext = createContext();
 
-// 2. Create a custom hook to use the context easily
+// Create a custom hook for easy access
 export const useCart = () => {
   return useContext(CartContext);
 };
 
-// 3. Create the Provider component
+// Create the Provider component
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const localData = localStorage.getItem('cartItems');
+      return localData ? JSON.parse(localData) : [];
+    } catch (error) {
+      console.error("Could not parse cart data from localStorage", error);
+      return [];
+    }
+  });
 
-  // Function to add a product to the cart
-  const addToCart = (product) => {
+  // Save to localStorage whenever cartItems changes
+  useEffect(() => {
+    localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  
+  // --- THIS IS THE FIX ---
+  // Wrap the functions that don't depend on external state in `useCallback`
+  // with an empty dependency array `[]`. This tells React to create them only once.
+
+  const addToCart = useCallback((product) => {
     setCartItems(prevItems => {
-      // Check if the item already exists in the cart
       const existingItem = prevItems.find(item => item._id === product._id);
-
       if (existingItem) {
-        // If it exists, map through and increase the quantity of that item
         return prevItems.map(item =>
           item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
         );
       } else {
-        // If it's a new item, add it to the cart with quantity 1
         return [...prevItems, { ...product, quantity: 1 }];
       }
     });
-  };
+  }, []);
 
-  // Function to remove an item from the cart
-  const removeFromCart = (productId) => {
+  const removeFromCart = useCallback((productId) => {
     setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
-  };
-
-  // Function to update the quantity of an item
-  const updateQuantity = (productId, newQuantity) => {
+  }, []);
+  
+  const updateQuantity = useCallback((productId, newQuantity) => {
     const quantity = Number(newQuantity);
     setCartItems(prevItems => {
       if (quantity < 1) {
-        // If quantity is less than 1, remove the item
         return prevItems.filter(item => item._id !== productId);
       }
       return prevItems.map(item =>
         item._id === productId ? { ...item, quantity: quantity } : item
       );
     });
-  };
+  }, []);
 
-  // Calculate total items for the badge
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+  }, []); // The empty dependency array `[]` is crucial here
 
-  // The value that will be available to all children
+
+  // --- CALCULATED VALUES ---
+  const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+
+  // --- EXPORTED VALUE ---
   const value = {
     cartItems,
     addToCart,
     removeFromCart,
     updateQuantity,
-    totalItems,
+    clearCart, // Now exporting the stable, memoized function
+    totalItemsInCart,
+    cartTotal,
   };
 
+  // The Provider component renders its children, making the `value` object available
+  // to any component nested inside that calls the `useCart()` hook.
   return (
     <CartContext.Provider value={value}>
       {children}
