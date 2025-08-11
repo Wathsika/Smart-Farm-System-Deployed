@@ -9,6 +9,7 @@ import ContactUs from "./pages/contactus";
 import UserProfile from "./pages/UserProfile";
 import Checkout from "./pages/checkout";
 import Storefront from "./pages/Storefront";
+import FinanceDashboard from "./admin/FinanceDashboard";
 
 // --- ADMIN PAGES (Lazy Loaded) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -19,15 +20,33 @@ const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 import AdminProducts from "./pages/store/Products"; // ✅ your real products page
 
 // --- PLACEHOLDER COMPONENTS for other admin pages (keep until you build them) ---
-const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
-const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
-const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
-const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
-const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
-const OrdersPage = () => <div className="p-6 text-2xl font-bold">Order Management</div>;
-const DiscountsPage = () => <div className="p-6 text-2xl font-bold">Discount Management</div>;
-const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
-const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
+const FarmDashboard = () => (
+  <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
+);
+const LivestockPage = () => (
+  <div className="p-6 text-2xl font-bold">Livestock Management</div>
+);
+const CropPage = () => (
+  <div className="p-6 text-2xl font-bold">Crop Management</div>
+);
+const StaffPage = () => (
+  <div className="p-6 text-2xl font-bold">Staff Management</div>
+);
+const RevenuePage = () => (
+  <div className="p-6 text-2xl font-bold">Revenue & Financials</div>
+);
+const OrdersPage = () => (
+  <div className="p-6 text-2xl font-bold">Order Management</div>
+);
+const DiscountsPage = () => (
+  <div className="p-6 text-2xl font-bold">Discount Management</div>
+);
+const CustomersPage = () => (
+  <div className="p-6 text-2xl font-bold">Customer Management</div>
+);
+const ReportsPage = () => (
+  <div className="p-6 text-2xl font-bold">Store Reports</div>
+);
 
 export default function App() {
   return (
@@ -46,35 +65,44 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <Suspense fallback={<div className="w-full h-screen flex items-center justify-center text-lg">Loading Admin...</div>}>
+          <Suspense
+            fallback={
+              <div className="w-full h-screen flex items-center justify-center text-lg">
+                Loading Admin...
+              </div>
+            }
+          >
             <AdminLayout />
           </Suspense>
         }
       >
         {/* Main farm dashboard at /admin */}
         <Route index element={<FarmDashboard />} />
-
         {/* Farm management pages */}
         <Route path="livestock" element={<LivestockPage />} />
         <Route path="crop" element={<CropPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
-
         {/* Store management pages */}
         <Route
           path="store/dashboard"
           element={
-            <Suspense fallback={<div className="p-6">Loading Store Dashboard…</div>}>
+            <Suspense
+              fallback={<div className="p-6">Loading Store Dashboard…</div>}
+            >
               <StoreDashboard />
             </Suspense>
           }
         />
-        <Route path="store/products" element={<AdminProducts />} /> {/* ✅ linked to your file */}
+        <Route path="store/products" element={<AdminProducts />} />{" "}
+        {/* ✅ linked to your file */}
         <Route path="store/orders" element={<OrdersPage />} />
         <Route path="store/discounts" element={<DiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
       </Route>
+
+      <Route path="/finance" element={<FinanceDashboard />} />
 
       {/* === 404 FALLBACK ROUTE === */}
       <Route path="*" element={<Navigate to="/" replace />} />

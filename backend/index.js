@@ -6,6 +6,7 @@ import { connectDB } from "./config/db.js";
 import productRoutes from "./routes/product.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import { notFound, errorHandler } from "./middlewares/error.js";
+import expenseRoutes from "./routes/expense.routes.js";
 
 dotenv.config();
 const app = express();
@@ -31,7 +32,6 @@ app.use(
   })
 );
 
-
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -40,6 +40,9 @@ app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.get("/", (_, res) => res.json({ ok: true }));
+
+app.use("/api/expenses", expenseRoutes);
+app.get("/", (_req, res) => res.send("API running"));
 
 app.use(notFound);
 app.use(errorHandler);
