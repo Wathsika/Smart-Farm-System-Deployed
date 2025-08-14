@@ -13,23 +13,28 @@ import Storefront from "./pages/Storefront";
 import AboutUs from "./pages/aboutus";
 import ContactUs from "./pages/contactus";
 
-// --- USER-SPECIFIC PAGES (LOGGED IN USERS) ---
-import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
-import MyOrdersPage from './pages/MyOrdersPage';
-import CheckoutPage from "./pages/checkout";
-import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 
-// --- ADMIN PAGES ---
-// Admin pages ටික කෙලින්ම import කරගමු, lazy loading වලින් එන complexity එකක් නැතුව
-import AdminLayout from "./admin/AdminLayout";
-import AdminUsers from "./pages/AdminUsers";
-import StaffAttendance from "./admin/StaffAttendance";
-import LeaveManagement from "./admin/LeaveManagement";
-import StoreDashboard from "./admin/StoreDashboard";
+import FinanceOverview from "./admin/FinanceOverview";
+import FinanceTransaction from "./admin/FinanceTransaction";
+import FinanceNewTransaction from "./admin/FinanceNewTransaction";
+
+import CheckoutPage from "./pages/checkout"; // Correct import name
+// FIX: The path you had was './pages/store/...', let's assume it's directly in './pages/'
+import OrderSuccessPage from "./pages/store/OrderSuccessPage";
+import OrderCancelPage from "./pages/store/OrderCancelPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
+
+// --- ADMIN PAGES (Lazy Loaded & Direct Imports) ---
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
+
+// Direct import for the admin store management pages
+
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import FinanceDashboard from "./admin/FinanceDashboard";
+
 
 // --- PLACEHOLDER COMPONENTS (මේවා ඔයාට පස්සේ හදන්න පුළුවන්) ---
 const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
@@ -47,6 +52,7 @@ const AdminOnly = ({ children }) => (auth.user?.role === 'Admin' ? children : <N
 const EmployeeOnly = ({ children }) => (auth.user?.role === 'Employee' ? children : <Navigate to="/" replace />);
 
 
+
 // --- MAIN APP COMPONENT ---
 export default function App() {
   return (
@@ -59,6 +65,7 @@ export default function App() {
         <Route path="/store" element={<Storefront />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
+
       </Route>
 
       {/* ================================================================== */}
@@ -81,6 +88,7 @@ export default function App() {
       {/* ================================================================== */}
       {/* 5. ADMIN-ONLY ROUTES (Adminට විතරක් පේන පිටු)                  */}
       {/* ================================================================== */}
+
       <Route
         path="/admin"
         element={<AdminOnly><AdminLayout /></AdminOnly>}
@@ -95,17 +103,37 @@ export default function App() {
         <Route path="revenue" element={<RevenuePage />} />
 
         {/* --- Nested Store Management Routes --- */}
-        <Route path="store/dashboard" element={<StoreDashboard />} />
+
+        <Route
+          path="store/dashboard"
+          element={
+            <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}>
+              <StoreDashboard />
+            </Suspense>
+          }
+        />
+
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<DiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
+
+
+        {/* Finance */}
+        <Route path="finance">
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<FinanceOverview />} />
+          <Route path="transaction" element={<FinanceTransaction />} />
+          <Route path="new_transaction" element={<FinanceNewTransaction />} />
+        </Route>
       </Route>
-      
-      {/* ================================================================== */}
-      {/* 6. 404 FALLBACK ROUTE (ගැලපෙන path එකක් නැත්නම් Home එකට යවන්න) */}
-      {/* ================================================================== */}
+
+      {/* === 404 FALLBACK ROUTE === */}
+
+      {/* === FALLBACK ROUTE (Catches any unmatched URL) === */}
+
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
