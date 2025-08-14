@@ -35,3 +35,4 @@ export const uploadToCloudinary = async (fileBuffer, folderName = 'smart_farm_pr
 };
 
 export default cloudinary;
+
