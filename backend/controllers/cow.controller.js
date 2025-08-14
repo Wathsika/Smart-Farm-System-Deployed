@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Cow = require('../models/cow');
 
+//add a new cow
 const addCow = async (req, res, next) => {
   try {
     let { name, breed, bday, gender } = req.body;
@@ -8,7 +9,7 @@ const addCow = async (req, res, next) => {
     if (!name || !breed || !bday || !gender) {
       return res.status(400).json({ message: 'Please fill in all required fields' });
     }
-    const cow = await Cow.create({ name, breed, bday: d, gender }); // cowId auto if your model has it
+    const cow = await Cow.create({ name, breed, bday, gender }); 
     return res.status(201).json(cow);
   } catch (err) {
     if (err.name === 'ValidationError') {

@@ -18,6 +18,9 @@ const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 // --- REAL ADMIN STORE PAGES ---
 import AdminProducts from "./pages/store/Products"; // ✅ your real products page
 
+// Livestock management pages
+import CowProfilePage from "./pages/livestock/cow.jsx";
+
 // --- PLACEHOLDER COMPONENTS for other admin pages (keep until you build them) ---
 const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
 const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
@@ -28,6 +31,10 @@ const OrdersPage = () => <div className="p-6 text-2xl font-bold">Order Managemen
 const DiscountsPage = () => <div className="p-6 text-2xl font-bold">Discount Management</div>;
 const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
 const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
+
+const MilkProductionPage = () => <div className="p-6 text-2xl font-bold">Milk Production Records</div>;
+const HealthRecordsPage = () => <div className="p-6 text-2xl font-bold">Health Records</div>;
+const BreedingRecordsPage = () => <div className="p-6 text-2xl font-bold">Breeding Records</div>;
 
 export default function App() {
   return (
@@ -55,7 +62,13 @@ export default function App() {
         <Route index element={<FarmDashboard />} />
 
         {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} />
+        <Route path="livestock" element={<LivestockPage />} /> 
+        {/* Livestock sub-pages */}
+        <Route path="livestock/profile" element={<CowProfilePage />} />
+        <Route path="livestock/milk" element={<MilkProductionPage />} />
+        <Route path="livestock/health" element={<HealthRecordsPage />} />
+        <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
+
         <Route path="crop" element={<CropPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
