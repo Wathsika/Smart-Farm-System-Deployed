@@ -14,6 +14,14 @@ import { notFound, errorHandler } from "./middlewares/error.js";
 import productRoutes from "./routes/product.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 
+import staffOwnerRoutes from "./routes/staffOwner.routes.js"; // mounts user mgmt under /api/admin/users
+import employeeRoutes from "./routes/employee.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import attendanceRoutes from "./routes/attendance.routes.js";
+import leaveRequestRoutes from "./routes/leaveRequest.routes.js"; 
+import taskRoutes from "./routes/task.routes.js";
+
+
 import expenseRoutes from "./routes/expense.routes.js";
 
 import orderRoutes from "./routes/order.routes.js";
@@ -73,8 +81,18 @@ app.get("/", (_, res) => res.json({ message: "API is running successfully." }));
 app.use("/api/expenses", expenseRoutes);
 app.get("/", (_req, res) => res.send("API running"));
 
+app.use("/api/admin", adminRoutes);        // your existing admin endpoints
+app.use("/api/admin/users", staffOwnerRoutes);  // exposes /api/admin/users
+app.use("/api/employee", employeeRoutes);
+app.use("/api/attendance", attendanceRoutes); 
+app.use("/api/leave-requests", leaveRequestRoutes); // future employee self-service
+app.use("/api/tasks", taskRoutes);
+// Health check
+app.get("/", (_req, res) => res.json({ ok: true }));
+
 
 // --- Error Handling Middleware (must be last) ---
+
 
 app.use(notFound);
 app.use(errorHandler);
