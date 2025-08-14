@@ -15,6 +15,9 @@ import adminRoutes from "./routes/admin.routes.js";
 import staffOwnerRoutes from "./routes/staffOwner.routes.js"; // mounts user mgmt under /api/admin/users
 import employeeRoutes from "./routes/employee.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import attendanceRoutes from "./routes/attendance.routes.js";
+import leaveRequestRoutes from "./routes/leaveRequest.routes.js"; 
+import taskRoutes from "./routes/task.routes.js";
 
 import { notFound, errorHandler } from "./middlewares/error.js";
 
@@ -57,8 +60,10 @@ app.use("/api/products", productRoutes);   // product endpoints
 
 app.use("/api/admin", adminRoutes);        // your existing admin endpoints
 app.use("/api/admin/users", staffOwnerRoutes);  // exposes /api/admin/users
-app.use("/api/employee", employeeRoutes);  // future employee self-service
-
+app.use("/api/employee", employeeRoutes);
+app.use("/api/attendance", attendanceRoutes); 
+app.use("/api/leave-requests", leaveRequestRoutes); // future employee self-service
+app.use("/api/tasks", taskRoutes);
 // Health check
 app.get("/", (_req, res) => res.json({ ok: true }));
 

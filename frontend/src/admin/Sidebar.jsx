@@ -53,7 +53,8 @@ const Sidebar = () => {
         <SidebarLink to="/admin/livestock" icon="fas fa-cow">Livestock</SidebarLink>
         <SidebarLink to="/admin/crop" icon="fas fa-seedling">Crop</SidebarLink>
         <SidebarLink to="/admin/staff" icon="fas fa-users-cog">Staff</SidebarLink>
-        
+         <SidebarLink to="/admin/attendance" icon="fas fa-clock">Attendance</SidebarLink>
+         <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">Leave Requests</SidebarLink>
         {/* === STORE BUTTON - මෙම කොටස පමණක් වෙනස් කරන්න === */}
         <button
           onClick={handleStoreClick} // මෙතනට අලුත් function එක යොදන්න
