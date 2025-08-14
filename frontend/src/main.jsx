@@ -1,6 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+
+// We are temporarily removing CartProvider to ensure the app renders.
+// import { CartProvider } from './context/CartContext.jsx'; 
+
 import App from "./App.jsx";
 import { CartProvider } from './context/CartContext.jsx'; 
 import './index.css'; 
@@ -20,6 +24,7 @@ const queryClient = new QueryClient();
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
+
       {/* 3. Wrap your entire application with the QueryClientProvider. */}
       {/*    This makes the query client available to any component in your app. */}
       <QueryClientProvider client={queryClient}>
@@ -30,6 +35,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </CartProvider>
         
       </QueryClientProvider>
+
     </BrowserRouter>
   </React.StrictMode>
 );
