@@ -1,6 +1,6 @@
 // src/pages/Login.jsx
 import React, { useState } from "react";
-//import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { auth } from "../lib/auth";
 
@@ -9,7 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState("Adm1n@123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,12 +20,10 @@ export default function Login() {
       auth.login({ token: data.token, user: data.user });
       
       // Navigate based on user role
-     if (data.user.role === 'Admin') {
-        window.location.href = "/admin"; // navigate("/admin") වෙනුවට
-      } else if (data.user.role === 'Employee') {
-        window.location.href = "/dashboard"; // navigate("/dashboard") වෙනුවට
+      if (data.user.role === 'Admin') {
+        navigate("/admin/users");
       } else {
-        window.location.href = "/"; // navigate("/") වෙනුවට
+        navigate("/"); // Navigate to home for other roles
       }
 
     } catch (err) {
