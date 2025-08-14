@@ -70,6 +70,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // --- API ROUTES ---
+app.use("/api/auth", authRoutes); 
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
