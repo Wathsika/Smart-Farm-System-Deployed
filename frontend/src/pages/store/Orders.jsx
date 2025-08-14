@@ -1,95 +1,130 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { Eye, FileText, X, Loader2, Package } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// This is a simple badge to show the order status
-const OrderStatusBadge = ({ status }) => {
-    const statusMap = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      PROCESSING: "bg-blue-100 text-blue-800",
-      SHIPPED: "bg-indigo-100 text-indigo-800",
-      DELIVERED: "bg-green-100 text-green-800",
-      CANCELLED: "bg-red-100 text-red-800",
+const Badge = ({ text, type }) => {
+    const types = {
+      PROCESSING: 'bg-yellow-100 text-yellow-800', SHIPPED: 'bg-blue-100 text-blue-800',
+      DELIVERED: 'bg-green-100 text-green-800', CANCELLED: 'bg-red-100 text-red-800',
+      PAID: 'bg-green-100 text-green-800', PENDING: 'bg-yellow-100 text-yellow-800',
     };
+    return <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${types[text] || 'bg-gray-100'}`}>{text}</span>;
+};
+
+const OrderDetailsModal = ({ order, onClose }) => {
+    if (!order) return null;
+    const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
     return (
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusMap[status] || 'bg-gray-100'}`}>
-            {status}
-        </span>
+        <AnimatePresence>
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+                <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} 
+                    className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                    <header className="flex items-center justify-between p-4 border-b">
+                        <div>
+                            <h2 className="text-xl font-bold">Order #{order.stripeSessionId.slice(-10)}</h2>
+                            <p className="text-sm text-gray-500">Placed: {new Date(order.createdAt).toLocaleString()}</p>
+                        </div>
+                        <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100"><X size={20} /></button>
+                    </header>
+                    <main className="p-6 overflow-y-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 className="font-semibold mb-2">Customer Information</h3>
+                                <p className="text-sm">{order.customer.name}</p>
+                                <p className="text-sm">{order.customer.email}</p>
+                                <p className="text-sm">{order.shippingAddress.addressLine1}, {order.shippingAddress.city}</p>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold mb-2">Order Information</h3>
+                                <div className="text-sm flex gap-2">Status: <Badge text={order.status} type={order.status} /></div>
+                                <div className="text-sm flex gap-2">Payment: <Badge text={order.isPaid ? 'PAID' : 'PENDING'} type={order.isPaid ? 'PAID' : 'PENDING'} /></div>
+                            </div>
+                        </div>
+                        <h3 className="font-semibold mb-2">Order Items</h3>
+                        <table className="min-w-full text-sm">
+                            <thead className="bg-gray-50"><tr><th className="p-2 text-left">Product</th><th className="p-2 text-center">Qty</th><th className="p-2 text-right">Unit Price</th><th className="p-2 text-right">Total</th></tr></thead>
+                            <tbody className="divide-y">{order.orderItems.map((item, i) => (<tr key={i}><td className="p-2">{item.name}</td><td className="p-2 text-center">{item.qty}</td><td className="p-2 text-right">{formatCurrency(item.price)}</td><td className="p-2 text-right font-semibold">{formatCurrency(item.price * item.qty)}</td></tr>))}</tbody>
+                            <tfoot className="font-bold border-t-2"><tr><td colSpan="3" className="p-2 text-right">Total</td><td className="p-2 text-right">{formatCurrency(order.totalPrice)}</td></tr></tfoot>
+                        </table>
+                    </main>
+                    <footer className="flex justify-between items-center p-4 bg-gray-50 border-t">
+                        <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300"><FileText size={16}/> Download PDF</button>
+                        <button onClick={onClose} className="px-4 py-2 text-sm bg-white border rounded-lg hover:bg-gray-100">Close</button>
+                    </footer>
+                </motion.div>
+            </div>
+        </AnimatePresence>
     );
 };
 
-export default function AdminOrders() {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+const StatusDropdown = ({ order, onStatusChange, isUpdating }) => {
+    return (
+        <select value={order.status} disabled={isUpdating} onChange={(e) => onStatusChange(order._id, e.target.value)} 
+            className="p-1.5 text-xs border rounded-md focus:ring-green-500 focus:border-green-500 disabled:opacity-70 disabled:bg-gray-100">
+            <option value="PROCESSING">Processing</option><option value="SHIPPED">Shipped</option>
+            <option value="DELIVERED">Delivered</option><option value="CANCELLED">Cancelled</option>
+        </select>
+    );
+};
 
-    const formatCurrency = (amount) => `Rs ${amount.toFixed(2)}`;
+export default function AdminOrdersPage() {
+    const queryClient = useQueryClient();
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
+    const { data: orders = [], isLoading, isError } = useQuery({
+        queryKey: ['adminOrders'],
+        queryFn: async () => (await api.get('/orders')).data
+    });
+    
+    const { mutate: updateStatus, isLoading: isUpdatingStatus } = useMutation({
+        mutationFn: ({ orderId, status }) => api.put(`/orders/${orderId}/status`, { status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['adminOrders']);
+        },
+        onError: (error) => { alert(`Failed to update: ${error.response?.data?.message || error.message}`); }
+    });
+    
+    const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
     const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                // We need to create this backend endpoint next
-                const res = await api.get('/orders');
-                setOrders(res.data.items || []);
-            } catch (err) {
-                setError("Failed to fetch orders.");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOrders();
-    }, []);
-
-    if (loading) return <div className="p-6">Loading orders...</div>;
-    if (error) return <div className="p-6 text-red-500">{error}</div>;
+    if (isLoading) return <div className="p-8 flex justify-center items-center gap-2"><Loader2 className="animate-spin" /><span>Loading orders...</span></div>;
+    if (isError) return <div className="p-8 text-center text-red-500">Failed to load orders.</div>;
 
     return (
         <div className="p-6 bg-gray-50 min-h-full">
-            <div className="bg-white p-6 rounded-2xl shadow-sm">
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">Order Management</h1>
-                    <p className="text-sm text-gray-500">View and manage all incoming orders.</p>
-                </div>
-
-                {/* Orders Table */}
+            <header className="mb-6"><h1 className="text-3xl font-bold text-gray-900">Orders</h1></header>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="p-4 border-b"><h2 className="text-xl font-semibold text-gray-800">Order Management</h2></div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 text-left">
+                        <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-4 py-3 font-semibold text-gray-600">Date</th>
-                                <th className="px-4 py-3 font-semibold text-gray-600">Customer</th>
-                                <th className="px-4 py-3 font-semibold text-gray-600">Total</th>
-                                <th className="px-4 py-3 font-semibold text-gray-600">Status</th>
-                                <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+                                <th className="p-3 text-left">Order ID</th><th className="p-3 text-left">Customer</th>
+                                <th className="p-3 text-left">Date</th><th className="p-3 text-left">Total</th>
+                                <th className="p-3 text-left">Status</th><th className="p-3 text-left">Payment</th>
+                                <th className="p-3 text-left">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {orders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="text-center py-10 text-gray-500">
-                                        No orders found.
-                                    </td>
+                        <tbody className="divide-y">
+                            {orders.map(order => (
+                                <tr key={order._id} className="hover:bg-gray-50">
+                                    <td className="p-3 font-mono">#{order.stripeSessionId?.slice(-10)}</td>
+                                    <td className="p-3 font-medium">{order.customer.name}</td>
+                                    <td className="p-3 text-gray-500">{formatDate(order.createdAt)}</td>
+                                    <td className="p-3 font-medium">{formatCurrency(order.totalPrice)}</td>
+                                    <td className="p-3"><StatusDropdown order={order} onStatusChange={updateStatus} isUpdating={isUpdatingStatus && queryClient.isMutating(['adminOrders', order._id])} /></td>
+                                    <td className="p-3"><Badge text={order.isPaid ? "PAID" : "PENDING"} type={order.isPaid ? "PAID" : "PENDING"} /></td>
+                                    <td className="p-3"><button onClick={() => setSelectedOrder(order)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600"><Eye size={16} /> View</button></td>
                                 </tr>
-                            ) : (
-                                orders.map(order => (
-                                    <tr key={order._id}>
-                                        <td className="px-4 py-3">{formatDate(order.createdAt)}</td>
-                                        <td className="px-4 py-3 font-medium text-gray-800">{order.customer.name}</td>
-                                        <td className="px-4 py-3">{formatCurrency(order.totals.totalPrice)}</td>
-                                        <td className="px-4 py-3"><OrderStatusBadge status={order.orderStatus} /></td>
-                                        <td className="px-4 py-3">
-                                            {/* We will add update status functionality here later */}
-                                            <button className="text-blue-600 hover:underline">View Details</button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>
+                {orders.length === 0 && <div className="text-center py-12 text-gray-500"><Package /> No orders found.</div>}
             </div>
+            {selectedOrder && <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
         </div>
     );
 }
