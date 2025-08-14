@@ -1,37 +1,25 @@
 import express from 'express';
-
-// Import the correct controller functions for the Stripe flow
 import {
   createCheckoutSession,
-  stripeWebhookHandler
+  stripeWebhookHandler,
+  getAllOrders,
+  getOrderById,
+  updateOrderStatus
 } from '../controllers/order.controller.js';
+// import { protect, admin } from '../middlewares/auth.js'; // You will uncomment these later
 
 const router = express.Router();
 
-
-// --- THIS IS THE FIX ---
-// Apply the express.json() middleware.
-// This tells Express to parse the body of incoming JSON requests for any route defined below this line.
-// This is essential for the '/create-checkout-session' route to read the cart and customer data.
-router.use(express.json());
+// --- Customer Facing Routes ---
+router.post('/create-checkout-session', express.json(), createCheckoutSession);
+router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
 
-// --- ROUTE 1: Create Stripe Checkout Session ---
-// This route now correctly receives a populated `req.body`.
-// ROUTE: POST /api/orders/create-checkout-session
-router.post('/create-checkout-session', createCheckoutSession);
-
-
-// --- ROUTE 2: Stripe Webhook Handler ---
-// This special route for the webhook still needs its own `express.raw()` parser.
-// Because it's defined on the route itself, it overrides the `express.json()` middleware
-// we defined above ONLY for this specific POST /webhook request.
-// ROUTE: POST /api/orders/webhook
-router.post(
-  '/webhook',
-  express.raw({ type: 'application/json' }), // This special middleware runs for this route
-  stripeWebhookHandler
-);
+// --- Admin Facing Routes ---
+// For now, these are public. Later, you'll add `protect` and `admin` middleware.
+router.get('/', getAllOrders);
+router.get('/:id', getOrderById);
+router.put('/:id/status', express.json(), updateOrderStatus);
 
 
 export default router;
