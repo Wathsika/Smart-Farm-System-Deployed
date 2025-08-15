@@ -15,6 +15,7 @@ import CheckoutPage from "./pages/checkout";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
+import Login from "./pages/Login";
 
 // --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
@@ -30,7 +31,6 @@ import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 
 // --- MISSING PAGES (temporary placeholders so app runs) ---
-const Login = () => <div className="p-6">Login</div>;
 const EmployeeDashboard = () => <div className="p-6">Employee Dashboard</div>;
 const AdminUsers = () => <div className="p-6">Admin Users</div>;
 const StaffAttendance = () => <div className="p-6">Staff Attendance</div>;
