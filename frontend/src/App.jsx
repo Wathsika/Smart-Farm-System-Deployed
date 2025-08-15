@@ -8,9 +8,9 @@ import Layout from "./components/common/Layout";
 // --- PUBLIC PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
-import AboutUs from "./pages/AboutUs"; // <-- match file casing
-import ContactUs from "./pages/ContactUs"; // <-- match file casing
-import UserProfile from "./pages/UserProfile";
+import AboutUs from "./pages/AboutUs";          // <- use correct casing
+import ContactUs from "./pages/ContactUs";      // <- use correct casing
+import UserProfile from "./pages/UserProfile";  // component used in Private route
 import CheckoutPage from "./pages/checkout";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
@@ -29,54 +29,41 @@ const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 // --- STORE MGMT ---
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
+import AdminDiscountsPage from "./admin/DiscountsPage";
 
-// --- MISSING PAGES (temporary placeholders so app runs) ---
+// --- TEMP PLACEHOLDERS (keep app running while building pages) ---
 const EmployeeDashboard = () => <div className="p-6">Employee Dashboard</div>;
 const AdminUsers = () => <div className="p-6">Admin Users</div>;
 const StaffAttendance = () => <div className="p-6">Staff Attendance</div>;
 const LeaveManagement = () => <div className="p-6">Leave Management</div>;
-
-// --- PLACEHOLDERS you already had ---
-const FarmDashboard = () => (
-  <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
-);
-const LivestockPage = () => (
-  <div className="p-6 text-2xl font-bold">Livestock Management</div>
-);
-const CropPage = () => (
-  <div className="p-6 text-2xl font-bold">Crop Management</div>
-);
-const RevenuePage = () => (
-  <div className="p-6 text-2xl font-bold">Revenue & Financials</div>
-);
-const DiscountsPage = () => (
-  <div className="p-6 text-2xl font-bold">Discount Management</div>
-);
-const CustomersPage = () => (
-  <div className="p-6 text-2xl font-bold">Customer Management</div>
-);
-const ReportsPage = () => (
-  <div className="p-6 text-2xl font-bold">Store Reports</div>
-);
+const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
+const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
+const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
+const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
+const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
+const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
 
 // --- GUARDS ---
 const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
+
 const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
+
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
 
 export default function App() {
   return (
     <Routes>
-      {/* PUBLIC (with Layout) */}
+      {/* PUBLIC (with shared Layout) */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/store" element={<Storefront />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
-        {/* Use your order pages (they were imported but unused) */}
+
+        {/* Order status pages can stay public */}
         <Route path="/order/success" element={<OrderSuccessPage />} />
         <Route path="/order/cancel" element={<OrderCancelPage />} />
       </Route>
@@ -84,7 +71,7 @@ export default function App() {
       {/* STANDALONE */}
       <Route path="/login" element={<Login />} />
 
-      {/* AUTHENTICATED USER */}
+      {/* AUTHENTICATED USER (protect these) */}
       <Route
         path="/profile"
         element={
@@ -120,7 +107,7 @@ export default function App() {
         }
       />
 
-      {/* ADMIN (lazy + Suspense) */}
+      {/* ADMIN (lazy + guard) */}
       <Route
         path="/admin"
         element={
@@ -145,7 +132,7 @@ export default function App() {
         <Route path="crop" element={<CropPage />} />
         <Route path="revenue" element={<RevenuePage />} />
 
-        {/* Store */}
+        {/* Store (nested) */}
         <Route
           path="store/dashboard"
           element={
@@ -156,7 +143,7 @@ export default function App() {
         />
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
-        <Route path="store/discounts" element={<DiscountsPage />} />
+        <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
 
