@@ -19,6 +19,10 @@ import MyOrdersPage from './pages/MyOrdersPage';
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 
+//--Add crop supun-- 
+import AddCrop from './admin/AddCrop.jsx'; 
+import CropPage from './admin/CropPage.jsx';
+
 // Direct import for the admin store management pages
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
@@ -28,7 +32,6 @@ import AdminOrders from "./pages/store/Orders";
 // These are fine as they are. They are simple, non-lazy components.
 const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
 const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
-const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
 const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
 const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
 const DiscountsPage = () => <div className="p-6 text-2xl font-bold">Discount Management</div>;
@@ -70,7 +73,8 @@ export default function App() {
         <Route path="crop" element={<CropPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
-
+        <Route path="crop/add" element={<AddCrop />} />         {/* --- New Crop --- */}
+ 
         {/* --- Nested Store Management Routes --- */}
         <Route path="store/dashboard" element={ <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense> } />
         <Route path="store/products" element={<AdminProducts />} />

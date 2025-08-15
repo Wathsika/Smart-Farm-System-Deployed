@@ -14,6 +14,7 @@ import { notFound, errorHandler } from "./middlewares/error.js";
 import productRoutes from "./routes/product.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import orderRoutes from "./routes/order.routes.js";
+import cropRoutes from './routes/crop.routes.js';
 
 // --- Initialize App ---
 const app = express();
@@ -59,6 +60,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/crops", cropRoutes);
 
 // Simple root route for health checks
 app.get("/", (_, res) => res.json({ message: "API is running successfully." }));
