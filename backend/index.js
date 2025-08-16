@@ -15,6 +15,7 @@ import productRoutes from "./routes/product.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import cropRoutes from './routes/crop.routes.js';
+import fieldRoutes from './routes/field.routes.js';
 
 // --- Initialize App ---
 const app = express();
@@ -61,6 +62,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/crops", cropRoutes);
+app.use("/api/fields", fieldRoutes);
 
 // Simple root route for health checks
 app.get("/", (_, res) => res.json({ message: "API is running successfully." }));

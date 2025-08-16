@@ -19,10 +19,12 @@ import MyOrdersPage from './pages/MyOrdersPage';
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 
-//--Add crop supun-- 
+//--Add crop , fields supun-- 
 import AddCrop from './admin/AddCrop.jsx'; 
 import CropPage from './admin/CropPage.jsx';
 import EditCrop from './admin/EditCrop.jsx';
+import FieldPage from './admin/FieldPage.jsx';
+import AddFieldPage from './admin/AddFieldPage.jsx';
 
 // Direct import for the admin store management pages
 import AdminProducts from "./pages/store/Products";
@@ -76,6 +78,8 @@ export default function App() {
         <Route path="revenue" element={<RevenuePage />} />
         <Route path="crop/add" element={<AddCrop />} />  
         <Route path="crop/:id/edit" element={<EditCrop />} />       {/* --- New Crop --- */}
+        <Route path="/admin/fields" element={<FieldPage />} />
+        <Route path="/admin/fields/add" element={<AddFieldPage />} />
  
         {/* --- Nested Store Management Routes --- */}
         <Route path="store/dashboard" element={ <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense> } />
