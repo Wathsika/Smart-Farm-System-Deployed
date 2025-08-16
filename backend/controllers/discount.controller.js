@@ -72,3 +72,29 @@ export const deleteDiscount = async (req, res, next) => {
         next(error);
     }
 };
+
+// --- CONTROLLER 5: GET ACTIVE DISCOUNT ---
+// Finds the highest-priority discount that is currently active and usable.
+export const getActiveDiscount = async (req, res, next) => {
+    try {
+        const now = new Date();
+        const activeDiscount = await Discount.findOne({
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now },
+            $or: [
+                { usageLimit: null },
+                { $expr: { $gt: ['$usageLimit', '$timesUsed'] } }
+            ]
+        }).sort({ value: -1, startDate: -1 });
+
+        if (!activeDiscount) {
+            return res.status(404).json({ message: "No active discount available." });
+        }
+
+        res.status(200).json(activeDiscount);
+    } catch (error) {
+        console.error("Error fetching active discount:", error);
+        next(error);
+    }
+};

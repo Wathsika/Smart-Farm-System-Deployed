@@ -1,26 +1,62 @@
 import stripe from '../config/stripe.config.js'; 
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import Discount from '../models/Discount.js';
 
 // --- 1. CREATE STRIPE CHECKOUT SESSION (for Customers) ---
 export const createCheckoutSession = async (req, res, next) => {
     try {
-        const { cartItems, customerInfo } = req.body;
+             const { cartItems, customerInfo, discountId } = req.body;
         if (!cartItems || cartItems.length === 0 || !customerInfo) {
             return res.status(400).json({ message: "Cart items and customer information are required." });
         }
+
+        let cartTotal = 0;
         const line_items = await Promise.all(cartItems.map(async (item) => {
             const product = await Product.findById(item._id);
             if (!product) throw new Error(`Product not found: ${item.name}`);
+            cartTotal += product.price * item.quantity;
             return {
                 price_data: { currency: 'lkr', product_data: { name: product.name, images: product.images || [] }, unit_amount: Math.round(product.price * 100) },
                 quantity: item.quantity,
             };
         }));
+
+        
+        
+
+        let coupon;
+        let discountAmount = 0;
+        let discount;
+        if (discountId) {
+            discount = await Discount.findById(discountId);
+            if (!discount) {
+                return res.status(400).json({ message: "Invalid discount." });
+            }
+            const now = new Date();
+            if (!discount.isActive || now < discount.startDate || now > discount.endDate) {
+                return res.status(400).json({ message: "Discount is not active." });
+            }
+            if (cartTotal < discount.minPurchase) {
+                return res.status(400).json({ message: `Minimum purchase of Rs${discount.minPurchase} required for this discount.` });
+            }
+            if (discount.usageLimit !== null && discount.timesUsed >= discount.usageLimit) {
+                return res.status(400).json({ message: "Discount usage limit reached." });
+            }
+            if (discount.type === 'PERCENTAGE') {
+                discountAmount = cartTotal * (discount.value / 100);
+                coupon = await stripe.coupons.create({ percent_off: discount.value, duration: 'once' });
+            } else {
+                discountAmount = discount.value;
+                coupon = await stripe.coupons.create({ amount_off: Math.round(discountAmount * 100), currency: 'lkr', duration: 'once' });
+            }
+            discountAmount = Math.min(discountAmount, cartTotal);
+        }
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items,
             mode: 'payment',
+            ...(coupon && { discounts: [{ coupon: coupon.id }] }),
             success_url: `${process.env.CLIENT_URL}/order/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.CLIENT_URL}/checkout`,
             customer_email: customerInfo.email,
@@ -31,6 +67,12 @@ export const createCheckoutSession = async (req, res, next) => {
                 addressLine1: customerInfo.addressLine1,
                 city: customerInfo.city,
                 postalCode: customerInfo.postalCode,
+                ...(discount && {
+                    discountId: discount._id.toString(),
+                    discountAmount: discountAmount.toString(),
+                    discountCode: discount.code,
+                    discountType: discount.type,
+                }),
             },
         });
         res.status(200).json({ id: session.id, url: session.url });
@@ -49,16 +91,28 @@ const fulfillOrder = async (session) => {
     }
     try {
         const cartItems = JSON.parse(session.metadata.cartItems);
+        const discount = session.metadata.discountId ? {
+            discountId: session.metadata.discountId,
+            amount: parseFloat(session.metadata.discountAmount),
+            code: session.metadata.discountCode,
+            type: session.metadata.discountType,
+        } : undefined;
+        
         const newOrder = new Order({
             customer: { name: session.metadata.customerName, email: session.customer_email, phone: session.metadata.customerPhone },
             shippingAddress: { addressLine1: session.metadata.addressLine1, city: session.metadata.city, postalCode: session.metadata.postalCode },
             orderItems: cartItems.map(item => ({...item, product: item.productId})),
+            discount,
             totalPrice: session.amount_total / 100,
+            ...(discount && { discount }),
             isPaid: true, paidAt: new Date(), status: 'PROCESSING', stripeSessionId: session.id,
         });
         const savedOrder = await newOrder.save();
         for (const item of savedOrder.orderItems) {
             await Product.findByIdAndUpdate(item.product, { $inc: { 'stock.qty': -item.qty } });
+        }
+         if (discount && discount.discountId) {
+            await Discount.findByIdAndUpdate(discount.discountId, { $inc: { timesUsed: 1 } });
         }
         console.log(`✅ Order fulfilled and saved for session: ${session.id}`);
     } catch (error) {
