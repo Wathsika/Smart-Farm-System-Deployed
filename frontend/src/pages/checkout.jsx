@@ -24,7 +24,7 @@ const InputField = ({ id, label, value, onChange, placeholder, required = false,
 
 
 export default function CheckoutPage() {
-    const { cartItems, cartTotal } = useCart();
+  const { cartItems, cartTotal, discountAmount, totalAfterDiscount, discount } = useCart();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
     const [customerInfo, setCustomerInfo] = useState({
@@ -55,10 +55,14 @@ export default function CheckoutPage() {
 
         try {
             // Send cart and customer info to the backend
-            const { data } = await api.post('/orders/create-checkout-session', {
-                cartItems,
-                customerInfo
-            });
+            const payload = {
+                 cartItems,
+                  customerInfo,
+            };
+            if (discount && discountAmount > 0) {
+                payload.discountId = discount._id;
+            }
+            const { data } = await api.post('/orders/create-checkout-session', payload);
             
             // If the backend successfully creates a session, it will return a URL.
             // Redirect the user to this Stripe-hosted payment page.
@@ -130,9 +134,17 @@ export default function CheckoutPage() {
                                     </div>
 
                                     <div className="mt-6 border-t pt-6 space-y-4">
+                                         <div className="flex justify-between">
+                                            <span>Subtotal</span>
+                                            <span>Rs {cartTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Discount Applied</span>
+                                            <span>-Rs {discountAmount.toFixed(2)}</span>
+                                        </div>
                                         <div className="flex justify-between font-bold text-xl text-gray-800">
                                             <span>Total</span>
-                                            <span>Rs {cartTotal.toFixed(2)}</span>
+                                            <span>Rs {totalAfterDiscount.toFixed(2)}</span>
                                         </div>
 
                                         {error && (

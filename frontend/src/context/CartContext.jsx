@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'; // 1. Import useCallback
+import { api } from '../lib/api';
 
 // Create the context
 const CartContext = createContext();
@@ -20,12 +21,27 @@ export const CartProvider = ({ children }) => {
     }
   });
 
+    const [discount, setDiscount] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+
   // Save to localStorage whenever cartItems changes
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  
+  useEffect(() => {
+    const fetchDiscount = async () => {
+      try {
+        const { data } = await api.get('/discounts/active');
+        setDiscount(data || null);
+      } catch (err) {
+        console.error('Failed to fetch active discount', err);
+        setDiscount(null);
+      }
+    };
+    fetchDiscount();
+  }, []);
+
   // --- THIS IS THE FIX ---
   // Wrap the functions that don't depend on external state in `useCallback`
   // with an empty dependency array `[]`. This tells React to create them only once.
@@ -69,6 +85,22 @@ export const CartProvider = ({ children }) => {
   const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
 
+  useEffect(() => {
+    if (!discount || cartTotal < (discount.minPurchase || 0)) {
+      setDiscountAmount(0);
+      return;
+    }
+    let amount = 0;
+    if (discount.type === 'PERCENTAGE') {
+      amount = (cartTotal * discount.value) / 100;
+    } else {
+      amount = Math.min(discount.value, cartTotal);
+    }
+    setDiscountAmount(amount);
+  }, [cartTotal, discount]);
+
+  const totalAfterDiscount = cartTotal - discountAmount;
+
   // --- EXPORTED VALUE ---
   const value = {
     cartItems,
@@ -78,6 +110,9 @@ export const CartProvider = ({ children }) => {
     clearCart, // Now exporting the stable, memoized function
     totalItemsInCart,
     cartTotal,
+     discount,
+    discountAmount,
+    totalAfterDiscount,
   };
 
   // The Provider component renders its children, making the `value` object available
