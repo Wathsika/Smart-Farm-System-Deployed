@@ -1,7 +1,7 @@
 // src/pages/livestock/cow.jsx
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { FaPlus, FaSearch, FaEllipsisV, FaEye, FaPencilAlt, FaTrash } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaPlus, FaSearch, FaEllipsisV } from "react-icons/fa";
+import { ActionsMenuPortal, CowFormModal, ViewCowModal  } from "./CowModals";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
@@ -19,90 +19,17 @@ const calculateAge = (dob) => {
   if (!dob) return "N/A";
   const birth = new Date(dob);
   if (isNaN(+birth)) return "Invalid Date";
-
   const today = new Date();
   let years = today.getFullYear() - birth.getFullYear();
   let months = today.getMonth() - birth.getMonth();
   let days = today.getDate() - birth.getDate();
   if (days < 0) months -= 1;
-
   const totalMonths = years * 12 + months;
   if (totalMonths < 0) return "Invalid Date";
   if (totalMonths < 12) return totalMonths === 1 ? "1 month" : `${totalMonths} months`;
-
   const fullYears = Math.floor(totalMonths / 12);
   return fullYears === 1 ? "1 year" : `${fullYears} years`;
 };
-
-/* ---------- Portal Menu ---------- */
-function ActionsMenuPortal({ openForId, position, onClose, onEdit, onView, onDelete }) {
-  if (!openForId || !position) return null;
-
-  // Close on outside click / ESC / scroll / resize
-  useEffect(() => {
-    const handleClick = (e) => {
-      const inside = e.target.closest?.('[data-actions-menu="true"]') || e.target.closest?.('[data-actions-trigger="true"]');
-      if (!inside) onClose();
-    };
-    const handleKey = (e) => e.key === "Escape" && onClose();
-    const handleScroll = () => onClose();
-    const handleResize = () => onClose();
-
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleResize);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [onClose]);
-
-  const style = {
-    position: "fixed",
-    top: position.top,
-    left: position.left,
-    zIndex: 9999,
-  };
-
-  return createPortal(
-    <div
-      data-actions-menu="true"
-      style={style}
-      className="w-48 bg-white rounded-md shadow-lg border border-gray-200"
-    >
-      <ul className="py-1">
-        <li>
-          <button
-            onClick={onView}
-            className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <FaEye /> View Profile
-          </button>
-        </li>
-        <li>
-          <button
-            onClick={onEdit}
-            className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <FaPencilAlt /> Edit
-          </button>
-        </li>
-        <li>
-          <button
-            onClick={onDelete}
-            className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-          >
-            <FaTrash /> Delete
-          </button>
-        </li>
-      </ul>
-    </div>,
-    document.body
-  );
-}
 
 export default function CowProfilePage() {
   const [cows, setCows] = useState([]);
@@ -110,21 +37,20 @@ export default function CowProfilePage() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [genderFilter, setGenderFilter] = useState("All");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // add/edit modal toggles + data
   const [saving, setSaving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [initialForm, setInitialForm] = useState(null);
 
-  // Portal menu state
+  // actions menu
   const [openMenuForId, setOpenMenuForId] = useState(null);
-  const [menuPos, setMenuPos] = useState(null); // { top, left }
+  const [menuPos, setMenuPos] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewData, setViewData] = useState(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    breed: "",
-    gender: "Female",
-    bday: "",
-    photoFile: null,
-    photoPreviewUrl: "",
-  });
 
   useEffect(() => {
     (async () => {
@@ -142,65 +68,96 @@ export default function CowProfilePage() {
     })();
   }, []);
 
-  // search + gender filter
   const filteredCows = cows.filter((c) => {
     const matchesSearch = Object.values(c).some((v) =>
       String(v).toLowerCase().includes(searchQuery.toLowerCase())
     );
     const matchesGender =
-      genderFilter === "All" ? true : String(c.gender).toLowerCase() === genderFilter.toLowerCase();
+      genderFilter === "All"
+        ? true
+        : String(c.gender).toLowerCase() === genderFilter.toLowerCase();
     return matchesSearch && matchesGender;
   });
 
   function openMenu(e, id) {
-    // Coordinates for fixed-position menu (avoid clipping)
     const rect = e.currentTarget.getBoundingClientRect();
-    const MENU_WIDTH = 192; // w-48
+    const MENU_WIDTH = 192;
     const GAP = 6;
-
-    let left = rect.right - MENU_WIDTH; // align right of button to menu right
-    if (left < 8) left = 8; // keep inside viewport
+    let left = rect.right - MENU_WIDTH;
+    if (left < 8) left = 8;
     let top = rect.bottom + GAP;
-
-    // If near bottom, flip upward
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    const MENU_HEIGHT = 132; // approx; enough for 3 items
+    const MENU_HEIGHT = 132;
     if (top + MENU_HEIGHT > viewportHeight - 8) {
       top = rect.top - MENU_HEIGHT - GAP;
     }
-
     setMenuPos({ top, left });
     setOpenMenuForId(id);
   }
-
   function closeMenu() {
     setOpenMenuForId(null);
     setMenuPos(null);
   }
 
-  async function addCow(e) {
-    e.preventDefault();
+  // ----- Add -----
+  function openAddModal() {
+    setInitialForm({ name: "", breed: "", gender: "Female", bday: "", photoUrl: "" });
+    setAddOpen(true);
+  }
+  async function submitAdd(values) {
     setSaving(true);
     setError("");
     try {
-      const body = {
-        name: form.name.trim(),
-        breed: form.breed.trim(),
-        gender: form.gender,
-        bday: form.bday,
-      };
+      // JSON only for now. Switch to FormData if you add file upload.
       const r = await fetch(`${API}/api/cows`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(values),
       });
       if (!r.ok) throw new Error("Backend validation failed");
       const created = await r.json();
       setCows((prev) => [created, ...prev]);
-      setIsModalOpen(false);
-      setForm({ name: "", breed: "", gender: "Female", bday: "", photoFile: null, photoPreviewUrl: "" });
+      setAddOpen(false);
     } catch (err) {
       setError(err.message || "Could not add cow.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ----- Edit -----
+  function openEditModal(id) {
+    const c = cows.find((x) => x._id === id);
+    if (!c) return;
+    const b = c.bday ? new Date(c.bday) : null;
+    const bstr = b && !isNaN(+b) ? b.toISOString().slice(0, 10) : "";
+    setEditId(id);
+    setInitialForm({
+      name: c.name || "",
+      breed: c.breed || "",
+      gender: c.gender || "Female",
+      bday: bstr,
+      photoUrl: c.photoUrl || "",
+    });
+    setEditOpen(true);
+    closeMenu();
+  }
+  async function submitEdit(values) {
+    setSaving(true);
+    setError("");
+    try {
+      const r = await fetch(`${API}/api/cows/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!r.ok) throw new Error("Failed to update cow");
+      const updated = await r.json();
+      setCows((prev) => prev.map((c) => (c._id === editId ? updated : c)));
+      setEditOpen(false);
+      setEditId(null);
+    } catch (err) {
+      setError(err.message || "Could not update cow.");
     } finally {
       setSaving(false);
     }
@@ -217,15 +174,27 @@ export default function CowProfilePage() {
     }
   }
 
-  function onPickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) {
-      setForm((f) => ({ ...f, photoFile: null, photoPreviewUrl: "" }));
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setForm((f) => ({ ...f, photoFile: file, photoPreviewUrl: url }));
-  }
+  function openViewModal(id) {
+  const c = cows.find((x) => x._id === id);
+  if (!c) return;
+  setViewData(c);
+  setViewOpen(true);
+  closeMenu();
+}
+
+function closeViewModal() {
+  setViewOpen(false);
+  setViewData(null);
+}
+
+// From the View modal, jump to Edit prefilled
+function editFromView() {
+  if (!viewData?._id) return;
+  const id = viewData._id;
+  closeViewModal();
+  // tiny delay to ensure state toggles don’t clash visually
+  setTimeout(() => openEditModal(id), 0);
+}
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
@@ -233,7 +202,8 @@ export default function CowProfilePage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Cow Profiles</h1>
           <p className="text-gray-500 mt-1">
-            <span className="font-medium">Total:</span> {filteredCows.length} <span className="font-medium">cows</span>
+            <span className="font-medium">Total:</span> {filteredCows.length}{" "}
+            <span className="font-medium">cows</span>
           </p>
         </div>
 
@@ -261,7 +231,7 @@ export default function CowProfilePage() {
           </select>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAddModal}
             className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 flex items-center gap-2"
           >
             <FaPlus />
@@ -303,9 +273,7 @@ export default function CowProfilePage() {
                     <td className="py-3 px-4 text-center">
                       <button
                         data-actions-trigger="true"
-                        onClick={(e) =>
-                          openMenu(e, cow._id)
-                        }
+                        onClick={(e) => openMenu(e, cow._id)}
                         className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-200"
                         aria-label={`Open actions for ${cow.name}`}
                       >
@@ -327,111 +295,45 @@ export default function CowProfilePage() {
         )}
       </main>
 
-      {/* Actions Menu */}
       <ActionsMenuPortal
         openForId={openMenuForId}
         position={menuPos}
         onClose={closeMenu}
-        onView={() => {
-          // TODO: navigate to profile page
-          alert("View profile (coming soon)");
-          closeMenu();
-        }}
-        onEdit={() => {
-          alert("Edit " + (cows.find((c) => c._id === openMenuForId)?.name || ""));
-          closeMenu();
-        }}
+        onView={() => openViewModal(openMenuForId)}
+        onEdit={() => openEditModal(openMenuForId)}
         onDelete={() => deleteCow(openMenuForId)}
-      />
+        />
 
-      {/* Add Cow Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-          <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Add New Cow</h2>
-            <form onSubmit={addCow} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700">Name :</label>
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700">Gender :</label>
-                <select
-                  required
-                  value={form.gender}
-                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                >
-                  <option>Female</option>
-                  <option>Male</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Breed :</label>
-                <input
-                  required
-                  value={form.breed}
-                  onChange={(e) => setForm({ ...form, breed: e.target.value })}
-                  className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700">Birth Date :</label>
-                <input
-                  type="date"
-                  required
-                  value={form.bday}
-                  onChange={(e) => setForm({ ...form, bday: e.target.value })}
-                  className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                />
-              </div>
-              {/* Optional Photo */}
-              <div className="sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700">Photo (optional) :</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return setForm((f) => ({ ...f, photoFile: null, photoPreviewUrl: "" }));
-                    const url = URL.createObjectURL(file);
-                    setForm((f) => ({ ...f, photoFile: file, photoPreviewUrl: url }));
-                  }}
-                  className="mt-1 block w-full text-sm text-gray-700"
-                />
-                {form.photoPreviewUrl && (
-                  <img
-                    src={form.photoPreviewUrl}
-                    alt="Preview"
-                    className="mt-2 h-20 w-20 object-cover rounded-md border"
-                  />
-                )}
-              </div>
 
-              <div className="sm:col-span-2 flex justify-end gap-4 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  disabled={saving}
-                  className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save Cow"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {addOpen && (
+        <CowFormModal
+          title="Add New Cow"
+          initial={initialForm}
+          saving={saving}
+          onClose={() => setAddOpen(false)}
+          onSubmit={submitAdd}
+        />
       )}
+
+      {editOpen && (
+        <CowFormModal
+          title="Edit Cow"
+          initial={initialForm}
+          saving={saving}
+          onClose={() => setEditOpen(false)}
+          onSubmit={submitEdit}
+        />
+      )}
+
+      {viewOpen && viewData && (
+        <ViewCowModal
+            data={viewData}
+            age={calculateAge(viewData.bday)}
+            onClose={closeViewModal}
+            onEdit={editFromView}
+        />
+        )}
+
     </div>
   );
 }
