@@ -25,6 +25,7 @@ import CropPage from './admin/CropPage.jsx';
 import EditCrop from './admin/EditCrop.jsx';
 import FieldPage from './admin/FieldPage.jsx';
 import AddFieldPage from './admin/AddFieldPage.jsx';
+import EditFieldPage from './admin/EditFieldPage.jsx'; // Path එක හරියටම දෙන්න
 
 // Direct import for the admin store management pages
 import AdminProducts from "./pages/store/Products";
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="crop/:id/edit" element={<EditCrop />} />       {/* --- New Crop --- */}
         <Route path="/admin/fields" element={<FieldPage />} />
         <Route path="/admin/fields/add" element={<AddFieldPage />} />
+        <Route path="/admin/fields/edit/:id" element={<EditFieldPage />} />
  
         {/* --- Nested Store Management Routes --- */}
         <Route path="store/dashboard" element={ <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense> } />
