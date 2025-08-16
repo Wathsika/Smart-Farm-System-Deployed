@@ -97,7 +97,13 @@ const CropPage = () => {
                   <span className="bg-green-200 text-green-800 py-1 px-3 rounded-full text-xs font-medium">{crop.status}</span>
                 </td>
                 <td className="py-4 px-6">
-                  <button className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4">Edit</button>
+                  <button className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4"><Link
+                    to={`/admin/crop/${crop._id}/edit`}
+                    className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4"
+                  >
+                    Edit
+                  </Link>
+</button>
                   
                   {/* --- 3. Delete Button එකට onClick Event එක එකතු කරන්න --- */}
                   <button 

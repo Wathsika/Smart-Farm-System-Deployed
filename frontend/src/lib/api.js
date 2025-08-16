@@ -45,3 +45,15 @@ export const deleteCropAPI = async (cropId) => {
         throw new Error(error.response?.data?.message || 'Failed to delete crop.');
     }
 };
+
+
+// Updates an existing crop by its ID.
+export const updateCropAPI = async (cropId, cropData) => {
+    try {
+        const response = await api.put(`/crops/${cropId}`, cropData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating crop:", error.response?.data?.message || error.message);
+        throw new Error(error.response?.data?.message || 'Failed to update crop.');
+    }
+};
