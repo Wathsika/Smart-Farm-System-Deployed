@@ -20,6 +20,7 @@ import AdminProducts from "./pages/store/Products"; // ✅ your real products pa
 
 // Livestock management pages
 import CowProfilePage from "./pages/livestock/cow.jsx";
+import MilkProduction from "./pages/livestock/Milk.jsx";
 
 // --- PLACEHOLDER COMPONENTS for other admin pages (keep until you build them) ---
 const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
@@ -32,7 +33,6 @@ const DiscountsPage = () => <div className="p-6 text-2xl font-bold">Discount Man
 const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
 const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
 
-const MilkProductionPage = () => <div className="p-6 text-2xl font-bold">Milk Production Records</div>;
 const HealthRecordsPage = () => <div className="p-6 text-2xl font-bold">Health Records</div>;
 const BreedingRecordsPage = () => <div className="p-6 text-2xl font-bold">Breeding Records</div>;
 
@@ -65,7 +65,7 @@ export default function App() {
         <Route path="livestock" element={<LivestockPage />} /> 
         {/* Livestock sub-pages */}
         <Route path="livestock/profile" element={<CowProfilePage />} />
-        <Route path="livestock/milk" element={<MilkProductionPage />} />
+        <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthRecordsPage />} />
         <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
 
