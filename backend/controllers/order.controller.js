@@ -107,12 +107,16 @@ const fulfillOrder = async (session) => {
             ...(discount && { discount }),
             isPaid: true, paidAt: new Date(), status: 'PROCESSING', stripeSessionId: session.id,
         });
-        const savedOrder = await newOrder.save();
-        for (const item of savedOrder.orderItems) {
+        const order = await newOrder.save();
+        for (const item of order.orderItems) {
             await Product.findByIdAndUpdate(item.product, { $inc: { 'stock.qty': -item.qty } });
         }
-         if (discount && discount.discountId) {
-            await Discount.findByIdAndUpdate(discount.discountId, { $inc: { timesUsed: 1 } });
+          if (order.discount && order.discount.discountId) {
+            try {
+                await Discount.findByIdAndUpdate(order.discount.discountId, { $inc: { timesUsed: 1 } });
+            } catch (err) {
+                console.error(`Failed to update discount usage for order ${order._id}:`, err);
+            }
         }
         console.log(`✅ Order fulfilled and saved for session: ${session.id}`);
     } catch (error) {
