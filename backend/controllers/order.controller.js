@@ -66,12 +66,107 @@ export const createCheckoutSession = async (req, res, next) => {
 
 // --- HELPER: Fulfill Order (Called by Webhook) ---
 const fulfillOrder = async (session) => {
-    // Logic is correct
+     try {
+        const metadata = session.metadata || {};
+        const cartItems = metadata.cartItems ? JSON.parse(metadata.cartItems) : [];
+
+        const orderItems = cartItems.map((item) => ({
+            product: item.productId,
+            name: item.name,
+            qty: item.qty,
+            price: item.price,
+            image: item.image,
+        }));
+
+        // Prepare shipping/customer info
+        const customer = {
+            name: metadata.customerName,
+            email: session.customer_details?.email || session.customer_email,
+        };
+
+        const shippingAddress = {
+            addressLine1: metadata.addressLine1,
+            city: metadata.city,
+            postalCode: metadata.postalCode,
+            country: 'Sri Lanka',
+        };
+
+        // Optional discount info
+        let discountInfo;
+        if (metadata.discountId && session.total_details?.amount_discount) {
+            const discount = await Discount.findById(metadata.discountId);
+            if (discount) {
+                discountInfo = {
+                    discountId: discount._id,
+                    amount: session.total_details.amount_discount / 100,
+                    code: discount.code,
+                    type: discount.type,
+                };
+
+                // Track usage if applicable
+                if (typeof discount.timesUsed === 'number') {
+                    discount.timesUsed += 1;
+                    await discount.save();
+                }
+            }
+        }
+
+        const order = new Order({
+            customer,
+            orderItems,
+            shippingAddress,
+            ...(discountInfo && { discount: discountInfo }),
+            totalPrice: session.amount_total / 100,
+            isPaid: session.payment_status === 'paid',
+            paidAt: new Date(),
+            stripeSessionId: session.id,
+            status: 'PROCESSING',
+        });
+
+        const createdOrder = await order.save();
+
+        // Decrement stock for each product
+        for (const item of orderItems) {
+            await Product.findByIdAndUpdate(item.product, {
+                $inc: { 'stock.qty': -item.qty },
+            });
+        }
+
+        return createdOrder;
+    } catch (error) {
+        console.error('Error fulfilling order:', error);
+        throw error;
+    }
 };
 
 // --- CONTROLLER 2: Stripe Webhook Handler ---
 export const stripeWebhookHandler = async (req, res) => {
-    // Logic is correct
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        try {
+            await fulfillOrder(session);
+            return res.status(200).json({ received: true });
+        } catch (error) {
+            console.error('Failed to fulfill order:', error);
+            return res.status(500).json({ message: 'Order fulfillment failed.' });
+        }
+    }
+
+    res.status(200).json({ received: true });
 };
 
 // --- CONTROLLER 3: Get All Orders (for Admin) ---
@@ -115,7 +210,16 @@ export const updateOrderStatus = async (req, res, next) => {
 };
 
 
-// --- THIS IS THE MISSING PART ---
+// --- CONTROLLER 6: Get Order by Stripe Session ID ---
+export const getOrderBySessionId = async (req, res, next) => {
+    try {
+        const order = await Order.findOne({ stripeSessionId: req.params.sessionId });
+        if (!order) return res.status(404).json({ message: "Order not found." });
+        res.status(200).json(order);
+    } catch (error) {
+        next(error);
+    }
+};
 
 // --- CONTROLLER 6: GET MY ORDERS (for User Profile) ---
 export const getMyOrders = async (req, res, next) => {

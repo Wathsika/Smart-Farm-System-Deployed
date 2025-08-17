@@ -4,6 +4,7 @@ import {
   stripeWebhookHandler,
   getAllOrders,
   getOrderById,
+  getOrderBySessionId,
   updateOrderStatus,
   getMyOrders,
   cancelOrder
@@ -19,7 +20,7 @@ const router = express.Router();
 // --- Customer Facing Routes ---
 router.post('/create-checkout-session', express.json(), createCheckoutSession);
 router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
-
+router.get('/session/:sessionId', getOrderBySessionId);
 
 // --- User Profile Routes (now correctly protected) ---
 router.get('/myorders', protect, getMyOrders); 

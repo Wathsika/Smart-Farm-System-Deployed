@@ -55,6 +55,7 @@ export default function MyOrdersPage() {
     // This state will hold the order object that the user wants to view in the modal.
     // If it's `null`, the modal is closed.
     const [viewingOrder, setViewingOrder] = useState(null);
+ const [autoPrint, setAutoPrint] = useState(false);
 
     // --- DATA FETCHING with React Query ---
     // Fetches data from the protected `/api/orders/myorders` route.
@@ -88,6 +89,11 @@ export default function MyOrdersPage() {
         if (window.confirm("Are you sure you want to cancel this order? This will restock the items and cannot be undone.")) {
             cancelOrder(orderId);
         }
+    };
+
+    const handleDownloadInvoice = (order) => {
+        setViewingOrder(order);
+        setAutoPrint(true);
     };
 
     // --- RENDER STATES ---
@@ -139,11 +145,11 @@ export default function MyOrdersPage() {
                                         <button 
                                             onClick={() => setViewingOrder(order)}
                                             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
-                                            <FileText size={16} /> View Receipt
+                                            <FileText size={16} /> Download Invoice
                                         </button>
                                         {order.status === 'PROCESSING' && (
-                                            <button 
-                                                onClick={() => handleCancelOrder(order._id)}
+                                             <button
+                                            onClick={() => handleDownloadInvoice(order)}
                                                 disabled={isCancelling}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                                             >
@@ -159,10 +165,11 @@ export default function MyOrdersPage() {
             </div>
             
             {/* Render the InvoiceModal when an order is selected for viewing */}
-            <InvoiceModal 
-                isOpen={!!viewingOrder} 
-                onClose={() => setViewingOrder(null)} 
-                order={viewingOrder} 
+           <InvoiceModal
+                isOpen={!!viewingOrder}
+                onClose={() => { setViewingOrder(null); setAutoPrint(false); }}
+                order={viewingOrder}
+                autoPrint={autoPrint}
             />
         </div>
     );

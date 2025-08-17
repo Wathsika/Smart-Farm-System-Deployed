@@ -1,14 +1,36 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useCart } from '../../context/CartContext';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { api } from '../../lib/api';
+import InvoiceModal from '../../components/common/InvoiceModal';
 
 const OrderSuccessPage = () => {
-    const { clearCart } = useCart();  
+        const { clearCart } = useCart();
+    const [searchParams] = useSearchParams();
+    const sessionId = searchParams.get('session_id');
+    const [order, setOrder] = useState(null);
+    const [showInvoice, setShowInvoice] = useState(false);
+    const [autoPrint, setAutoPrint] = useState(false);
 
     // මෙම පිටුවට ආ විගස cart එක clear කරනවා.
     useEffect(() => {
-        clearCart();
-    }, [clearCart]);
+        const fetchOrder = async () => {
+            if (!sessionId) return;
+            try {
+                const { data } = await api.get('/orders/myorders');
+                const found = data.find(o => o.stripeSessionId === sessionId);
+                setOrder(found);
+            } catch (err) {
+                console.error('Failed to fetch order', err);
+            }
+        };
+        fetchOrder();
+    }, [sessionId]);
+
+    const handleDownloadInvoice = () => {
+        setShowInvoice(true);
+        setAutoPrint(true);
+    };
+
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center bg-gray-50">
@@ -19,10 +41,26 @@ const OrderSuccessPage = () => {
                 <h1 className="text-3xl font-bold text-gray-800">Thank You!</h1>
                 <p className="text-gray-600 mt-2">Your order has been placed successfully.</p>
                 <p className="text-gray-500 text-sm mt-1">You will receive an email confirmation shortly.</p>
-                <Link to="/store" className="mt-8 inline-block bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700">
+                {order && (
+                    <button
+                        onClick={handleDownloadInvoice}
+                        className="mt-6 inline-block bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-200"
+                    >
+                        Download Invoice
+                    </button>
+                )}
+                <Link to="/store" className="mt-4 inline-block bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700">
                     Continue Shopping
                 </Link>
             </div>
+            {order && (
+                <InvoiceModal
+                    order={order}
+                    isOpen={showInvoice}
+                    onClose={() => { setShowInvoice(false); setAutoPrint(false); }}
+                    autoPrint={autoPrint}
+                />
+            )}
         </div>
     );
 };

@@ -7,6 +7,10 @@ export const InvoiceTemplate = React.forwardRef(({ order }, ref) => {
     if (!order) return null;
     const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
 
+     // Calculate subtotal before discount and final total
+    const discountAmount = order.discount?.amount || 0;
+    const subTotal = Number(order.totalPrice || 0) + discountAmount;
+
     return (
         <div ref={ref} className="p-8 bg-white text-gray-800">
             {/* --- Header Section --- */}
@@ -62,11 +66,16 @@ export const InvoiceTemplate = React.forwardRef(({ order }, ref) => {
                     <tfoot className="border-t-2 border-gray-300">
                         <tr>
                             <td colSpan="3" className="p-3 text-right font-semibold">Subtotal</td>
-                            <td className="p-3 text-right">{formatCurrency(order.totalPrice)}</td>
+                           <td className="p-3 text-right">{formatCurrency(subTotal)}</td>
                         </tr>
-                        {/* You can add rows for discount, tax, etc. here if they exist in your order model */}
+                          {discountAmount > 0 && (
+                            <tr>
+                                <td colSpan="3" className="p-3 text-right font-semibold">Discount</td>
+                                <td className="p-3 text-right text-red-600">- {formatCurrency(discountAmount)}</td>
+                            </tr>
+                        )}
                         <tr className="bg-gray-100">
-                            <td colSpan="3" className="p-3 text-right text-xl font-bold">Grand Total</td>
+                                <td colSpan="3" className="p-3 text-right text-xl font-bold">Total</td>
                             <td className="p-3 text-right text-xl font-bold">{formatCurrency(order.totalPrice)}</td>
                         </tr>
                     </tfoot>
