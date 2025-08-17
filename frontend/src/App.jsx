@@ -1,104 +1,96 @@
-import React, { Suspense, lazy } from "react";
+// src/App.jsx
+import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
-// --- CONTEXT and HELPERS ---
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/common/Layout";
 
-// --- PUBLIC PAGES ---
+// Public
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
 import AboutUs from "./pages/aboutus";
 import ContactUs from "./pages/contactus";
-import LoginPage from "./pages/Login"; // As discussed, assuming Login.jsx exports a component named LoginPage
+import LoginPage from "./pages/Login";
 
-// --- PRIVATE (Authenticated User) PAGES ---
+// Private (still protected)
 import UserProfilePage from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
 import MyOrdersPage from "./pages/MyOrdersPage";
-import OrderSuccessPage from './pages/store/OrderSuccessPage';
-import OrderCancelPage from './pages/store/OrderCancelPage';
+import OrderSuccessPage from "./pages/store/OrderSuccessPage";
+import OrderCancelPage from "./pages/store/OrderCancelPage";
 
-// --- ADMIN PAGES (add these as you build them) ---
-// const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+// --- ADMIN PAGES (UNPROTECTED for development) ---
+import AdminLayout from "./admin/AdminLayout";
+import AdminDashboard from "./admin/AdminDashboard";
+import StoreDashboard from "./admin/StoreDashboard";
+import AdminOrdersPage from "./pages/store/Orders";
+import AdminDiscountsPage from "./admin/DiscountsPage";
+import FinanceOverview from "./admin/FinanceOverview";
+import FinanceTransaction from "./admin/FinanceTransaction";
+import FinanceNewTransaction from "./admin/FinanceNewTransaction";
+import StaffAttendance from "./admin/StaffAttendance";
+import LeaveManagement from "./admin/LeaveManagement";
 
-
-// --- !!! THIS IS THE FIX: DEFINE THE ROUTE GUARDS !!! ---
-
-// This component protects routes that only LOGGED-IN users should see.
+/* --------- Route Guards (user area only) --------- */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth(); // Get auth state from our context
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
-
   if (!isAuthenticated) {
-    // If the user is not authenticated, redirect them to the login page.
-    // We save the location they were trying to access in the `state`.
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
-  // If the user is authenticated, render the child components (the protected page).
   return children;
 };
 
-// This component protects routes that only LOGGED-OUT users should see (e.g., login/signup).
 const PublicOnlyRoute = ({ children }) => {
-    const { isAuthenticated } = useAuth();
-
-    if (isAuthenticated) {
-        // If the user is already logged in, redirect them away from the login/signup page.
-        // The profile page is a sensible default destination.
-        return <Navigate to="/profile" replace />;
-    }
-
-    // If the user is not authenticated, render the child component (the login/signup page).
-    return children;
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/profile" replace />;
+  return children;
 };
 
-
-// --- Main App Component ---
+/* ---------------------- App ---------------------- */
 export default function App() {
   return (
     <Routes>
-      {/* === PUBLIC ROUTES (Wrapped with standard Layout) === */}
+      {/* Public with site Layout */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/store" element={<Storefront />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
-        
-        {/* The Login page uses the PublicOnlyRoute guard to prevent logged-in users from seeing it */}
-        <Route path="/login" element={
+        <Route
+          path="/login"
+          element={
             <PublicOnlyRoute>
-                <LoginPage />
+              <LoginPage />
             </PublicOnlyRoute>
-        } />
+          }
+        />
       </Route>
 
-
-      {/* === PRIVATE / PROTECTED ROUTES (also uses Layout) === */}
-      {/* We wrap the entire Layout in the ProtectedRoute guard. */}
-      {/* Any route nested inside will now require authentication. */}
+      {/* Private with site Layout (user-only) */}
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/profile" element={<UserProfilePage />} />
         <Route path="/my-orders" element={<MyOrdersPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} /> 
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/order/success" element={<OrderSuccessPage />} />
         <Route path="/order/cancel" element={<OrderCancelPage />} />
       </Route>
 
-
-      {/* === ADMIN ROUTES (Placeholder) === */}
-      {/* Later, you would wrap this in an <AdminOnlyRoute> guard */}
-      {/*
-      <Route
-        path="/admin"
-        element={<Suspense fallback={<div>Loading Admin...</div>}><AdminLayout /></Suspense>}
-      >
-        ...
+      {/* ADMIN — NO AUTH GUARD (for building UI) */}
+      <Route path="/admin/*" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="store/dashboard" element={<StoreDashboard />} />
+        <Route path="store/orders" element={<AdminOrdersPage />} />
+        <Route path="store/discounts" element={<AdminDiscountsPage />} />
+        <Route path="finance/overview" element={<FinanceOverview />} />
+        <Route path="finance/transaction" element={<FinanceTransaction />} />
+        <Route path="finance/new_transaction" element={<FinanceNewTransaction />} />
+        <Route path="attendance" element={<StaffAttendance />} />
+        <Route path="leave" element={<LeaveManagement />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
-      */}
-      
-      {/* === FALLBACK ROUTE === */}
+
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -1,35 +1,51 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth } from '../lib/auth'; // Using your teammate's auth helper
+// src/context/AuthContext.jsx
+import React, {
+  createContext, useState, useContext, useEffect, useMemo,
+} from "react";
+import { auth as storageAuth } from "../lib/auth"; // localStorage helper
 
-const AuthContext = createContext();
-
+const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }) => {
-    // Initialize state from the auth helper in localStorage
-    const [user, setUser] = useState(auth.user);
-    const [token, setToken] = useState(auth.token);
-    
-    // Create login and logout functions that update both the state and localStorage
-    const login = (data) => {
-        auth.login(data); // This saves to localStorage
-        setUser(data.user);
-        setToken(data.token);
-    };
+export function AuthProvider({ children }) {
+  // hydrate from localStorage on first render
+  const [user, setUser]   = useState(storageAuth.user);
+  const [token, setToken] = useState(storageAuth.token);
 
-    const logout = () => {
-        auth.logout(); // This clears localStorage
-        setUser(null);
-        setToken(null);
+  // keep other tabs/windows in sync
+  useEffect(() => {
+    const onStorage = () => {
+      setUser(storageAuth.user);
+      setToken(storageAuth.token);
     };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
-    const value = {
-        user,
-        token,
-        isAuthenticated: !!token, // A helpful boolean: true if logged in, false if not
-        login,
-        logout,
-    };
+  const login = ({ token, user }) => {
+    // guard against malformed responses
+    if (!token || !user) throw new Error("Malformed login response");
+    storageAuth.login({ token, user }); // persist
+    setUser(user);
+    setToken(token);
+  };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+  const logout = () => {
+    storageAuth.logout();
+    setUser(null);
+    setToken(null);
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: Boolean(token),
+      login,
+      logout,
+    }),
+    [user, token]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
