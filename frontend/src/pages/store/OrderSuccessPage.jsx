@@ -2,14 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import InvoiceModal from '../../components/common/InvoiceModal';
+import { useCart } from '../../context/CartContext';
 
 const OrderSuccessPage = () => {
-        const { clearCart } = useCart();
+    const { clearCart } = useCart();
     const [searchParams] = useSearchParams();
     const sessionId = searchParams.get('session_id');
     const [order, setOrder] = useState(null);
     const [showInvoice, setShowInvoice] = useState(false);
     const [autoPrint, setAutoPrint] = useState(false);
+
+     // Clear the cart when the success page loads
+    useEffect(() => {
+        clearCart();
+    }, [clearCart]);
 
     // මෙම පිටුවට ආ විගස cart එක clear කරනවා.
     useEffect(() => {
