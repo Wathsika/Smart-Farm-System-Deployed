@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -69,6 +69,20 @@ export default function MyOrdersPage() {
         enabled: !!user, // The query will only run if the user is logged in
     });
     
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const { data } = await api.get('/products');
+            return data.items || data;
+        }
+    });
+
+    const productStock = useMemo(() => {
+        const map = {};
+        products.forEach(p => { map[p._id] = p.stock?.qty ?? 0; });
+        return map;
+    }, [products]);
+
     // --- API MUTATION for Cancelling an Order ---
     // `useMutation` is used for any action that changes data (Create, Update, Delete).
     const { mutate: cancelOrder, isLoading: isCancelling } = useMutation({
@@ -77,6 +91,7 @@ export default function MyOrdersPage() {
             // After a successful cancellation, tell React Query to refetch the 'myOrders' data.
             // This ensures the UI updates instantly to show the "Cancelled" status.
             queryClient.invalidateQueries({ queryKey: ['myOrders'] });
+             queryClient.invalidateQueries({ queryKey: ['products'] });
             alert("Your order has been successfully cancelled.");
         },
         onError: (error) => {
@@ -139,18 +154,18 @@ export default function MyOrdersPage() {
                                 <div className="mb-6"><StatusTracker status={order.status} /></div>
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-t pt-4">
                                     <div className="text-sm text-gray-600 mb-4 md:mb-0">
-                                       Contains {order.orderItems.length} item(s): {order.orderItems.map(i => i.name).join(', ')}
+                                      Contains {order.orderItems.length} item(s): {order.orderItems.map(i => `${i.name} (Stock: ${productStock[i.product] ?? 0})`).join(', ')}
                                     </div>
                                     <div className="flex gap-3">
-                                        <button 
-                                            onClick={() => setViewingOrder(order)}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+                                          <button
+                                            onClick={() => handleDownloadInvoice(order)}
+                                             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
                                             <FileText size={16} /> Download Invoice
                                         </button>
-                                        {order.status === 'PROCESSING' && (
-                                             <button
-                                            onClick={() => handleDownloadInvoice(order)}
-                                                disabled={isCancelling}
+                                       {order.status !== 'CANCELLED' && (
+                                            <button
+                                                onClick={() => handleCancelOrder(order._id)}
+                                                disabled={isCancelling || ['SHIPPED', 'DELIVERED'].includes(order.status)}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                                             >
                                                <XCircle size={16} /> Cancel Order

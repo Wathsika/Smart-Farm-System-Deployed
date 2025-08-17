@@ -247,9 +247,9 @@ export const cancelOrder = async (req, res, next) => {
             return res.status(403).json({ message: "Not authorized to cancel this order." });
         }
         
-        // Business logic: only cancel if status is PROCESSING.
-        if (order.status !== 'PROCESSING') {
-            return res.status(400).json({ message: `Cannot cancel an order with status: ${order.status}.` });
+         // Allow cancellation only for PENDING or PROCESSING orders
+        if (!['PENDING', 'PROCESSING'].includes(order.status)) {
+          return res.status(400).json({ message: `Cannot cancel an order with status: ${order.status}.` });
         }
         
         // Restock items.
