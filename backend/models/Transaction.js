@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const financeSchema = new mongoose.Schema(
+const transactionSchema = new mongoose.Schema(
   {
     type: {
       type: String,
@@ -26,4 +26,4 @@ const financeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Finance", financeSchema);
+export default mongoose.model("Transaction", transactionSchema);

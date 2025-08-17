@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function AddTransactionPage() {
   const [form, setForm] = useState({
-    type: "expense",
+    type: "",
     date: new Date().toISOString().slice(0, 10),
     category: "",
     amount: "",
     note: "",
   });
-
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
@@ -58,8 +59,7 @@ export default function AddTransactionPage() {
       amount: "",
       note: "",
     });
-    // In a real app, this would navigate back to transactions page
-    alert("Navigate back to Transactions page");
+    navigate("/admin/finance/transaction");
   }
 
   return (
@@ -253,49 +253,6 @@ export default function AddTransactionPage() {
                     Cancel
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Tips */}
-          <div className="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6 border border-emerald-100">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-emerald-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-emerald-800 mb-2">
-                  Quick Tips
-                </h3>
-                <ul className="text-sm text-emerald-700 space-y-1">
-                  <li>
-                    • Use clear category names like "Feed", "Fertilizer", "Milk
-                    Sales"
-                  </li>
-                  <li>
-                    • Add detailed notes to track specific purchases or sales
-                  </li>
-                  <li>
-                    • Record transactions promptly for accurate financial
-                    tracking
-                  </li>
-                  <li>
-                    • Consider setting up recurring transactions for regular
-                    expenses
-                  </li>
-                </ul>
               </div>
             </div>
           </div>
