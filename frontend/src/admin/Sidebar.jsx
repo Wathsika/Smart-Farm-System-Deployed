@@ -23,6 +23,7 @@ const SidebarLink = ({ to, icon, children }) => (
 
 const Sidebar = () => {
   const [isStoreOpen, setStoreOpen] = useState(true);
+  const [isStaffOpen, setStaffOpen] = useState(true);
   const navigate = useNavigate(); // useNavigate hook එක call කරගන්න
 
   // Store බොත්තම සඳහා click handler function එකක්
@@ -52,10 +53,39 @@ const Sidebar = () => {
         <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">Farm</div>
         <SidebarLink to="/admin/livestock" icon="fas fa-cow">Livestock</SidebarLink>
         <SidebarLink to="/admin/crop" icon="fas fa-seedling">Crop</SidebarLink>
-        <SidebarLink to="/admin/staff" icon="fas fa-users-cog">Staff</SidebarLink>
-         <SidebarLink to="/admin/attendance" icon="fas fa-clock">Attendance</SidebarLink>
-         <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">Leave Requests</SidebarLink>
-        {/* === STORE BUTTON - මෙම කොටස පමණක් වෙනස් කරන්න === */}
+        
+
+        {/* === STAFF DROPDOWN - යාවත්කාලීන කළ කොටස === */}
+        <button
+          onClick={() => setStaffOpen(!isStaffOpen)} // <-- Click කල විට state එක වෙනස් කරයි
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-users-cog w-5 text-center" />
+            <span>Staff</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isStaffOpen ? 0 : -90 }} // <-- ඊතලය කරකැවීම සඳහා
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isStaffOpen && ( // <-- isStaffOpen true නම් පමණක් මෙය පෙන්වයි
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              {/* Dropdown එක තුළ ඇති ලින්ක් තුන */}
+              <SidebarLink to="/admin/users" icon="fas fa-users">Manage Staff</SidebarLink>
+              <SidebarLink to="/admin/tasks" icon="fas fa-tasks">Task Management</SidebarLink>
+              <SidebarLink to="/admin/attendance" icon="fas fa-clock">Attendance</SidebarLink>
+              <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">Leave Requests</SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         <button
           onClick={handleStoreClick} // මෙතනට අලුත් function එක යොදන්න
           className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
@@ -69,6 +99,7 @@ const Sidebar = () => {
              className="fas fa-chevron-down text-xs"
           />
         </button>
+        
 
         <AnimatePresence>
           {isStoreOpen && (

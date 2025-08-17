@@ -26,6 +26,7 @@ import AdminLayout from "./admin/AdminLayout";
 import AdminUsers from "./pages/AdminUsers";
 import StaffAttendance from "./admin/StaffAttendance";
 import LeaveManagement from "./admin/LeaveManagement";
+import TaskManagement from "./admin/TaskManagement";
 import StoreDashboard from "./admin/StoreDashboard";
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
@@ -87,6 +88,7 @@ export default function App() {
       >
         <Route index element={<FarmDashboard />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="tasks" element={<TaskManagement />} />
         <Route path="attendance" element={<StaffAttendance />} />
         <Route path="leave" element={<LeaveManagement />} />
         <Route path="finance" element={<FinanceDashboard />} />
