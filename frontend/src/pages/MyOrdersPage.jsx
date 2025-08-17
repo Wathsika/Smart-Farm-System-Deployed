@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -98,6 +98,23 @@ export default function MyOrdersPage() {
             alert(error.response?.data?.message || "Failed to cancel the order.");
         }
     });
+
+    useEffect(() => {
+        if (!user) return;
+        const eventsUrl = `${api.defaults.baseURL}/orders/events`;
+        const eventSource = new EventSource(eventsUrl);
+        eventSource.onmessage = (e) => {
+            try {
+                const payload = JSON.parse(e.data);
+                queryClient.setQueryData(['myOrders', user.email], (old = []) =>
+                    old.map(o => o._id === payload.orderId ? { ...o, status: payload.status } : o)
+                );
+            } catch {
+                /* ignore malformed events */
+            }
+        };
+        return () => eventSource.close();
+    }, [queryClient, user]);
 
     // --- EVENT HANDLERS ---
     const handleCancelOrder = (orderId) => {

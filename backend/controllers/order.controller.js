@@ -1,7 +1,8 @@
-import stripe from '../config/stripe.config.js'; 
+import stripe from '../config/stripe.config.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Discount from '../models/Discount.js';
+import orderEvents from '../events/orderEvents.js';
 
 // --- CONTROLLER 1: Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
@@ -202,9 +203,16 @@ export const updateOrderStatus = async (req, res, next) => {
             }
         }
         
+         const previousStatus = order.status;
         order.status = status;
         if (status === 'DELIVERED') order.deliveredAt = new Date();
         const updatedOrder = await order.save();
+        if (previousStatus !== status) {
+            orderEvents.emit('statusChange', {
+                orderId: order._id.toString(),
+                status: updatedOrder.status,
+            });
+        }
         res.status(200).json(updatedOrder);
     } catch (error) { next(error); }
 };
