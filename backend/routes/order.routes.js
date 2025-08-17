@@ -4,9 +4,15 @@ import {
   stripeWebhookHandler,
   getAllOrders,
   getOrderById,
-  updateOrderStatus
+  updateOrderStatus,
+  getMyOrders,
+  cancelOrder
 } from '../controllers/order.controller.js';
-// import { protect, admin } from '../middlewares/auth.js'; // You will uncomment these later
+
+// --- THIS IS THE FIX ---
+// Import the function named 'requireAuth' but rename it to 'protect' for use in this file.
+import { requireAuth as protect } from '../middlewares/auth.js';
+
 
 const router = express.Router();
 
@@ -15,8 +21,13 @@ router.post('/create-checkout-session', express.json(), createCheckoutSession);
 router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
 
+// --- User Profile Routes (now correctly protected) ---
+router.get('/myorders', protect, getMyOrders); 
+router.put('/:id/cancel', protect, cancelOrder); 
+
+
 // --- Admin Facing Routes ---
-// For now, these are public. Later, you'll add `protect` and `admin` middleware.
+// You will later add `admin` middleware here too, e.g., router.get('/', protect, admin, getAllOrders)
 router.get('/', getAllOrders);
 router.get('/:id', getOrderById);
 router.put('/:id/status', express.json(), updateOrderStatus);

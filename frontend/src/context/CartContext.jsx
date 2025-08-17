@@ -1,125 +1,78 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'; // 1. Import useCallback
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 
-// Create the context
+// 1. Create the context
 const CartContext = createContext();
 
-// Create a custom hook for easy access
-export const useCart = () => {
-  return useContext(CartContext);
-};
+// 2. Create the custom hook
+export const useCart = () => useContext(CartContext);
 
-// Create the Provider component
+
+// 3. Create the ONE and ONLY Provider component
+//    (This was previously named 'FullCartProvider')
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const localData = localStorage.getItem('cartItems');
-      return localData ? JSON.parse(localData) : [];
-    } catch (error) {
-      console.error("Could not parse cart data from localStorage", error);
-      return [];
-    }
-  });
-
-    const [discount, setDiscount] = useState(null);
-  const [discountAmount, setDiscountAmount] = useState(0);
-
-  // Save to localStorage whenever cartItems changes
-  useEffect(() => {
-    localStorage.setItem('cartItems', JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  useEffect(() => {
-    const fetchDiscount = async () => {
-      try {
-        const { data } = await api.get('/discounts/active');
-        setDiscount(data || null);
-      } catch (err) {
-        console.error('Failed to fetch active discount', err);
-        setDiscount(null);
-      }
-    };
-    fetchDiscount();
-  }, []);
-
-  // --- THIS IS THE FIX ---
-  // Wrap the functions that don't depend on external state in `useCallback`
-  // with an empty dependency array `[]`. This tells React to create them only once.
-
-  const addToCart = useCallback((product) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item._id === product._id);
-      if (existingItem) {
-        return prevItems.map(item =>
-          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        return [...prevItems, { ...product, quantity: 1 }];
-      }
+    // State for cart items, initialized from localStorage
+    const [cartItems, setCartItems] = useState(() => {
+        try {
+            const data = localStorage.getItem('smartfarm_cart_items');
+            return data ? JSON.parse(data) : [];
+        } catch {
+            return [];
+        }
     });
-  }, []);
 
-  const removeFromCart = useCallback((productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
-  }, []);
-  
-  const updateQuantity = useCallback((productId, newQuantity) => {
-    const quantity = Number(newQuantity);
-    setCartItems(prevItems => {
-      if (quantity < 1) {
-        return prevItems.filter(item => item._id !== productId);
-      }
-      return prevItems.map(item =>
-        item._id === productId ? { ...item, quantity: quantity } : item
-      );
+    // State for applied discount, initialized from localStorage
+    const [discount, setDiscount] = useState(() => {
+        try {
+            const data = localStorage.getItem('smartfarm_cart_discount');
+            return data ? JSON.parse(data) : null;
+        } catch {
+            return null;
+        }
     });
-  }, []);
 
-  const clearCart = useCallback(() => {
-    setCartItems([]);
-  }, []); // The empty dependency array `[]` is crucial here
+    // Save state to localStorage whenever it changes
+    useEffect(() => { localStorage.setItem('smartfarm_cart_items', JSON.stringify(cartItems)); }, [cartItems]);
+    useEffect(() => { localStorage.setItem('smartfarm_cart_discount', JSON.stringify(discount)); }, [discount]);
 
+    // --- All Cart & Discount Functions ---
+    const addToCart = useCallback((product) => setCartItems(p => {
+        const exist = p.find(i => i._id === product._id);
+        return exist
+            ? p.map(i => i._id === product._id ? { ...i, quantity: i.quantity + 1 } : i)
+            : [...p, { ...product, quantity: 1 }];
+    }), []);
+    const updateQuantity = useCallback((id, q) => setCartItems(p => p.map(i => i._id === id ? { ...i, quantity: Math.max(0, Number(q)) } : i).filter(i => i.quantity > 0)), []);
+    const removeFromCart = useCallback((id) => setCartItems(p => p.filter(i => i._id !== id)), []);
+    const clearCart = useCallback(() => { setCartItems([]); setDiscount(null); }, []);
 
-  // --- CALCULATED VALUES ---
-  const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    const applyDiscountCode = useCallback(async (code) => {
+        try {
+            const { data } = await api.post('/discounts/apply', { code });
+            setDiscount(data);
+            return { success: true };
+        } catch (e) {
+            setDiscount(null);
+            throw e;
+        }
+    }, []);
 
+    const removeDiscount = useCallback(() => setDiscount(null), []);
 
-  useEffect(() => {
-    if (!discount || cartTotal < (discount.minPurchase || 0)) {
-      setDiscountAmount(0);
-      return;
+    // --- Calculated Values ---
+    const cartTotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
+    const totalItemsInCart = cartItems.reduce((t, i) => t + i.quantity, 0);
+    let discountAmount = 0;
+    let isDiscountValid = false;
+    if (discount && cartTotal >= discount.minPurchase) {
+        isDiscountValid = true;
+        discountAmount = discount.type === 'PERCENTAGE' ? cartTotal * (discount.value / 100) : discount.value;
+        discountAmount = Math.min(discountAmount, cartTotal);
     }
-    let amount = 0;
-    if (discount.type === 'PERCENTAGE') {
-      amount = (cartTotal * discount.value) / 100;
-    } else {
-      amount = Math.min(discount.value, cartTotal);
-    }
-    setDiscountAmount(amount);
-  }, [cartTotal, discount]);
-
-  const totalAfterDiscount = cartTotal - discountAmount;
-
-  // --- EXPORTED VALUE ---
-  const value = {
-    cartItems,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart, // Now exporting the stable, memoized function
-    totalItemsInCart,
-    cartTotal,
-     discount,
-    discountAmount,
-    totalAfterDiscount,
-  };
-
-  // The Provider component renders its children, making the `value` object available
-  // to any component nested inside that calls the `useCart()` hook.
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
+    const totalAfterDiscount = cartTotal - discountAmount;
+    
+    // The value provided to all consuming components
+    const value = { cartItems, addToCart, updateQuantity, removeFromCart, clearCart, cartTotal, totalItemsInCart, discount, discountAmount, totalAfterDiscount, isDiscountValid, applyDiscountCode, removeDiscount };
+    
+    return (<CartContext.Provider value={value}>{children}</CartContext.Provider>);
 };

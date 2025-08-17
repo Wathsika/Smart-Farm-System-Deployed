@@ -1,70 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, XCircle, FileText, ChevronRight } from 'lucide-react'; // Modern icons
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
-// --- MOCK DATA ---
-// This is fake data to simulate what we'll get from the backend.
-// We have different statuses to test our UI.
-const fakeOrders = [
-    {
-        _id: '60c72b2f4f1a2c001f8e4d1a',
-        createdAt: '2025-08-10T10:00:00.000Z',
-        totalPrice: 25.98,
-        status: 'DELIVERED', // This one is complete
-        orderItems: [{ name: 'Organic Carrots' }, { name: 'Farm Fresh Eggs' }],
-    },
-    {
-        _id: '60c72b2f4f1a2c001f8e4d1b',
-        createdAt: '2025-08-11T11:30:00.000Z',
-        totalPrice: 12.99,
-        status: 'SHIPPED', // This one is on the way
-        orderItems: [{ name: 'Grass-fed Beef' }],
-    },
-    {
-        _id: '60c72b2f4f1a2c001f8e4d1c',
-        createdAt: '2025-08-12T09:00:00.000Z',
-        totalPrice: 8.98,
-        status: 'PROCESSING', // This one can be cancelled
-        orderItems: [{ name: 'Organic Milk' }, { name: 'Fresh Bread' }],
-    },
-    {
-        _id: '60c72b2f4f1a2c001f8e4d1d',
-        createdAt: '2025-07-20T14:00:00.000Z',
-        totalPrice: 15.45,
-        status: 'CANCELLED', // This one was cancelled
-        orderItems: [{ name: 'Strawberries' }],
-    },
-];
-// --- END MOCK DATA ---
+// Import necessary components and icons
+import { Package, XCircle, FileText, Loader2, Check } from 'lucide-react';
+import InvoiceModal from '../components/common/InvoiceModal'; // The new modal for receipts
 
 
-// --- Reusable Component for the Status Tracker ---
+// --- Reusable Component for the Order Status Tracker ---
 const StatusTracker = ({ status }) => {
     const statuses = ['PROCESSING', 'SHIPPED', 'DELIVERED'];
     const currentStatusIndex = statuses.indexOf(status);
 
-    const getStatusClass = (index) => {
-        if (index < currentStatusIndex) return 'bg-green-600 border-green-600'; // Completed
-        if (index === currentStatusIndex) return 'bg-green-600 border-green-600 animate-pulse'; // Current
-        return 'bg-gray-300 border-gray-300'; // Pending
-    };
-
     if (status === 'CANCELLED') {
-        return <div className="text-red-600 font-bold">Order Cancelled</div>
+        return <div className="text-red-600 font-bold flex items-center gap-2"><XCircle size={18} /> Order Cancelled</div>
     }
 
     return (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center w-full">
             {statuses.map((s, index) => (
                 <React.Fragment key={s}>
-                    <div className="flex flex-col items-center">
-                        <div className={`w-6 h-6 rounded-full border-2 ${getStatusClass(index)} flex items-center justify-center`}>
-                           {index <= currentStatusIndex && <i className="fas fa-check text-white text-xs"></i>}
+                    <div className="flex flex-col items-center text-center w-1/3">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            index <= currentStatusIndex ? 'bg-green-600 border-green-600' : 'bg-white border-gray-300'
+                        }`}>
+                           {index <= currentStatusIndex && <Check className="text-white" size={16} />}
                         </div>
-                        <span className={`text-xs mt-1 ${index <= currentStatusIndex ? 'text-gray-700 font-semibold' : 'text-gray-500'}`}>{s}</span>
+                        <span className={`text-xs mt-2 font-semibold ${
+                            index <= currentStatusIndex ? 'text-gray-800' : 'text-gray-400'
+                        }`}>
+                            {s.charAt(0) + s.slice(1).toLowerCase()}
+                        </span>
                     </div>
                     {index < statuses.length - 1 && (
-                         <div className={`flex-1 h-1 ${index < currentStatusIndex ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+                         <div className={`flex-1 h-1 transition-colors duration-300 mx-2 ${
+                            index < currentStatusIndex ? 'bg-green-600' : 'bg-gray-300'
+                         }`}></div>
                     )}
                 </React.Fragment>
             ))}
@@ -74,39 +47,55 @@ const StatusTracker = ({ status }) => {
 
 
 // --- Main My Orders Page Component ---
-const MyOrdersPage = () => {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function MyOrdersPage() {
+    const queryClient = useQueryClient();
+    const { user } = useAuth(); // Get the currently logged-in user
 
-    // When the page loads, simulate fetching data from an API
-    useEffect(() => {
-        setLoading(true);
-        // We use a timeout to simulate a real network request delay
-        setTimeout(() => {
-            // Later, this will be: `const { data } = await api.get('/api/orders/myorders');`
-            setOrders(fakeOrders);
+    // --- State for the UI ---
+    // This state will hold the order object that the user wants to view in the modal.
+    // If it's `null`, the modal is closed.
+    const [viewingOrder, setViewingOrder] = useState(null);
 
-            setLoading(false);
-        }, 1000); // 1 second delay
-    }, []);
+    // --- DATA FETCHING with React Query ---
+    // Fetches data from the protected `/api/orders/myorders` route.
+    // React Query handles all loading, error, and caching logic for us.
+    const { data: orders = [], isLoading, isError } = useQuery({
+        queryKey: ['myOrders', user?.email], // Query is unique to the logged-in user
+        queryFn: async () => {
+            const { data } = await api.get('/orders/myorders');
+            return data;
+        },
+        enabled: !!user, // The query will only run if the user is logged in
+    });
+    
+    // --- API MUTATION for Cancelling an Order ---
+    // `useMutation` is used for any action that changes data (Create, Update, Delete).
+    const { mutate: cancelOrder, isLoading: isCancelling } = useMutation({
+        mutationFn: (orderId) => api.put(`/orders/${orderId}/cancel`),
+        onSuccess: () => {
+            // After a successful cancellation, tell React Query to refetch the 'myOrders' data.
+            // This ensures the UI updates instantly to show the "Cancelled" status.
+            queryClient.invalidateQueries({ queryKey: ['myOrders'] });
+            alert("Your order has been successfully cancelled.");
+        },
+        onError: (error) => {
+            alert(error.response?.data?.message || "Failed to cancel the order.");
+        }
+    });
 
-    // Placeholder function for cancelling an order
+    // --- EVENT HANDLERS ---
     const handleCancelOrder = (orderId) => {
-        if (window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
-            console.log("Cancelling order:", orderId);
-            // Later, this will be an API call:
-            // await api.put(`/api/orders/${orderId}/cancel`);
-            // And then we would refresh the orders list.
-            
-            // For now, we'll just update the fake data to show the change instantly
-            setOrders(prevOrders => prevOrders.map(order => 
-                order._id === orderId ? { ...order, status: 'CANCELLED' } : order
-            ));
+        if (window.confirm("Are you sure you want to cancel this order? This will restock the items and cannot be undone.")) {
+            cancelOrder(orderId);
         }
     };
 
-    if (loading) {
-        return <div className="text-center py-20">Loading your orders...</div>;
+    // --- RENDER STATES ---
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-green-600" /></div>;
+    }
+    if (isError) {
+        return <div className="p-8 text-center text-red-500">Could not load your orders. Please ensure you are logged in and try again.</div>;
     }
 
     return (
@@ -114,49 +103,49 @@ const MyOrdersPage = () => {
             <div className="container mx-auto px-4 max-w-4xl">
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-                    <p className="text-gray-600">View the history and status of your past orders.</p>
+                    <p className="text-gray-600">View the history and status of all your past purchases.</p>
                 </header>
 
                 <div className="space-y-6">
                     {orders.length === 0 ? (
-                        <div className="text-center bg-white p-10 rounded-lg shadow-sm">
-                            <p>You have no past orders.</p>
-                            <Link to="/store" className="text-green-600 font-semibold mt-2 inline-block">Start Shopping</Link>
+                        <div className="text-center bg-white p-12 rounded-xl shadow-sm">
+                            <Package size={48} className="mx-auto text-gray-400 mb-4" />
+                            <h2 className="text-xl font-semibold text-gray-800">You haven't placed any orders yet.</h2>
+                            <p className="text-gray-500 mt-2">All your future purchases will appear here.</p>
+                            <Link to="/store" className="mt-6 inline-block bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700">
+                                Start Shopping
+                            </Link>
                         </div>
                     ) : (
                         orders.map(order => (
-                            <div key={order._id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                            <div key={order._id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 pb-4 border-b">
                                     <div>
-                                        <h2 className="font-bold text-lg">Order #{order._id.slice(-6)}</h2>
+                                        <h2 className="font-bold text-lg text-gray-800">Order #{order.stripeSessionId?.slice(-10).toUpperCase() || order._id.slice(-6)}</h2>
                                         <p className="text-sm text-gray-500">
                                             Placed on: {new Date(order.createdAt).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <div className="font-bold text-lg mt-2 md:mt-0">
+                                    <div className="font-bold text-lg mt-2 md:mt-0 text-gray-900">
                                         Total: Rs {order.totalPrice.toFixed(2)}
                                     </div>
                                 </div>
-
-                                <div className="mb-6">
-                                    <StatusTracker status={order.status} />
-                                </div>
-                                
+                                <div className="mb-6"><StatusTracker status={order.status} /></div>
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-t pt-4">
                                     <div className="text-sm text-gray-600 mb-4 md:mb-0">
                                        Contains {order.orderItems.length} item(s): {order.orderItems.map(i => i.name).join(', ')}
                                     </div>
-
                                     <div className="flex gap-3">
-                                        <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
-                                            <FileText size={16} /> Download Receipt
+                                        <button 
+                                            onClick={() => setViewingOrder(order)}
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+                                            <FileText size={16} /> View Receipt
                                         </button>
-
-                                        {/* Cancel button is only shown if the order is still being processed */}
                                         {order.status === 'PROCESSING' && (
                                             <button 
                                                 onClick={() => handleCancelOrder(order._id)}
-                                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                                disabled={isCancelling}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                                             >
                                                <XCircle size={16} /> Cancel Order
                                             </button>
@@ -168,8 +157,13 @@ const MyOrdersPage = () => {
                     )}
                 </div>
             </div>
+            
+            {/* Render the InvoiceModal when an order is selected for viewing */}
+            <InvoiceModal 
+                isOpen={!!viewingOrder} 
+                onClose={() => setViewingOrder(null)} 
+                order={viewingOrder} 
+            />
         </div>
     );
 };
-
-export default MyOrdersPage;
