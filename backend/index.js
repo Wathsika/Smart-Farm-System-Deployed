@@ -27,7 +27,6 @@ import taskRoutes from "./routes/task.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import discountRoutes from "./routes/discount.routes.js";
-import expenseRoutes from "./routes/expense.routes.js"; // ✅ was missing
 
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
@@ -89,7 +88,6 @@ app.use("/api/orders", orderRoutes);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
-app.use("/api/expenses", expenseRoutes);
 app.use("/api/admin/users", staffOwnerRoutes);
 app.use("/api/employee", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
