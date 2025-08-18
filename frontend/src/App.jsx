@@ -1,89 +1,129 @@
+// src/App.jsx
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+
+import { auth } from "./lib/auth";
 import Layout from "./components/common/Layout";
 
 // --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
-import AboutUs from "./pages/aboutus";
-import ContactUs from "./pages/contactus";
-import LoginPage from "./pages/Login"; 
-import UserProfilePage from "./pages/UserProfile";
+import AboutUs from "./pages/AboutUs";         // fixed casing
+import ContactUs from "./pages/ContactUs";     // fixed casing
+import Login from "./pages/Login";
+import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
 import MyOrdersPage from "./pages/MyOrdersPage";
-import OrderSuccessPage from './pages/store/OrderSuccessPage';
-import OrderCancelPage from './pages/store/OrderCancelPage';
+import OrderSuccessPage from "./pages/store/OrderSuccessPage";
+import OrderCancelPage from "./pages/store/OrderCancelPage";
+
+// --- EMPLOYEE ---
+import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
+
+// --- ADMIN (direct imports) ---
+import AdminUsers from "./pages/AdminUsers";
+import StaffAttendance from "./admin/StaffAttendance";
+import LeaveManagement from "./admin/LeaveManagement";
+import TaskManagement from "./admin/TaskManagement";
+import AdminProducts from "./pages/store/Products";
+import AdminOrders from "./pages/store/Orders";
+import AdminDiscountsPage from "./admin/DiscountsPage";
+
+// --- FINANCE (admin) ---
+import FinanceOverview from "./admin/FinanceOverview";
+import FinanceTransaction from "./admin/FinanceTransaction";
+import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
-import AdminProductsPage from "./pages/store/Products";
-import AdminOrdersPage from "./pages/store/Orders";
-import AdminDiscountsPage from "./admin/DiscountsPage";
 
-// --- Simple Placeholder Pages ---
-// These are useful to keep your routes working while pages are being built.
-const FarmDashboard = () => <div className="p-6">Farm Overview Dashboard</div>;
-const LivestockPage = () => <div className="p-6">Livestock Management</div>;
-const CropPage = () => <div className="p-6">Crop Management</div>;
-const StaffPage = () => <div className="p-6">Staff Management</div>;
-const RevenuePage = () => <div className="p-6">Revenue & Financials</div>;
-const CustomersPage = () => <div className="p-6">Customer Management</div>;
-const ReportsPage = () => <div className="p-6">Store Reports</div>;
+// --- TEMP PLACEHOLDERS ---
+const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
+const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
+const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
+const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
+const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
+const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
+const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
 
-// --- Main App Component ---
+// --- GUARDS ---
+const Private = ({ children }) =>
+  auth.token ? children : <Navigate to="/login" replace />;
+
+const AdminOnly = ({ children }) =>
+  auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
+
+const EmployeeOnly = ({ children }) =>
+  auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
+
 export default function App() {
   return (
     <Routes>
-      
-      {/* === PUBLIC ROUTES (Wrapped with standard Header/Footer) === */}
+      {/* PUBLIC (wrapped with main layout) */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/store" element={<Storefront />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
-        <Route path="/login" element={<LoginPage />} />
-
-        {/* These pages are for users, but are accessible without auth guards for now */}
-        <Route path="/profile" element={<UserProfilePage />} />
-        <Route path="/checkout" element={<CheckoutPage />} /> 
-        <Route path="/my-orders" element={<MyOrdersPage />} />
-        
-        {/* Order completion pages also use the main layout */}
         <Route path="/order/success" element={<OrderSuccessPage />} />
         <Route path="/order/cancel" element={<OrderCancelPage />} />
       </Route>
 
-      
-      {/* === ADMIN ROUTES (Wrapped with special AdminLayout) === */}
-      {/* No authentication is applied to these routes for now. */}
+      {/* STANDALONE */}
+      <Route path="/login" element={<Login />} />
+
+      {/* AUTH USER */}
+      <Route path="/profile" element={<Private><UserProfile /></Private>} />
+      <Route path="/checkout" element={<Private><CheckoutPage /></Private>} />
+      <Route path="/my-orders" element={<Private><MyOrdersPage /></Private>} />
+
+      {/* EMPLOYEE */}
+      <Route
+        path="/dashboard"
+        element={<EmployeeOnly><EmployeeDashboard /></EmployeeOnly>}
+      />
+
+      {/* ADMIN */}
       <Route
         path="/admin"
         element={
-          <Suspense fallback={<div className="w-full h-screen flex items-center justify-center">Loading Admin...</div>}>
-            <AdminLayout />
-          </Suspense>
+          <AdminOnly>
+            <Suspense fallback={<div className="w-full h-screen flex items-center justify-center text-lg">Loading Admin…</div>}>
+              <AdminLayout />
+            </Suspense>
+          </AdminOnly>
         }
       >
         <Route index element={<FarmDashboard />} />
-        <Route path="livestock" element={<LivestockPage />} />
-        <Route path="crop" element={<CropPage />} />
-        <Route path="staff" element={<StaffPage />} />
-        <Route path="revenue" element={<RevenuePage />} />
-        
-        {/* --- Nested Admin Store Routes --- */}
-        <Route path="store/dashboard" element={<Suspense fallback={<div>Loading...</div>}><StoreDashboard /></Suspense>} />
-        <Route path="store/products" element={<AdminProductsPage />} />
-        <Route path="store/orders" element={<AdminOrdersPage />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="tasks" element={<TaskManagement />} />
+        <Route path="attendance" element={<StaffAttendance />} />
+        <Route path="leave" element={<LeaveManagement />} />
+
+        {/* Store (nested) */}
+        <Route
+          path="store/dashboard"
+          element={
+            <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}>
+              <StoreDashboard />
+            </Suspense>
+          }
+        />
+        <Route path="store/products" element={<AdminProducts />} />
+        <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
+
+        {/* Finance */}
+        <Route path="finance" element={<FinanceOverview />} />
+        <Route path="finance/transactions" element={<FinanceTransaction />} />
+        <Route path="finance/transactions/new" element={<FinanceNewTransaction />} />
       </Route>
 
-      
-      {/* === FALLBACK ROUTE (Catches any unmatched URL and redirects to Home) === */}
+      {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" replace />} />
-
     </Routes>
   );
 }
