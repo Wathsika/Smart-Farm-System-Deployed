@@ -4,7 +4,8 @@ import {
     createDiscount,
     updateDiscount,
     deleteDiscount,
-    getActiveDiscount
+   getActiveDiscount,
+    validateDiscount
 
 } from '../controllers/discount.controller.js';
 
@@ -17,6 +18,9 @@ router.use(express.json());
 
 // GET /api/discounts/active
 router.get('/active', getActiveDiscount);
+
+// POST /api/discounts/validate
+router.post('/validate', validateDiscount);
 
 // GET /api/discounts
 router.get('/', getAllDiscounts);

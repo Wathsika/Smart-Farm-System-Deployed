@@ -98,3 +98,33 @@ export const getActiveDiscount = async (req, res, next) => {
         next(error);
     }
 };
+
+// --- CONTROLLER 6: VALIDATE DISCOUNT CODE ---
+// Validates a discount code based on activity, date range, and usage limits.
+export const validateDiscount = async (req, res, next) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ message: "Discount code is required." });
+        }
+
+        const discount = await Discount.findOne({ code: code.toUpperCase() });
+        if (!discount) {
+            return res.status(404).json({ message: "Invalid discount code." });
+        }
+
+        const now = new Date();
+        if (!discount.isActive || discount.startDate > now || discount.endDate < now) {
+            return res.status(400).json({ message: "Discount code is expired or inactive." });
+        }
+
+        if (discount.usageLimit !== null && discount.timesUsed >= discount.usageLimit) {
+            return res.status(400).json({ message: "Discount usage limit exceeded." });
+        }
+
+        res.status(200).json(discount);
+    } catch (error) {
+        console.error("Error validating discount:", error);
+        next(error);
+    }
+};

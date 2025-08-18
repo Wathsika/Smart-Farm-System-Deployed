@@ -35,6 +35,11 @@ export const CartProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('smartfarm_cart_items', JSON.stringify(cartItems)); }, [cartItems]);
     useEffect(() => { localStorage.setItem('smartfarm_cart_discount', JSON.stringify(discount)); }, [discount]);
 
+     // --- Calculated Values ---
+    const cartTotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
+    const totalItemsInCart = cartItems.reduce((t, i) => t + i.quantity, 0);
+
+
     // --- All Cart & Discount Functions ---
     const addToCart = useCallback((product) => setCartItems(p => {
         const exist = p.find(i => i._id === product._id);
@@ -48,20 +53,37 @@ export const CartProvider = ({ children }) => {
 
     const applyDiscountCode = useCallback(async (code) => {
         try {
-            const { data } = await api.post('/discounts/apply', { code });
-            setDiscount(data);
-            return { success: true };
+       const { data } = await api.post('/discounts/validate', { code });
+            if (cartTotal >= data.minPurchase) {
+                setDiscount({ ...data, source: 'CODE' });
+                return { success: true };
+            }
+            return { success: false };
         } catch (e) {
             setDiscount(null);
             throw e;
         }
-    }, []);
+    }, [cartTotal]);
+
+    const fetchAutoDiscount = useCallback(async () => {
+        try {
+            const { data } = await api.get('/discounts/active');
+            if (cartTotal >= data.minPurchase && (!discount || discount.source !== 'CODE')) {
+                setDiscount({ ...data, source: 'AUTO' });
+            } else if (discount?.source === 'AUTO') {
+                setDiscount(null);
+            }
+        } catch {
+            if (discount?.source === 'AUTO') setDiscount(null);
+        }
+    }, [cartTotal, discount]);
 
     const removeDiscount = useCallback(() => setDiscount(null), []);
 
     // --- Calculated Values ---
-    const cartTotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
-    const totalItemsInCart = cartItems.reduce((t, i) => t + i.quantity, 0);
+    useEffect(() => { fetchAutoDiscount(); }, [cartTotal]);
+    useEffect(() => { if (!discount) fetchAutoDiscount(); }, [discount]);
+
     let discountAmount = 0;
     let isDiscountValid = false;
     if (discount && cartTotal >= discount.minPurchase) {
