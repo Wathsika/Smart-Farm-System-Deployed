@@ -46,11 +46,11 @@ const Sidebar = () => {
     [location.pathname]
   );
 
-  // Accordions (defaults + auto-open if on section)
-  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true); // Store open by default
+  // Accordions (Store & Crop open by default as requested)
+  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true);
   const [isFinanceOpen, setFinanceOpen] = useState(isOnFinance || false);
   const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
-  const [isCropOpen, setCropOpen] = useState(isOnCrop || true); // Crop open by default
+  const [isCropOpen, setCropOpen] = useState(isOnCrop || true);
 
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
@@ -59,7 +59,9 @@ const Sidebar = () => {
 
   const handleCropClick = () => {
     setCropOpen((v) => !v);
+
     // navigate("/admin/crop"); // keep current behavior commented out
+
   };
 
   return (
@@ -239,14 +241,32 @@ const Sidebar = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink to="/admin/finance" icon="fas fa-chart-line">
+              {/* Matches /admin/finance/overview etc. from App.jsx */}
+              <SidebarLink to="/admin/finance/overview" icon="fas fa-chart-line">
                 Overview
               </SidebarLink>
-              <SidebarLink to="/admin/finance/transactions" icon="fas fa-receipt">
+
+              <SidebarLink to="/admin/finance/transaction" icon="fas fa-receipt">
                 Transactions
               </SidebarLink>
-              <SidebarLink to="/admin/finance/transactions/new" icon="fas fa-plus-circle">
+              <SidebarLink
+                to="/admin/finance/new_transaction"
+                icon="fas fa-plus-circle"
+              >
+
                 Add New Transaction
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/finance/edit_rule"
+                icon="fas fa-sliders-h"
+              >
+                Edit Payroll Rule
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/finance/payroll_management"
+                icon="fas fa-file-invoice-dollar"
+              >
+                Payroll Management
               </SidebarLink>
             </motion.div>
           )}
