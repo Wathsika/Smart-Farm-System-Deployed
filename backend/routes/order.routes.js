@@ -1,57 +1,53 @@
 import express from 'express';
+
+// --- Import Controller Functions ---
+// All the functions needed to handle the logic for these routes.
 import {
   createCheckoutSession,
   stripeWebhookHandler,
   getAllOrders,
   getOrderById,
-  getOrderBySessionId,
   updateOrderStatus,
   getMyOrders,
   cancelOrder
 } from '../controllers/order.controller.js';
 
-// --- THIS IS THE FIX ---
-// Import the function named 'requireAuth' but rename it to 'protect' for use in this file.
+// --- Import Middleware ---
+// Import both `requireAuth` and `requireRole` for security.
+// We rename `requireAuth` to `protect` for cleaner route definitions.
 import { requireAuth as protect, requireRole } from '../middlewares/auth.js';
-import orderEvents from '../events/orderEvents.js';
 
 
+// Create a new router instance.
 const router = express.Router();
 
-// --- Customer Facing Routes ---
-router.post('/create-checkout-session', express.json(), createCheckoutSession);
-router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
-router.get('/session/:sessionId', getOrderBySessionId);
 
-// --- User Profile Routes (now correctly protected) ---
+// --- GROUP 1: Public & Customer-Facing Routes ---
+
+// Creates a Stripe payment session. Needs a JSON body.
+router.post('/create-checkout-session', express.json(), createCheckoutSession);
+
+// Securely handles incoming events from Stripe. Needs the raw request body.
+router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+
+// Fetches the orders for the currently logged-in user. `protect` middleware runs first.
 router.get('/myorders', protect, getMyOrders);
+
+// Allows the currently logged-in user to cancel their own order.
 router.put('/:id/cancel', protect, cancelOrder);
 
-// --- Real-time Order Status Events ---
-router.get('/events', (req, res) => {
-  res.set({
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
-  });
-  res.flushHeaders();
 
-  const sendEvent = (payload) => {
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
+// --- GROUP 2: Admin-Only Routes ---
+// These routes require the user to be logged in (`protect`) AND have the role 'Admin'.
 
-  orderEvents.on('statusChange', sendEvent);
+// Fetches a list of ALL orders in the system.
+router.get('/', protect, requireRole('Admin'), getAllOrders);
 
-  req.on('close', () => {
-    orderEvents.off('statusChange', sendEvent);
-  });
-});
+// Fetches a single order by its ID.
+router.get('/:id', protect, requireRole('Admin'), getOrderById);
 
-// --- Admin Facing Routes ---
-// You will later add `admin` middleware here too, e.g., router.get('/', protect, admin, getAllOrders)
-router.get('/', protect, requireRole('ADMIN'), getAllOrders);
-router.get('/:id', protect, requireRole('ADMIN'), getOrderById);
-router.put('/:id/status', protect, requireRole('ADMIN'), express.json(), updateOrderStatus);
+// Updates the fulfillment status of an order (e.g., to 'SHIPPED').
+router.put('/:id/status', protect, requireRole('Admin'), express.json(), updateOrderStatus);
 
 
 export default router;
