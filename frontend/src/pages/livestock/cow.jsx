@@ -31,6 +31,14 @@ const calculateAge = (dob) => {
   return fullYears === 1 ? "1 year" : `${fullYears} years`;
 };
 
+const sortByCowIdAsc = (list = []) =>
+  [...list].sort((a, b) => {
+    const na = parseInt((a.cowId || "").replace(/\D/g, "")) || 0;
+    const nb = parseInt((b.cowId || "").replace(/\D/g, "")) || 0;
+    if (na !== nb) return na - nb; // lower cowId first (COW-0001 → COW-0002…)
+    return new Date(a.createdAt || 0) - new Date(b.createdAt || 0); // fallback
+  });
+
 export default function CowProfilePage() {
   const [cows, setCows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,20 +61,21 @@ export default function CowProfilePage() {
 
 
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`${API}/api/cows`);
-        if (!r.ok) throw new Error("Could not fetch data");
-        const data = await r.json();
-        setCows(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setError("Failed to load cows. Please check API connection.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  (async () => {
+    try {
+      const r = await fetch(`${API}/api/cows`);
+      if (!r.ok) throw new Error("Could not fetch data");
+      const data = await r.json();
+      setCows(sortByCowIdAsc(Array.isArray(data) ? data : []));
+    } catch (err) {
+      setError("Failed to load cows. Please check API connection.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, []);
+
 
   const filteredCows = cows.filter((c) => {
     const matchesSearch = Object.values(c).some((v) =>
@@ -262,7 +271,7 @@ function editFromView() {
               <tbody className="text-gray-700">
                 {filteredCows.map((cow) => (
                   <tr key={cow._id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium">{cow.tagId || "N/A"}</td>
+                    <td className="py-3 px-4 font-medium">{cow.cowId || cow.tagId || "N/A"}</td>
                     <td className="py-3 px-4">{cow.name}</td>
                     <td className="py-3 px-4">{cow.breed}</td>
                     <td className="py-3 px-4">{cow.gender}</td>

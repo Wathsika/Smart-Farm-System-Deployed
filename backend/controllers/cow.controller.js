@@ -22,7 +22,7 @@ const addCow = async (req, res, next) => {
 //
 const listCows = async (_req, res, next) => {
   try {
-    const cows = await Cow.find().sort({ createdAt: -1 });
+    const cows = await Cow.find().sort({ cowId: -1 }); 
     res.json(cows);
   } catch (err) {
     next(err);
