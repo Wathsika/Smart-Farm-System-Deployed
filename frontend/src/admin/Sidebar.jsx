@@ -1,64 +1,98 @@
 // src/admin/Sidebar.jsx
-
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom'; 
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SidebarLink = ({ to, icon, children }) => (
-    <NavLink
-      to={to}
-      end
-      className={({ isActive }) =>
-        `flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 ${
-          isActive ? 'bg-green-100 text-green-800 font-semibold' : 'text-gray-700'
-        }`
-      }
-    >
-      <i className={`${icon} w-5 text-center`} />
-      <span>{children}</span>
-    </NavLink>
+  <NavLink
+    to={to}
+    end
+    className={({ isActive }) =>
+      `flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 ${
+        isActive ? "bg-green-100 text-green-800 font-semibold" : "text-gray-700"
+      }`
+    }
+  >
+    <i className={`${icon} w-5 text-center`} />
+    <span>{children}</span>
+  </NavLink>
 );
 
 const Sidebar = () => {
-  // --- 1. ADD NEW STATE for the Crop menu ---
-  const [isCropOpen, setCropOpen] = useState(true); // Default to open
-  
-  const [isStoreOpen, setStoreOpen] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // --- 2. ADD a NEW CLICK HANDLER for the Crop button ---
-  const handleCropClick = () => {
-    setCropOpen(!isCropOpen);
-    // Optional: navigate to a default crop page if needed
-    // navigate('/admin/crop'); 
-  };
-  
+  // Auto-open accordions based on current route
+  const isOnStore = useMemo(
+    () => location.pathname.startsWith("/admin/store"),
+    [location.pathname]
+  );
+  const isOnFinance = useMemo(
+    () => location.pathname.startsWith("/admin/finance"),
+    [location.pathname]
+  );
+  const isOnStaff = useMemo(
+    () =>
+      location.pathname.startsWith("/admin/users") ||
+      location.pathname.startsWith("/admin/tasks") ||
+      location.pathname.startsWith("/admin/attendance") ||
+      location.pathname.startsWith("/admin/leave"),
+    [location.pathname]
+  );
+  const isOnCrop = useMemo(
+    () =>
+      location.pathname.startsWith("/admin/crop") ||
+      location.pathname.startsWith("/admin/fields"),
+    [location.pathname]
+  );
+
+  // Accordions (defaults + auto-open if on section)
+  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true); // Store open by default
+  const [isFinanceOpen, setFinanceOpen] = useState(isOnFinance || false);
+  const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
+  const [isCropOpen, setCropOpen] = useState(isOnCrop || true); // Crop open by default
+
   const handleStoreClick = () => {
-    setStoreOpen(!isStoreOpen);
-    navigate('/admin/store/dashboard'); 
+    setStoreOpen((v) => !v);
+    navigate("/admin/store/dashboard");
+  };
+
+  const handleCropClick = () => {
+    setCropOpen((v) => !v);
+    // Optionally navigate to default crop page:
+    // navigate("/admin/crop");
   };
 
   return (
     <aside className="flex flex-col w-64 border-r border-gray-200 p-4 bg-white">
-      {/* Header (No change) */}
+      {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center">
           <i className="fas fa-leaf text-white text-xl" />
         </div>
         <div className="font-bold text-xl text-gray-800">Admin Panel</div>
       </div>
-      
+
       {/* Navigation */}
       <nav className="flex flex-col space-y-1">
-        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">Overview</div>
-        <SidebarLink to="/admin" icon="fas fa-chart-pie">Dashboard</SidebarLink>
+        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">
+          Overview
+        </div>
+        <SidebarLink to="/admin" icon="fas fa-chart-pie">
+          Dashboard
+        </SidebarLink>
 
-        {/* --- 3. FARM SECTION IS NOW MODIFIED --- */}
-        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">Farm</div>
-        <SidebarLink to="/admin/livestock" icon="fas fa-cow">Livestock</SidebarLink>
+        {/* Farm */}
+        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">
+          Farm
+        </div>
+        <SidebarLink to="/admin/livestock" icon="fas fa-cow">
+          Livestock
+        </SidebarLink>
 
-        {/* === START OF CROP BUTTON & SUB-MENU === */}
+        {/* Crop accordion (Crop List + Fields) */}
         <button
+          type="button"
           onClick={handleCropClick}
           className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
         >
@@ -67,31 +101,70 @@ const Sidebar = () => {
             <span>Crop</span>
           </div>
           <motion.i
-             animate={{ rotate: isCropOpen ? 0 : -90 }}
-             className="fas fa-chevron-down text-xs"
+            animate={{ rotate: isCropOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
           />
         </button>
-        
         <AnimatePresence>
           {isCropOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              {/* Here are your two sub-menu links */}
-              <SidebarLink to="/admin/crop" icon="fas fa-tractor">Crop List</SidebarLink>
-              <SidebarLink to="/admin/fields" icon="fas fa-map-marked-alt">Farm Fields</SidebarLink>
+              <SidebarLink to="/admin/crop" icon="fas fa-tractor">
+                Crop List
+              </SidebarLink>
+              <SidebarLink to="/admin/fields" icon="fas fa-map-marked-alt">
+                Farm Fields
+              </SidebarLink>
             </motion.div>
           )}
         </AnimatePresence>
-        {/* === END OF CROP BUTTON & SUB-MENU === */}
 
-        <SidebarLink to="/admin/staff" icon="fas fa-users-cog">Staff</SidebarLink>
-        
-        {/* Store Button (No change) */}
+        {/* Staff accordion */}
         <button
+          type="button"
+          onClick={() => setStaffOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-users-cog w-5 text-center" />
+            <span>Staff</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isStaffOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isStaffOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink to="/admin/users" icon="fas fa-users">
+                Manage Staff
+              </SidebarLink>
+              <SidebarLink to="/admin/tasks" icon="fas fa-tasks">
+                Task Management
+              </SidebarLink>
+              <SidebarLink to="/admin/attendance" icon="fas fa-clock">
+                Attendance
+              </SidebarLink>
+              <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">
+                Leave Requests
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Store accordion */}
+        <button
+          type="button"
           onClick={handleStoreClick}
           className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
         >
@@ -100,29 +173,89 @@ const Sidebar = () => {
             <span>Store</span>
           </div>
           <motion.i
-             animate={{ rotate: isStoreOpen ? 0 : -90 }}
-             className="fas fa-chevron-down text-xs"
+            animate={{ rotate: isStoreOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
           />
         </button>
-
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {isStoreOpen && (
             <motion.div
+              key="store-sub"
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink to="/admin/store/products" icon="fas fa-box">Products</SidebarLink>
-              <SidebarLink to="/admin/store/orders" icon="fas fa-shopping-cart">Orders</SidebarLink>
-              <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">Discounts</SidebarLink>
-              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends">Customers</SidebarLink>
-              <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">Reports</SidebarLink>
+              <SidebarLink
+                to="/admin/store/dashboard"
+                icon="fas fa-tachometer-alt"
+              >
+                Dashboard
+              </SidebarLink>
+              <SidebarLink to="/admin/store/products" icon="fas fa-box">
+                Products
+              </SidebarLink>
+              <SidebarLink to="/admin/store/orders" icon="fas fa-shopping-cart">
+                Orders
+              </SidebarLink>
+              <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">
+                Discounts
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/store/customers"
+                icon="fas fa-user-friends"
+              >
+                Customers
+              </SidebarLink>
+              <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">
+                Reports
+              </SidebarLink>
             </motion.div>
           )}
         </AnimatePresence>
-        
-        <SidebarLink to="/admin/revenue" icon="fas fa-coins">Revenue</SidebarLink>
+
+        {/* Finance accordion */}
+        <button
+          type="button"
+          onClick={() => setFinanceOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-coins w-5 text-center" />
+            <span>Finance</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isFinanceOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence initial={false}>
+          {isFinanceOpen && (
+            <motion.div
+              key="finance-sub"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink to="/admin/finance" icon="fas fa-chart-line">
+                Overview
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/finance/transactions"
+                icon="fas fa-receipt"
+              >
+                Transactions
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/finance/transactions/new"
+                icon="fas fa-plus-circle"
+              >
+                Add New Transaction
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
     </aside>
   );
