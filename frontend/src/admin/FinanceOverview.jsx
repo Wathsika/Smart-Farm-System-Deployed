@@ -1,5 +1,5 @@
-// src/admin/OverviewPage.jsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { api } from "../lib/api";
 import {
   BarChart,
   Bar,
@@ -68,8 +68,34 @@ const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
 );
 
 export default function OverviewPage() {
-  // In real app, fetch transactions
-  const transactions = [];
+  // fetch transactions
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errMsg, setErrMsg] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get("/transactions"); // GET http://localhost:5001/api/transactions
+        const rows = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setTransactions(
+          rows.map((r) => ({
+            id: r._id || r.id,
+            date: r.date,
+            type: r.type,
+            category: r.category || "—",
+            amount: Number(r.amount) || 0,
+            description: r.description || "",
+          }))
+        );
+      } catch (e) {
+        console.error("Failed to load transactions", e);
+        setErrMsg(e?.response?.data?.message || "Failed to load transactions");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   // Normalize types to handle "INCOME"/"EXPENSE" or lowercase
   const stats = useMemo(() => {
@@ -248,7 +274,7 @@ export default function OverviewPage() {
             <div className="h-80">
               {categoryData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width="100%" height="70%">
+                  <ResponsiveContainer width="100%" height="65%">
                     <PieChart>
                       <Pie
                         data={categoryData}
