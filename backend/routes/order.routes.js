@@ -1,7 +1,6 @@
 import express from 'express';
 
-// --- Import Controller Functions ---
-// All the functions needed to handle the logic for these routes.
+// Controllers
 import {
   createCheckoutSession,
   stripeWebhookHandler,
@@ -9,45 +8,34 @@ import {
   getOrderById,
   updateOrderStatus,
   getMyOrders,
-  cancelOrder
+  cancelOrder,
+  getOrderBySessionId
 } from '../controllers/order.controller.js';
 
-// --- Import Middleware ---
-// Import both `requireAuth` and `requireRole` for security.
-// We rename `requireAuth` to `protect` for cleaner route definitions.
+// Auth
 import { requireAuth as protect, requireRole } from '../middlewares/auth.js';
 
-
-// Create a new router instance.
 const router = express.Router();
 
+// --- Public & Customer-Facing ---
 
-// --- GROUP 1: Public & Customer-Facing Routes ---
-
-// Creates a Stripe payment session. Needs a JSON body.
 router.post('/create-checkout-session', express.json(), createCheckoutSession);
 
-// Securely handles incoming events from Stripe. Needs the raw request body.
-router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+// This path remains for compatibility with your existing setup
+router.post('/webhook', stripeWebhookHandler);
 
-// Fetches the orders for the currently logged-in user. `protect` middleware runs first.
+// ✅ Make the session lookup PUBLIC so success page works without login
+router.get('/session/:sessionId', getOrderBySessionId);
+
+// User’s own orders (requires auth)
 router.get('/myorders', protect, getMyOrders);
 
-// Allows the currently logged-in user to cancel their own order.
+// Cancel own order (requires auth)
 router.put('/:id/cancel', protect, cancelOrder);
 
-
-// --- GROUP 2: Admin-Only Routes ---
-// These routes require the user to be logged in (`protect`) AND have the role 'Admin'.
-
-// Fetches a list of ALL orders in the system.
+// --- Admin-only ---
 router.get('/', protect, requireRole('Admin'), getAllOrders);
-
-// Fetches a single order by its ID.
 router.get('/:id', protect, requireRole('Admin'), getOrderById);
-
-// Updates the fulfillment status of an order (e.g., to 'SHIPPED').
 router.put('/:id/status', protect, requireRole('Admin'), express.json(), updateOrderStatus);
-
 
 export default router;
