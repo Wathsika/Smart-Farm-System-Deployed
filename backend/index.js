@@ -8,6 +8,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import { notFound, errorHandler } from "./middlewares/error.js";
 import cowRoutes from "./routes/cow.routes.js";
 import milkRoutes from "./routes/milk.routes.js";
+import healthRoutes from "./routes/health.routes.js";
 
 dotenv.config();
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/cows", cowRoutes);
 app.use("/api/milk", milkRoutes);
+app.use("/api/health", healthRoutes);  
 
 app.get("/", (_, res) => res.json({ ok: true }));
 
