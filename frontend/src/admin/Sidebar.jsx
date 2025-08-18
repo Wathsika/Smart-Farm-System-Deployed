@@ -61,12 +61,24 @@ const Sidebar = () => {
 
         {/* Store */}
 
-        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">Farm</div>
-        <SidebarLink to="/admin/livestock" icon="fas fa-cow">Livestock</SidebarLink>
-        <SidebarLink to="/admin/crop" icon="fas fa-seedling">Crop</SidebarLink>
-        <SidebarLink to="/admin/staff" icon="fas fa-users-cog">Staff</SidebarLink>
-         <SidebarLink to="/admin/attendance" icon="fas fa-clock">Attendance</SidebarLink>
-         <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">Leave Requests</SidebarLink>
+        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">
+          Farm
+        </div>
+        <SidebarLink to="/admin/livestock" icon="fas fa-cow">
+          Livestock
+        </SidebarLink>
+        <SidebarLink to="/admin/crop" icon="fas fa-seedling">
+          Crop
+        </SidebarLink>
+        <SidebarLink to="/admin/staff" icon="fas fa-users-cog">
+          Staff
+        </SidebarLink>
+        <SidebarLink to="/admin/attendance" icon="fas fa-clock">
+          Attendance
+        </SidebarLink>
+        <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">
+          Leave Requests
+        </SidebarLink>
         {/* === STORE BUTTON - මෙම කොටස පමණක් වෙනස් කරන්න === */}
 
         <button
@@ -163,6 +175,13 @@ const Sidebar = () => {
                 icon="fas fa-plus-circle"
               >
                 Add New Transaction
+              </SidebarLink>
+
+              <SidebarLink
+                to="/admin/finance/payroll_management"
+                icon="fas fa-plus-circle"
+              >
+                Payroll Management
               </SidebarLink>
             </motion.div>
           )}

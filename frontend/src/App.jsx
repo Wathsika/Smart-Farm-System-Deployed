@@ -21,6 +21,8 @@ import Login from "./pages/Login";
 import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
 import FinanceNewTransaction from "./admin/FinanceNewTransaction";
+import FinancePayrollManagement from "./admin/FinancePayrollManagement";
+import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
 // --- ADMIN (lazy) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -166,6 +168,11 @@ export default function App() {
           <Route path="overview" element={<FinanceOverview />} />
           <Route path="transaction" element={<FinanceTransaction />} />
           <Route path="new_transaction" element={<FinanceNewTransaction />} />
+          <Route path="edit_rule" element={<FinanceEditPayrollRule />} />
+          <Route
+            path="payroll_management"
+            element={<FinancePayrollManagement />}
+          />
         </Route>
       </Route>
 
