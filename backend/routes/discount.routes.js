@@ -3,7 +3,10 @@ import {
     getAllDiscounts,
     createDiscount,
     updateDiscount,
-    deleteDiscount
+    deleteDiscount,
+   getActiveDiscount,
+    validateDiscount
+
 } from '../controllers/discount.controller.js';
 
 const router = express.Router();
@@ -12,6 +15,12 @@ const router = express.Router();
 // Add the express.json() middleware. This will parse the JSON body
 // for the POST and PUT requests defined below.
 router.use(express.json());
+
+// GET /api/discounts/active
+router.get('/active', getActiveDiscount);
+
+// POST /api/discounts/validate
+router.post('/validate', validateDiscount);
 
 // GET /api/discounts
 router.get('/', getAllDiscounts);

@@ -5,17 +5,17 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { auth } from "./lib/auth";
 import Layout from "./components/common/Layout";
 
-// --- PUBLIC PAGES ---
+// --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
-import AboutUs from "./pages/AboutUs";
-import ContactUs from "./pages/ContactUs";
+import AboutUs from "./pages/AboutUs";         // fixed casing
+import ContactUs from "./pages/ContactUs";     // fixed casing
+import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
+import MyOrdersPage from "./pages/MyOrdersPage";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
-import MyOrdersPage from "./pages/MyOrdersPage";
-import Login from "./pages/Login";
 
 // --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
@@ -34,7 +34,7 @@ import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
 import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 
-// --- ADMIN (lazy) ---
+// --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 
@@ -42,6 +42,7 @@ const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
 const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
 const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
+const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
 const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
 const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
 const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
@@ -59,7 +60,7 @@ const EmployeeOnly = ({ children }) =>
 export default function App() {
   return (
     <Routes>
-      {/* PUBLIC */}
+      {/* PUBLIC (wrapped with main layout) */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/store" element={<Storefront />} />
@@ -99,28 +100,29 @@ export default function App() {
         <Route path="tasks" element={<TaskManagement />} />
         <Route path="attendance" element={<StaffAttendance />} />
         <Route path="leave" element={<LeaveManagement />} />
-        <Route path="livestock" element={<LivestockPage />} />
-        <Route path="crop" element={<CropPage />} />
-        <Route path="revenue" element={<RevenuePage />} />
 
         {/* Store (nested) */}
-        <Route path="store/dashboard" element={<Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense>} />
+        <Route
+          path="store/dashboard"
+          element={
+            <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}>
+              <StoreDashboard />
+            </Suspense>
+          }
+        />
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
 
-        {/* Finance (nested) */}
-        <Route path="finance">
-          <Route index element={<Navigate to="overview" replace />} />
-          <Route path="overview" element={<FinanceOverview />} />
-          <Route path="transaction" element={<FinanceTransaction />} />
-          <Route path="new_transaction" element={<FinanceNewTransaction />} />
-        </Route>
+        {/* Finance */}
+        <Route path="finance" element={<FinanceOverview />} />
+        <Route path="finance/transactions" element={<FinanceTransaction />} />
+        <Route path="finance/transactions/new" element={<FinanceNewTransaction />} />
       </Route>
 
-      {/* 404 */}
+      {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
