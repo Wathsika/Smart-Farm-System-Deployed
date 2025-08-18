@@ -31,9 +31,18 @@ const Sidebar = () => {
     () => location.pathname.startsWith("/admin/finance"),
     [location.pathname]
   );
+  const isOnStaff = useMemo(
+    () =>
+      location.pathname.startsWith("/admin/users") ||
+      location.pathname.startsWith("/admin/tasks") ||
+      location.pathname.startsWith("/admin/attendance") ||
+      location.pathname.startsWith("/admin/leave"),
+    [location.pathname]
+  );
 
-  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true); // default open
+  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true); // store open by default
   const [isFinanceOpen, setFinanceOpen] = useState(isOnFinance || false);
+  const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
 
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
@@ -59,16 +68,56 @@ const Sidebar = () => {
           Dashboard
         </SidebarLink>
 
-        {/* Store */}
+        {/* Farm */}
+        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">
+          Farm
+        </div>
+        <SidebarLink to="/admin/livestock" icon="fas fa-cow">
+          Livestock
+        </SidebarLink>
+        <SidebarLink to="/admin/crop" icon="fas fa-seedling">
+          Crop
+        </SidebarLink>
 
-        <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">Farm</div>
-        <SidebarLink to="/admin/livestock" icon="fas fa-cow">Livestock</SidebarLink>
-        <SidebarLink to="/admin/crop" icon="fas fa-seedling">Crop</SidebarLink>
-        <SidebarLink to="/admin/staff" icon="fas fa-users-cog">Staff</SidebarLink>
-         <SidebarLink to="/admin/attendance" icon="fas fa-clock">Attendance</SidebarLink>
-         <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">Leave Requests</SidebarLink>
-        {/* === STORE BUTTON - මෙම කොටස පමණක් වෙනස් කරන්න === */}
+        {/* Staff Accordion */}
+        <button
+          onClick={() => setStaffOpen(!isStaffOpen)}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-users-cog w-5 text-center" />
+            <span>Staff</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isStaffOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isStaffOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink to="/admin/users" icon="fas fa-users">
+                Manage Staff
+              </SidebarLink>
+              <SidebarLink to="/admin/tasks" icon="fas fa-tasks">
+                Task Management
+              </SidebarLink>
+              <SidebarLink to="/admin/attendance" icon="fas fa-clock">
+                Attendance
+              </SidebarLink>
+              <SidebarLink to="/admin/leave" icon="fas fa-calendar-check">
+                Leave Requests
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
+        {/* Store Accordion */}
         <button
           type="button"
           onClick={handleStoreClick}
@@ -108,10 +157,7 @@ const Sidebar = () => {
               <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">
                 Discounts
               </SidebarLink>
-              <SidebarLink
-                to="/admin/store/customers"
-                icon="fas fa-user-friends"
-              >
+              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends">
                 Customers
               </SidebarLink>
               <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">
@@ -121,7 +167,7 @@ const Sidebar = () => {
           )}
         </AnimatePresence>
 
-        {/* Finance */}
+        {/* Finance Accordion */}
         <button
           type="button"
           onClick={() => setFinanceOpen((v) => !v)}
@@ -146,16 +192,10 @@ const Sidebar = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink
-                to="/admin/finance/overview"
-                icon="fas fa-chart-line"
-              >
+              <SidebarLink to="/admin/finance/overview" icon="fas fa-chart-line">
                 Overview
               </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/transaction"
-                icon="fas fa-receipt"
-              >
+              <SidebarLink to="/admin/finance/transaction" icon="fas fa-receipt">
                 Transaction
               </SidebarLink>
               <SidebarLink
