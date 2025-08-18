@@ -2,25 +2,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// --- 1. අලුතෙන් deleteCropAPI එක Import කරගන්න ---
-import { getCropsAPI, deleteCropAPI } from '../lib/api';
+// --- 1. වැදගත්ම වෙනස: api.js එකෙන් පොදු 'api' instance එක import කරගන්නවා ---
+import { api } from '../lib/api'; 
 
 // මේ තමයි Crop Management වල ප්‍රධාන Page එක.
 const CropPage = () => {
-  // --- State Variables (වෙනසක් නෑ) ---
   const [crops, setCrops] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- Data Fetching Logic (වෙනසක් නෑ) ---
   useEffect(() => {
     const fetchCrops = async () => {
       try {
-        const data = await getCropsAPI();
-        if (Array.isArray(data)) {
-            setCrops(data);
+        // --- 2. API Call එක කෙලින්ම මෙතන කරනවා ('getCropsAPI' වෙනුවට) ---
+        const response = await api.get('/crops'); 
+        
+        // Backend එකෙන් array එකක් එනවද කියලා check කරනවා
+        if (Array.isArray(response.data)) {
+            setCrops(response.data);
         } else {
-            console.error("API did not return an array, setting empty array.", data);
+            console.error("API did not return an array, setting empty array.", response.data);
             setCrops([]);
         }
       } catch (err) {
@@ -32,32 +33,22 @@ const CropPage = () => {
     fetchCrops();
   }, []);
 
-  // --- 2. අලුතෙන් handleDelete Function එක එකතු කරන්න ---
-  // මේ function එක "Delete" button එක click කලාම run වෙනවා.
   const handleDelete = async (cropId, cropName) => {
-    // User ගෙන් අනිවාර්යයෙන්ම confirm කරගන්නවා, වැරදීමකින් delete වෙන එක නවත්තන්න.
     const isConfirmed = window.confirm(`Are you sure you want to delete the crop "${cropName}"? This action cannot be undone.`);
-
     if (isConfirmed) {
       try {
-        // API එකට call කරලා crop එක database එකෙන් delete කරනවා.
-        await deleteCropAPI(cropId);
+        // --- 3. Delete API Call එකත් කෙලින්ම මෙතන කරනවා ---
+        await api.delete(`/crops/${cropId}`);
 
-        // සාර්ථකව delete උනාට පස්සේ, page එක reload කරන්නේ නැතුව UI එක update කරනවා.
-        // දැනට තියෙන crops list එකෙන්, delete කරපු crop එක විතරක් අයින් කරනවා.
+        // UI එක update කරනවා
         setCrops(currentCrops => currentCrops.filter(crop => crop._id !== cropId));
-        
-        // Optional: Userට සාර්ථක පණිවිඩයක් පෙන්වීම.
-        // alert('Crop deleted successfully!'); 
       } catch (error) {
-        // Error එකක් ආවොත් user ට පණිවිඩයක් දෙනවා.
         alert(`Failed to delete crop: ${error.message}`);
       }
     }
   };
 
 
-  // --- Dynamic Content Rendering Function (Table එක ඇතුළේ පොඩි වෙනසක් තියෙනවා) ---
   const renderCropContent = () => {
     if (isLoading) {
       return <p className="text-gray-500 text-center py-10">Loading crop data...</p>;
@@ -76,7 +67,6 @@ const CropPage = () => {
       );
     }
 
-    // Data තියෙනවා නම්, මේ Table එක render කරනවා.
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-lg">
@@ -97,22 +87,22 @@ const CropPage = () => {
                   <span className="bg-green-200 text-green-800 py-1 px-3 rounded-full text-xs font-medium">{crop.status}</span>
                 </td>
                 <td className="py-4 px-6">
-                  <button className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4"><Link
-                    to={`/admin/crop/${crop._id}/edit`}
+                  
+                  {/* --- 4. Edit button එක නිවැරදි කරා --- */}
+                  {/* <button> එකක් ඇතුළේ <Link> එකක් දාන්නේ නැතුව, කෙලින්ම <Link> එක දානවා */}
+                  <Link
+                    to={`/admin/crop/edit/${crop._id}`} // නිවැරදි edit path එක (අපි App.jsx එකේ හදනවා)
                     className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4"
                   >
                     Edit
                   </Link>
-</button>
-                  
-                  {/* --- 3. Delete Button එකට onClick Event එක එකතු කරන්න --- */}
+
                   <button 
                     onClick={() => handleDelete(crop._id, crop.cropName)}
                     className="text-red-600 hover:text-red-900 font-semibold"
                   >
                     Delete
                   </button>
-
                 </td>
               </tr>
             ))}

@@ -37,6 +37,10 @@ import FieldPage from "./admin/FieldPage.jsx";
 import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
 
+// ⬇️ ADDED: Plan pages (no other changes)
+import AddPlan from "./admin/AddPlan.jsx";
+import PlanList from "./admin/PlanList.jsx";
+
 // --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
@@ -155,6 +159,10 @@ export default function App() {
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
 
+        {/* ⬇️ ADDED: Plan pages under Crop (distinct paths, no conflicts) */}
+        <Route path="crop/plans" element={<PlanList />} />
+        <Route path="crop/plan/new" element={<AddPlan />} />
+
         {/* Field management */}
         <Route path="fields" element={<FieldPage />} />
         <Route path="fields/add" element={<AddFieldPage />} />
@@ -184,10 +192,7 @@ export default function App() {
         {/* Finance */}
         <Route path="finance" element={<FinanceOverview />} />
         <Route path="finance/transactions" element={<FinanceTransaction />} />
-        <Route
-          path="finance/transactions/new"
-          element={<FinanceNewTransaction />}
-        />
+        <Route path="finance/transactions/new" element={<FinanceNewTransaction />} />
       </Route>
 
       {/* FALLBACK */}

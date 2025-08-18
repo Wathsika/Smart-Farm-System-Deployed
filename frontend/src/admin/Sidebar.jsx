@@ -59,8 +59,7 @@ const Sidebar = () => {
 
   const handleCropClick = () => {
     setCropOpen((v) => !v);
-    // Optionally navigate to default crop page:
-    // navigate("/admin/crop");
+    // navigate("/admin/crop"); // keep current behavior commented out
   };
 
   return (
@@ -90,7 +89,7 @@ const Sidebar = () => {
           Livestock
         </SidebarLink>
 
-        {/* Crop accordion (Crop List + Fields) */}
+        {/* Crop accordion */}
         <button
           type="button"
           onClick={handleCropClick}
@@ -118,6 +117,14 @@ const Sidebar = () => {
               </SidebarLink>
               <SidebarLink to="/admin/fields" icon="fas fa-map-marked-alt">
                 Farm Fields
+              </SidebarLink>
+
+              {/* ⬇️ ADDED: Plans links under Crop */}
+              <SidebarLink to="/admin/crop/plans" icon="fas fa-clipboard-list">
+                Plans
+              </SidebarLink>
+              <SidebarLink to="/admin/crop/plan/new" icon="fas fa-plus-circle">
+                Add Plan
               </SidebarLink>
             </motion.div>
           )}
@@ -162,7 +169,7 @@ const Sidebar = () => {
           )}
         </AnimatePresence>
 
-        {/* Store accordion */}
+        {/* Store accordion (unchanged) */}
         <button
           type="button"
           onClick={handleStoreClick}
@@ -186,10 +193,7 @@ const Sidebar = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink
-                to="/admin/store/dashboard"
-                icon="fas fa-tachometer-alt"
-              >
+              <SidebarLink to="/admin/store/dashboard" icon="fas fa-tachometer-alt">
                 Dashboard
               </SidebarLink>
               <SidebarLink to="/admin/store/products" icon="fas fa-box">
@@ -201,10 +205,7 @@ const Sidebar = () => {
               <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">
                 Discounts
               </SidebarLink>
-              <SidebarLink
-                to="/admin/store/customers"
-                icon="fas fa-user-friends"
-              >
+              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends">
                 Customers
               </SidebarLink>
               <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">
@@ -214,7 +215,7 @@ const Sidebar = () => {
           )}
         </AnimatePresence>
 
-        {/* Finance accordion */}
+        {/* Finance accordion (unchanged) */}
         <button
           type="button"
           onClick={() => setFinanceOpen((v) => !v)}
@@ -241,16 +242,10 @@ const Sidebar = () => {
               <SidebarLink to="/admin/finance" icon="fas fa-chart-line">
                 Overview
               </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/transactions"
-                icon="fas fa-receipt"
-              >
+              <SidebarLink to="/admin/finance/transactions" icon="fas fa-receipt">
                 Transactions
               </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/transactions/new"
-                icon="fas fa-plus-circle"
-              >
+              <SidebarLink to="/admin/finance/transactions/new" icon="fas fa-plus-circle">
                 Add New Transaction
               </SidebarLink>
             </motion.div>
