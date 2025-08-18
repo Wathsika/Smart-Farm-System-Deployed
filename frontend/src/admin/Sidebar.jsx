@@ -61,7 +61,6 @@ const Sidebar = () => {
     setCropOpen((v) => !v);
 
     // navigate("/admin/crop"); // keep current behavior commented out
-
   };
 
   return (
@@ -195,7 +194,10 @@ const Sidebar = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink to="/admin/store/dashboard" icon="fas fa-tachometer-alt">
+              <SidebarLink
+                to="/admin/store/dashboard"
+                icon="fas fa-tachometer-alt"
+              >
                 Dashboard
               </SidebarLink>
               <SidebarLink to="/admin/store/products" icon="fas fa-box">
@@ -207,7 +209,10 @@ const Sidebar = () => {
               <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">
                 Discounts
               </SidebarLink>
-              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends">
+              <SidebarLink
+                to="/admin/store/customers"
+                icon="fas fa-user-friends"
+              >
                 Customers
               </SidebarLink>
               <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">
@@ -242,26 +247,26 @@ const Sidebar = () => {
               className="overflow-hidden pl-6 space-y-1"
             >
               {/* Matches /admin/finance/overview etc. from App.jsx */}
-              <SidebarLink to="/admin/finance/overview" icon="fas fa-chart-line">
+              <SidebarLink
+                to="/admin/finance/overview"
+                icon="fas fa-chart-line"
+              >
                 Overview
               </SidebarLink>
 
-              <SidebarLink to="/admin/finance/transaction" icon="fas fa-receipt">
+              <SidebarLink
+                to="/admin/finance/transaction"
+                icon="fas fa-receipt"
+              >
                 Transactions
               </SidebarLink>
               <SidebarLink
                 to="/admin/finance/new_transaction"
                 icon="fas fa-plus-circle"
               >
-
                 Add New Transaction
               </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/edit_rule"
-                icon="fas fa-sliders-h"
-              >
-                Edit Payroll Rule
-              </SidebarLink>
+
               <SidebarLink
                 to="/admin/finance/payroll_management"
                 icon="fas fa-file-invoice-dollar"
