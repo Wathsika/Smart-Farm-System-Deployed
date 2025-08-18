@@ -6,6 +6,7 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api",
 });
 
+
 // Attach token before every request
 api.interceptors.request.use((config) => {
   const token = auth.token;
@@ -29,3 +30,4 @@ api.interceptors.response.use(
 );
 
 //stripe listen --forward-to http://localhost:5001/api/stripe/webhook
+

@@ -8,8 +8,8 @@ import Layout from "./components/common/Layout";
 // --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
-import AboutUs from "./pages/AboutUs";         // fixed casing
-import ContactUs from "./pages/ContactUs";     // fixed casing
+import AboutUs from "./pages/AboutUs";
+import ContactUs from "./pages/ContactUs";
 import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
@@ -29,6 +29,14 @@ import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import AdminDiscountsPage from "./admin/DiscountsPage";
 
+// --- ADMIN FARM MODULES ---
+import AddCrop from "./admin/AddCrop.jsx";
+import CropPage from "./admin/CropPage.jsx";
+import EditCrop from "./admin/EditCrop.jsx";
+import FieldPage from "./admin/FieldPage.jsx";
+import AddFieldPage from "./admin/AddFieldPage.jsx";
+import EditFieldPage from "./admin/EditFieldPage.jsx";
+
 // --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
@@ -39,13 +47,24 @@ const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
-const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
-const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
-const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
-const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
-const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
-const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
-const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
+const FarmDashboard = () => (
+  <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
+);
+const LivestockPage = () => (
+  <div className="p-6 text-2xl font-bold">Livestock Management</div>
+);
+const StaffPage = () => (
+  <div className="p-6 text-2xl font-bold">Staff Management</div>
+);
+const RevenuePage = () => (
+  <div className="p-6 text-2xl font-bold">Revenue & Financials</div>
+);
+const CustomersPage = () => (
+  <div className="p-6 text-2xl font-bold">Customer Management</div>
+);
+const ReportsPage = () => (
+  <div className="p-6 text-2xl font-bold">Store Reports</div>
+);
 
 // --- GUARDS ---
 const Private = ({ children }) =>
@@ -74,14 +93,39 @@ export default function App() {
       <Route path="/login" element={<Login />} />
 
       {/* AUTH USER */}
-      <Route path="/profile" element={<Private><UserProfile /></Private>} />
-      <Route path="/checkout" element={<Private><CheckoutPage /></Private>} />
-      <Route path="/my-orders" element={<Private><MyOrdersPage /></Private>} />
+      <Route
+        path="/profile"
+        element={
+          <Private>
+            <UserProfile />
+          </Private>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <Private>
+            <CheckoutPage />
+          </Private>
+        }
+      />
+      <Route
+        path="/my-orders"
+        element={
+          <Private>
+            <MyOrdersPage />
+          </Private>
+        }
+      />
 
       {/* EMPLOYEE */}
       <Route
         path="/dashboard"
-        element={<EmployeeOnly><EmployeeDashboard /></EmployeeOnly>}
+        element={
+          <EmployeeOnly>
+            <EmployeeDashboard />
+          </EmployeeOnly>
+        }
       />
 
       {/* ADMIN */}
@@ -89,13 +133,34 @@ export default function App() {
         path="/admin"
         element={
           <AdminOnly>
-            <Suspense fallback={<div className="w-full h-screen flex items-center justify-center text-lg">Loading Admin…</div>}>
+            <Suspense
+              fallback={
+                <div className="w-full h-screen flex items-center justify-center text-lg">
+                  Loading Admin…
+                </div>
+              }
+            >
               <AdminLayout />
             </Suspense>
           </AdminOnly>
         }
       >
         <Route index element={<FarmDashboard />} />
+        <Route path="livestock" element={<LivestockPage />} />
+        <Route path="staff" element={<StaffPage />} />
+        <Route path="revenue" element={<RevenuePage />} />
+
+        {/* Crop management */}
+        <Route path="crop" element={<CropPage />} />
+        <Route path="crop/add" element={<AddCrop />} />
+        <Route path="crop/:id/edit" element={<EditCrop />} />
+
+        {/* Field management */}
+        <Route path="fields" element={<FieldPage />} />
+        <Route path="fields/add" element={<AddFieldPage />} />
+        <Route path="fields/edit/:id" element={<EditFieldPage />} />
+
+        {/* HR management */}
         <Route path="users" element={<AdminUsers />} />
         <Route path="tasks" element={<TaskManagement />} />
         <Route path="attendance" element={<StaffAttendance />} />
@@ -119,7 +184,10 @@ export default function App() {
         {/* Finance */}
         <Route path="finance" element={<FinanceOverview />} />
         <Route path="finance/transactions" element={<FinanceTransaction />} />
-        <Route path="finance/transactions/new" element={<FinanceNewTransaction />} />
+        <Route
+          path="finance/transactions/new"
+          element={<FinanceNewTransaction />}
+        />
       </Route>
 
       {/* FALLBACK */}
