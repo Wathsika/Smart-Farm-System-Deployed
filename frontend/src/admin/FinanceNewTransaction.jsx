@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
+const CATEGORY_OPTIONS = ["crop", "milk", "store", "staff", "others"];
+
 export default function AddTransactionPage() {
   const [form, setForm] = useState({
     type: "",
     date: new Date().toISOString().slice(0, 10),
-    category: "",
+    category: "others", // default value
     amount: "",
     description: "",
   });
@@ -31,7 +33,7 @@ export default function AddTransactionPage() {
         setForm({
           type: data.type || "expense",
           date: (data.date || new Date().toISOString()).slice(0, 10),
-          category: data.category || "",
+          category: data.category || "others",
           amount: String(data.amount ?? ""),
           description: data.description || "",
         });
@@ -85,7 +87,7 @@ export default function AddTransactionPage() {
     setForm({
       type: "expense",
       date: new Date().toISOString().slice(0, 10),
-      category: "",
+      category: "others",
       amount: "",
       description: "",
     });
@@ -137,21 +139,6 @@ export default function AddTransactionPage() {
                       <option value="EXPENSE">💸 Expense</option>
                       <option value="INCOME">💰 Income</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg
-                        className="h-5 w-5 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -169,19 +156,44 @@ export default function AddTransactionPage() {
                 </div>
               </div>
 
+              {/* Category dropdown */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Category
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Feed, Fertilizer, Milk Sales, Crop Sales"
-                  className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                />
+                <div className="relative">
+                  <select
+                    className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200 appearance-none font-medium"
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -226,60 +238,13 @@ export default function AddTransactionPage() {
                     onClick={handleSubmit}
                     className="inline-flex items-center px-8 py-4 border border-transparent text-base font-bold rounded-xl text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   >
-                    {isEditing ? (
-                      <>
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                          />
-                        </svg>
-                        Update Transaction
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
-                        Add Transaction
-                      </>
-                    )}
+                    {isEditing ? "Update Transaction" : "Add Transaction"}
                   </button>
                   <button
                     type="button"
                     onClick={handleCancel}
                     className="inline-flex items-center px-8 py-4 border-2 border-gray-300 text-base font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
                     Cancel
                   </button>
                 </div>
