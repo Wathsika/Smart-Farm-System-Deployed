@@ -41,6 +41,8 @@ import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
 import FinanceNewTransaction from "./admin/FinanceNewTransaction";
+import FinancePayrollManagement from "./admin/FinancePayrollManagement";
+import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -181,13 +183,20 @@ export default function App() {
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
 
-        {/* Finance */}
-        <Route path="finance" element={<FinanceOverview />} />
-        <Route path="finance/transactions" element={<FinanceTransaction />} />
-        <Route
-          path="finance/transactions/new"
-          element={<FinanceNewTransaction />}
-        />
+
+        {/* Finance (nested) */}
+        <Route path="finance">
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<FinanceOverview />} />
+          <Route path="transaction" element={<FinanceTransaction />} />
+          <Route path="new_transaction" element={<FinanceNewTransaction />} />
+          <Route path="edit_rule" element={<FinanceEditPayrollRule />} />
+          <Route
+            path="payroll_management"
+            element={<FinancePayrollManagement />}
+          />
+        </Route>
+
       </Route>
 
       {/* FALLBACK */}

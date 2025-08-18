@@ -24,9 +24,10 @@ import authRoutes from "./routes/auth.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import taskRoutes from "./routes/task.routes.js";
-import expenseRoutes from "./routes/expense.routes.js";
+import transactionRoutes from "./routes/transaction.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import discountRoutes from "./routes/discount.routes.js";
+import expenseRoutes from "./routes/expense.routes.js"; // ✅ was missing
 
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
@@ -54,13 +55,14 @@ app.use(
   cors({
     origin(origin, cb) {
       if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      // ❗ Explicitly reject unknown origins (more secure)
       return cb(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-app.use(morgan("dev"));
+app.use(morgan("dev")); // HTTP request logger
 
 /**
  * ❗ Stripe needs the raw body for signature verification.
@@ -71,6 +73,9 @@ app.use(morgan("dev"));
  */
 app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
+
+// Attach handlers for both webhook paths
+app.post("/api/orders/webhook", stripeWebhookHandler);
 app.post("/api/stripe/webhook", stripeWebhookHandler);
 
 // --- Body Parsers (after raw webhook parsers) ---
@@ -81,6 +86,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+
 app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/expenses", expenseRoutes);
@@ -89,6 +95,8 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
+
+app.use("/api/transactions", transactionRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
