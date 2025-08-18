@@ -5,8 +5,17 @@ const transactionSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ["INCOME", "EXPENSE"],
-      default: "EXPENSE", // Default is expense
+      default: "EXPENSE",
       required: true,
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
     },
     amount: {
       type: Number,
@@ -15,12 +24,9 @@ const transactionSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
       trim: true,
-    },
-    date: {
-      type: Date,
-      default: Date.now,
+      required: true,
+      default: "",
     },
   },
   { timestamps: true }

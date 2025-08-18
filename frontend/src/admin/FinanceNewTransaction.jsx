@@ -8,7 +8,7 @@ export default function AddTransactionPage() {
     date: new Date().toISOString().slice(0, 10),
     category: "",
     amount: "",
-    note: "",
+    description: "",
   });
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -27,13 +27,13 @@ export default function AddTransactionPage() {
     (async () => {
       try {
         const { data } = await api.get(`/transactions/${editId}`);
-        // Expecting: { type, date, category, amount, note }
+        // Expecting: { type, date, category, amount, description }
         setForm({
           type: data.type || "expense",
           date: (data.date || new Date().toISOString()).slice(0, 10),
           category: data.category || "",
           amount: String(data.amount ?? ""),
-          description: data.note || "",
+          description: data.description || "",
         });
       } catch (err) {
         console.error(err);
@@ -53,11 +53,11 @@ export default function AddTransactionPage() {
     }
 
     const payload = {
-      type: form.type || "expense",
+      type: form.type || "EXPENSE",
       date: form.date,
       category: form.category.trim(),
       amount: amt,
-      description: form.note?.trim() || "",
+      description: form.description?.trim() || "",
     };
 
     try {
@@ -206,15 +206,15 @@ export default function AddTransactionPage() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Description (Optional)
+                  Description
                 </label>
                 <textarea
                   placeholder="Additional details about this transaction..."
                   className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200 resize-none"
                   rows={4}
-                  value={form.note}
+                  value={form.description}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
+                    setForm((f) => ({ ...f, description: e.target.value }))
                   }
                 />
               </div>
