@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import ctrl from '../controllers/plan.controller.js';
+import { create, list, due, toggle, remove } from '../controllers/plan.controller.js';
 import { auth } from '../middlewares/auth.js';
 
 const router = Router();
 
-router.post('/', auth, ctrl.create);
-router.get('/', auth, ctrl.list);
-router.get('/due', auth, ctrl.due);
-router.patch('/:id/toggle', auth, ctrl.toggle);
-router.delete('/:id', auth, ctrl.remove);
+router.post('/', auth, create);
+router.get('/', auth, list);
+router.get('/due', auth, due);
+router.patch('/:id/toggle', auth, toggle);
+router.delete('/:id', auth, remove);
 
 export default router;
