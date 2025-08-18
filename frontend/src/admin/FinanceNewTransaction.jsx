@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 
 export default function AddTransactionPage() {
   const [form, setForm] = useState({
@@ -13,42 +14,71 @@ export default function AddTransactionPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // Check if we're editing (in a real app, this would come from URL params or props)
+  // Check if we're editing (this would come from URL params or props)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get("edit");
-    if (editId) {
-      setIsEditing(true);
-      setEditingId(editId);
-      // In a real app, you would fetch the transaction data here based on the ID
-      // For now, we'll keep the form empty since there's no dummy data
-    }
+    if (!editId) return;
+
+    setIsEditing(true);
+    setEditingId(editId);
+
+    // Fetch the existing transaction from backend
+    (async () => {
+      try {
+        const { data } = await api.get(`/transactions/${editId}`);
+        // Expecting: { type, date, category, amount, note }
+        setForm({
+          type: data.type || "expense",
+          date: (data.date || new Date().toISOString()).slice(0, 10),
+          category: data.category || "",
+          amount: String(data.amount ?? ""),
+          description: data.note || "",
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load transaction to edit.");
+      }
+    })();
   }, []);
 
-  function handleSubmit(e) {
+  //submit data
+  async function handleSubmit(e) {
     e.preventDefault();
+
     const amt = Number(form.amount);
-    if (!form.date || !form.category || !amt || amt <= 0) {
+    if (!form.date || !form.category?.trim() || !amt || amt <= 0) {
       alert("Please fill date, category and a positive amount.");
       return;
     }
 
-    const transaction = {
-      ...form,
+    const payload = {
+      type: form.type || "expense",
+      date: form.date,
+      category: form.category.trim(),
       amount: amt,
-      id: editingId || crypto.randomUUID(),
+      description: form.note?.trim() || "",
     };
 
-    // In a real app, you would save to database here
-    console.log("Saving transaction:", transaction);
-    alert(
-      `${isEditing ? "Updated" : "Added"} transaction: ${
-        form.category
-      } - LKR ${amt.toLocaleString()}`
-    );
-
-    // Navigate back to transactions page
-    handleCancel();
+    try {
+      if (isEditing && editingId) {
+        // UPDATE
+        await api.patch(`/transactions/${editingId}`, payload);
+        alert("Transaction updated successfully.");
+      } else {
+        // CREATE
+        await api.post("/transactions", payload);
+        alert("Transaction added successfully.");
+      }
+      // Navigate back after success
+      navigate("/admin/finance/transaction");
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ||
+        (isEditing ? "Failed to update." : "Failed to add.");
+      alert(msg);
+    }
   }
 
   function handleCancel() {
@@ -57,7 +87,7 @@ export default function AddTransactionPage() {
       date: new Date().toISOString().slice(0, 10),
       category: "",
       amount: "",
-      note: "",
+      description: "",
     });
     navigate("/admin/finance/transaction");
   }
@@ -104,8 +134,8 @@ export default function AddTransactionPage() {
                         setForm((f) => ({ ...f, type: e.target.value }))
                       }
                     >
-                      <option value="expense">💸 Expense</option>
-                      <option value="income">💰 Income</option>
+                      <option value="EXPENSE">💸 Expense</option>
+                      <option value="INCOME">💰 Income</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg
@@ -176,7 +206,7 @@ export default function AddTransactionPage() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Notes (Optional)
+                  Description (Optional)
                 </label>
                 <textarea
                   placeholder="Additional details about this transaction..."

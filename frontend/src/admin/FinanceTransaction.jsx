@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { TransactionsAPI } from "/lib/api";
 
 function currency(n) {
   if (isNaN(n)) return "—";
@@ -32,45 +33,61 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-export default function TransactionsPage() {
-  // Transactions data - in a real app, this would come from a database or API
+export default function FinanceTransaction() {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [showDeleteModal, setShowDeleteModal] = useState(null);
 
+  const navigate = useNavigate();
+
+  // Load from backend whenever filters/search change
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      setLoading(true);
+      setErr("");
+      try {
+        const rows = await TransactionsAPI.list({
+          q: q || undefined,
+          type: typeFilter !== "all" ? typeFilter : undefined,
+          month: monthFilter !== "all" ? monthFilter : undefined,
+        });
+        if (!ignore) setTransactions(rows);
+      } catch (e) {
+        if (!ignore) setErr(e.message || "Failed to load transactions");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [q, typeFilter, monthFilter]);
+
   const months = useMemo(() => {
-    const set = new Set(transactions.map((r) => monthKey(r.date)));
+    const set = new Set(transactions.map((r) => (r.date || "").slice(0, 7)));
     return ["all", ...Array.from(set).sort().reverse()];
   }, [transactions]);
 
-  const filtered = transactions.filter((r) => {
-    if (typeFilter !== "all" && r.type !== typeFilter) return false;
-    if (monthFilter !== "all" && monthKey(r.date) !== monthFilter) return false;
-    if (!q) return true;
-    const hay = `${r.category} ${r.note} ${r.type} ${r.date}`.toLowerCase();
-    return hay.includes(q.toLowerCase());
-  });
-
-  const handleDelete = (id) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-    setShowDeleteModal(null);
+  const handleDelete = async (id) => {
+    try {
+      await TransactionsAPI.remove(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      alert(e.message || "Failed to delete");
+    } finally {
+      setShowDeleteModal(null);
+    }
   };
 
-  const handleEdit = (transaction) => {
-    // In a real app, this would navigate to edit page with transaction data
-    alert(
-      `Edit transaction: ${transaction.category} - ${currency(
-        transaction.amount
-      )}`
-    );
-  };
-
-  const handleAddNew = () => {
-    alert("Navigate to Add New Transaction page");
-  };
+  const handleEdit = (row) =>
+    navigate(`/admin/finance/new_transaction?edit=${row.id}`);
+  const handleAddNew = () => navigate("/admin/finance/new_transaction");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
