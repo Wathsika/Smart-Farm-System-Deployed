@@ -1,11 +1,9 @@
 // frontend/src/admin/pages/AddCrop.jsx
 
 import React, { useState } from 'react';
-import { addCropAPI } from '../lib/api'; // උඩ හදපු API function එක
-
-// ඔයා FontAwesome use කරනවා නම් මෙහෙම icon import කරන්න පුළුවන්
-// import { faSeedling } from '@fortawesome/free-solid-svg-icons';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// --- 1. වැදගත්ම වෙනස: api.js එකෙන් පොදු 'api' instance එක import කරගන්නවා ---
+// අපි දැන් addCropAPI කියලා function එකක් import කරන්නේ නෑ.
+import { api } from '../lib/api.js';
 
 const AddCrop = () => {
     const [formData, setFormData] = useState({
@@ -24,7 +22,7 @@ const AddCrop = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Page එක refresh වෙන එක නවත්තනවා
+        e.preventDefault();
         setMessage('');
         setError('');
 
@@ -34,8 +32,13 @@ const AddCrop = () => {
         }
 
         try {
-            const result = await addCropAPI(formData);
-            setMessage(result.message); // Backend එකෙන් එන success message එක
+            // --- 2. API Call එක කෙලින්ම මෙතන කරනවා ---
+            // 'addCropAPI(formData)' වෙනුවට, 'api.post' පාවිච්චි කරනවා.
+            const response = await api.post('/crops/add', formData);
+
+            // Backend එකෙන් එන response එකේ structure එකට අනුව message එක ගන්න
+            setMessage(response.data.message || 'Crop added successfully!'); 
+            
             // Form එක clear කරනවා
             setFormData({
                 cropName: '',
@@ -43,14 +46,15 @@ const AddCrop = () => {
                 expectedHarvestDate: ''
             });
         } catch (err) {
-            setError(err.message || 'An error occurred. Please try again.');
+            // Error handling එක තවත් දියුණු කරලා, backend එකෙන් එන message එක පෙන්නනවා
+            const errorMessage = err.response?.data?.message || err.message || 'An error occurred. Please try again.';
+            setError(errorMessage);
         }
     };
 
     return (
         <div className="p-8 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                {/* <FontAwesomeIcon icon={faSeedling} className="mr-3" /> */}
                 Add New Crop
             </h1>
 
@@ -66,6 +70,7 @@ const AddCrop = () => {
                             onChange={handleChange}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             placeholder="e.g., Papaya, Mango"
+                            required // HTML validation එකක් එකතු කළා
                         />
                     </div>
 
@@ -78,6 +83,7 @@ const AddCrop = () => {
                             value={formData.plantingDate}
                             onChange={handleChange}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required // HTML validation එකක් එකතු කළා
                         />
                     </div>
 
