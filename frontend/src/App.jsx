@@ -8,8 +8,8 @@ import Layout from "./components/common/Layout";
 // --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront";
-import AboutUs from "./pages/AboutUs";
-import ContactUs from "./pages/ContactUs";
+import AboutUs from "./pages/aboutus.jsx";
+import ContactUs from "./pages/contactus.jsx";
 import Login from "./pages/Login";
 import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
@@ -85,22 +85,12 @@ import CowProfilePage from "./pages/livestock/cow.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
 
-// --- PLACEHOLDER COMPONENTS for other admin pages (keep until you build them) ---
-const FarmDashboard = () => <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>;
-const LivestockPage = () => <div className="p-6 text-2xl font-bold">Livestock Management</div>;
-const CropPage = () => <div className="p-6 text-2xl font-bold">Crop Management</div>;
-const StaffPage = () => <div className="p-6 text-2xl font-bold">Staff Management</div>;
-const RevenuePage = () => <div className="p-6 text-2xl font-bold">Revenue & Financials</div>;
-const OrdersPage = () => <div className="p-6 text-2xl font-bold">Order Management</div>;
-const DiscountsPage = () => <div className="p-6 text-2xl font-bold">Discount Management</div>;
-const CustomersPage = () => <div className="p-6 text-2xl font-bold">Customer Management</div>;
-const ReportsPage = () => <div className="p-6 text-2xl font-bold">Store Reports</div>;
-
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
 
-
-const BreedingRecordsPage = () => <div className="p-6 text-2xl font-bold">Breeding Records</div>;
+const BreedingRecordsPage = () => (
+  <div className="p-6 text-2xl font-bold">Breeding Records</div>
+);
 
 export default function App() {
   return (
@@ -182,13 +172,11 @@ export default function App() {
         <Route path="livestock/health" element={<HealthPage />} />
         <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
 
-        <Route path="crop" element={<CropPage />} />
+          <Route path="staff" element={<StaffPage />} />
+          <Route path="revenue" element={<RevenuePage />} />
 
-        <Route path="staff" element={<StaffPage />} />
-        <Route path="revenue" element={<RevenuePage />} />
-
-        {/* Crop management */}
-        <Route path="crop" element={<CropPage />} />
+          {/* Crop management */}
+          <Route path="crop" element={<CropPage />} />
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
 
