@@ -1,7 +1,6 @@
 // HealthModals.jsx (Updated and Fixed Code)
 import React, { useEffect, useState } from "react";
-
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+import { api } from "../../lib/api";
 const pad = (n) => String(n).padStart(2, "0");
 const liso = (d) => { 
   if (!d) return "";
@@ -105,9 +104,12 @@ export function AddHealthModal({ open, onClose, cows, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     const payload = { ...form, temperatureC: Number(form.temperatureC) || undefined, weightKg: Number(form.weightKg) || undefined, symptoms: form.symptoms ? form.symptoms.split(",").map(s => s.trim()) : [] };
-    const r = await fetch(`${API}/api/health`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    if (!r.ok) { alert("Save failed"); return; }
-    onSaved?.();
+    try {
+      const { data } = await api.post("health", payload);
+      onSaved?.(data);
+    } catch {
+      alert("Save failed");
+    }
   };
   return <ModalFrame title="Add Health Record" onClose={onClose} onSubmit={submit}><HealthFields form={form} setForm={setForm} cows={cows} /></ModalFrame>;
 }
@@ -120,9 +122,12 @@ export function EditHealthModal({ open, onClose, cows, record, onSaved }) {
   const submit = async (e) => {
     e.preventDefault();
     const payload = { ...form, temperatureC: Number(form.temperatureC) || undefined, weightKg: Number(form.weightKg) || undefined, symptoms: form.symptoms ? form.symptoms.split(",").map(s => s.trim()) : [] };
-    const r = await fetch(`${API}/api/health/${form._id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    if (!r.ok) { alert("Update failed"); return; }
-    onSaved?.();
+    try {
+      const { data } = await api.put(`health/${form._id}`, payload);
+      onSaved?.(data);
+    } catch {
+      alert("Update failed");
+    }
   };
   return <ModalFrame title="Edit Health Record" onClose={onClose} onSubmit={submit}><HealthFields form={form} setForm={setForm} cows={cows} /></ModalFrame>;
 }
@@ -168,9 +173,12 @@ export function AddVaccModal({ open, onClose, cows, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    const r = await fetch(`${API}/api/health`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    if (!r.ok) { alert("Save failed"); return; }
-    onSaved?.();
+    try {
+      const { data } = await api.post("health", form);
+      onSaved?.(data);
+    } catch {
+      alert("Save failed");
+    }
   };
   // **** FIX: Pass `showNextDueDate` prop ****
   return <ModalFrame title="Add Vaccination" onClose={onClose} onSubmit={submit}><HealthFields form={form} setForm={setForm} cows={cows} hideType showNextDueDate /></ModalFrame>;
@@ -183,9 +191,12 @@ export function EditVaccModal({ open, onClose, cows, record, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    const r = await fetch(`${API}/api/health/${form._id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    if (!r.ok) { alert("Update failed"); return; }
-    onSaved?.();
+    try {
+      const { data } = await api.put(`health/${form._id}`, form);
+      onSaved?.(data);
+    } catch {
+      alert("Update failed");
+    }
   };
   // **** FIX: Pass `showNextDueDate` prop ****
   return <ModalFrame title="Edit Vaccination" onClose={onClose} onSubmit={submit}><HealthFields form={form} setForm={setForm} cows={cows} hideType showNextDueDate /></ModalFrame>;
