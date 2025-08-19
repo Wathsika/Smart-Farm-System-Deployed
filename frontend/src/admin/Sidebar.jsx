@@ -31,15 +31,15 @@ const SectionLabel = ({ children }) => (
 
 const drawerVariants = {
   hidden: { x: -320, opacity: 0 },
-  visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 280, damping: 28 } },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: { type: "spring", stiffness: 280, damping: 28 },
+  },
   exit: { x: -320, opacity: 0, transition: { duration: 0.2 } },
 };
 
-const SidebarInner = ({
-  location,
-  navigate,
-  closeMobile,
-}) => {
+const SidebarInner = ({ location, navigate, closeMobile }) => {
   // Auto-open accordions based on current route
   const isOnStore = useMemo(
     () => location.pathname.startsWith("/admin/store"),
@@ -57,23 +57,37 @@ const SidebarInner = ({
       location.pathname.startsWith("/admin/leave"),
     [location.pathname]
   );
+  const isOnCrop = useMemo(
+    () =>
+      location.pathname.startsWith("/admin/crop") ||
+      location.pathname.startsWith("/admin/fields"),
+    [location.pathname]
+  );
+  const isOnLivestock = useMemo(
+    () => location.pathname.startsWith("/admin/livestock"),
+    [location.pathname]
+  );
 
   // Accordions
-  const [isStoreOpen, setStoreOpen] = useState(isOnStore || true); // store open by default
+  const [isStoreOpen, setStoreOpen] = useState(isOnStore || false); // store open by default
   const [isFinanceOpen, setFinanceOpen] = useState(isOnFinance || false);
   const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
+  const [isCropOpen, setCropOpen] = useState(isOnCrop || false);
+  const [isLivestockOpen, setLivestockOpen] = useState(isOnLivestock || false);
 
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
-    // navigate to dashboard when heading clicked
     navigate("/admin/store/dashboard");
-    // on mobile: close drawer after navigation
     closeMobile?.();
   };
 
-  const onNavigate = () => {
-    // Close the drawer when a link is clicked (mobile only)
-    closeMobile?.();
+  const onNavigate = () => closeMobile?.();
+
+  const handleCropClick = () => setCropOpen((v) => !v);
+
+  const handleLivestockClick = () => {
+    setLivestockOpen((v) => !v);
+    navigate("/admin/livestock");
   };
 
   return (
@@ -93,17 +107,122 @@ const SidebarInner = ({
           Dashboard
         </SidebarLink>
 
+        {/* Farm */}
         <SectionLabel>Farm</SectionLabel>
-        <SidebarLink to="/admin/livestock" icon="fas fa-cow" onNavigate={onNavigate}>
-          Livestock
-        </SidebarLink>
-        <SidebarLink to="/admin/crop" icon="fas fa-seedling" onNavigate={onNavigate}>
-          Crop
-        </SidebarLink>
 
-        {/* Staff Accordion */}
+        {/* Livestock accordion */}
         <button
-          onClick={() => setStaffOpen(!isStaffOpen)}
+          onClick={handleLivestockClick}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-cow w-5 text-center" />
+            <span>Livestock</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isLivestockOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isLivestockOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink
+                to="/admin/livestock/profile"
+                icon="fas fa-id-card"
+                onNavigate={onNavigate}
+              >
+                Cow Profile
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/livestock/milk"
+                icon="fas fa-tint"
+                onNavigate={onNavigate}
+              >
+                Milk Production
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/livestock/health"
+                icon="fas fa-heartbeat"
+                onNavigate={onNavigate}
+              >
+                Health Records
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/livestock/breeding"
+                icon="fas fa-venus-mars"
+                onNavigate={onNavigate}
+              >
+                Breeding Records
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Crop accordion */}
+        <button
+          type="button"
+          onClick={handleCropClick}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-seedling w-5 text-center" />
+            <span>Crop</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isCropOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isCropOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink
+                to="/admin/crop"
+                icon="fas fa-tractor"
+                onNavigate={onNavigate}
+              >
+                Crop List
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/fields"
+                icon="fas fa-map-marked-alt"
+                onNavigate={onNavigate}
+              >
+                Farm Fields
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/crop/plans"
+                icon="fas fa-clipboard-list"
+                onNavigate={onNavigate}
+              >
+                Plans
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/crop/plan/new"
+                icon="fas fa-plus-circle"
+                onNavigate={onNavigate}
+              >
+                Add Plan
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Staff accordion */}
+        <button
+          type="button"
+          onClick={() => setStaffOpen((v) => !v)}
           className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
           aria-expanded={isStaffOpen}
         >
@@ -140,7 +259,7 @@ const SidebarInner = ({
           )}
         </AnimatePresence>
 
-        {/* Store Accordion */}
+        {/* Store accordion */}
         <button
           type="button"
           onClick={handleStoreClick}
@@ -156,7 +275,6 @@ const SidebarInner = ({
             className="fas fa-chevron-down text-xs"
           />
         </button>
-
         <AnimatePresence initial={false}>
           {isStoreOpen && (
             <motion.div
@@ -166,33 +284,57 @@ const SidebarInner = ({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink to="/admin/store/dashboard" icon="fas fa-tachometer-alt" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/dashboard"
+                icon="fas fa-tachometer-alt"
+                onNavigate={onNavigate}
+              >
                 Dashboard
               </SidebarLink>
-              <SidebarLink to="/admin/store/products" icon="fas fa-box" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/products"
+                icon="fas fa-box"
+                onNavigate={onNavigate}
+              >
                 Products
               </SidebarLink>
-              <SidebarLink to="/admin/store/orders" icon="fas fa-shopping-cart" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/orders"
+                icon="fas fa-shopping-cart"
+                onNavigate={onNavigate}
+              >
                 Orders
               </SidebarLink>
-              <SidebarLink to="/admin/store/discounts" icon="fas fa-tags" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/discounts"
+                icon="fas fa-tags"
+                onNavigate={onNavigate}
+              >
                 Discounts
               </SidebarLink>
-              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/customers"
+                icon="fas fa-user-friends"
+                onNavigate={onNavigate}
+              >
                 Customers
               </SidebarLink>
-              <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/store/reports"
+                icon="fas fa-chart-bar"
+                onNavigate={onNavigate}
+              >
                 Reports
               </SidebarLink>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Finance Accordion */}
+        {/* Finance accordion */}
         <button
           type="button"
           onClick={() => setFinanceOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+          className="flex w/full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
           aria-expanded={isFinanceOpen}
         >
           <div className="flex items-center gap-3">
@@ -204,7 +346,6 @@ const SidebarInner = ({
             className="fas fa-chevron-down text-xs"
           />
         </button>
-
         <AnimatePresence initial={false}>
           {isFinanceOpen && (
             <motion.div
@@ -214,14 +355,33 @@ const SidebarInner = ({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              <SidebarLink to="/admin/finance/overview" icon="fas fa-chart-line" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/finance/overview"
+                icon="fas fa-chart-line"
+                onNavigate={onNavigate}
+              >
                 Overview
               </SidebarLink>
-              <SidebarLink to="/admin/finance/transaction" icon="fas fa-receipt" onNavigate={onNavigate}>
-                Transaction
+              <SidebarLink
+                to="/admin/finance/transaction"
+                icon="fas fa-receipt"
+                onNavigate={onNavigate}
+              >
+                Transactions
               </SidebarLink>
-              <SidebarLink to="/admin/finance/new_transaction" icon="fas fa-plus-circle" onNavigate={onNavigate}>
+              <SidebarLink
+                to="/admin/finance/new_transaction"
+                icon="fas fa-plus-circle"
+                onNavigate={onNavigate}
+              >
                 Add New Transaction
+              </SidebarLink>
+              <SidebarLink
+                to="/admin/finance/payroll_management"
+                icon="fas fa-file-invoice-dollar"
+                onNavigate={onNavigate}
+              >
+                Payroll Management
               </SidebarLink>
             </motion.div>
           )}
@@ -298,7 +458,11 @@ const Sidebar = () => {
                 </button>
               </div>
 
-              <SidebarInner location={location} navigate={navigate} closeMobile={closeMobile} />
+              <SidebarInner
+                location={location}
+                navigate={navigate}
+                closeMobile={closeMobile}
+              />
             </motion.aside>
           </>
         )}

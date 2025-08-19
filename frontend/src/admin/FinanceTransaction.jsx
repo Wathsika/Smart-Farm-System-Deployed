@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+// src/admin/FinanceTransaction.jsx
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 
 function currency(n) {
   if (isNaN(n)) return "—";
-  return n.toLocaleString("en-LK", {
+  return Number(n).toLocaleString("en-LK", {
     style: "currency",
     currency: "LKR",
     maximumFractionDigits: 0,
@@ -15,7 +17,8 @@ function monthKey(iso) {
 }
 
 function downloadCSV(filename, rows) {
-  const headers = ["id", "type", "date", "category", "amount", "note"];
+  // 🔧 use the correct field name: description
+  const headers = ["id", "type", "date", "category", "amount", "description"];
   const body = rows.map((r) =>
     headers
       .map((h) => String(r[h] ?? "").replace(/"/g, '""'))
@@ -32,45 +35,102 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-export default function TransactionsPage() {
-  // Transactions data - in a real app, this would come from a database or API
+// optional: make sure dates render safely
+function shortDate(d) {
+  if (!d) return "—";
+  // if backend sends ISO string
+  if (typeof d === "string") return d.slice(0, 10);
+  // if backend sends Date (unlikely in JSON), fallback
+  try {
+    return new Date(d).toISOString().slice(0, 10);
+  } catch {
+    return String(d);
+  }
+}
+
+export default function FinanceTransaction() {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   const [q, setQ] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all"); // "INCOME" | "EXPENSE" | "all"
   const [monthFilter, setMonthFilter] = useState("all");
   const [showDeleteModal, setShowDeleteModal] = useState(null);
 
+  const navigate = useNavigate();
+
+  // Load from backend whenever filters/search change
+  useEffect(() => {
+    let ignore = false;
+
+    (async () => {
+      setLoading(true);
+      setErr("");
+      try {
+        const res = await api.get("/transactions", {
+          params: {
+            q: q || undefined, // your controller may ignore q; harmless
+            type: typeFilter !== "all" ? typeFilter : undefined, // INCOME/EXPENSE
+            month: monthFilter !== "all" ? monthFilter : undefined, // your controller may ignore; harmless
+          },
+        });
+
+        // Backend might return array or {data: [...]}
+        const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
+
+        // Normalize and keep only fields we actually use
+        const rows = raw.map((r) => ({
+          id: r.id || r._id,
+          date: r.date,
+          type: r.type, // "INCOME" | "EXPENSE"
+          category: r.category,
+          amount: r.amount,
+          description: r.description, // ✅ correct field
+        }));
+
+        if (!ignore) setTransactions(rows);
+      } catch (e) {
+        if (!ignore)
+          setErr(
+            e?.response?.data?.message ||
+              e.message ||
+              "Failed to load transactions"
+          );
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [q, typeFilter, monthFilter]);
+
+  // derive month list from the loaded data
   const months = useMemo(() => {
     const set = new Set(transactions.map((r) => monthKey(r.date)));
-    return ["all", ...Array.from(set).sort().reverse()];
+    return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
   }, [transactions]);
 
-  const filtered = transactions.filter((r) => {
-    if (typeFilter !== "all" && r.type !== typeFilter) return false;
-    if (monthFilter !== "all" && monthKey(r.date) !== monthFilter) return false;
-    if (!q) return true;
-    const hay = `${r.category} ${r.note} ${r.type} ${r.date}`.toLowerCase();
-    return hay.includes(q.toLowerCase());
-  });
+  // Server already did filtering; show as-is
+  const filtered = transactions;
 
-  const handleDelete = (id) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-    setShowDeleteModal(null);
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/transactions/${id}`);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      alert(e?.response?.data?.message || e.message || "Failed to delete");
+    } finally {
+      setShowDeleteModal(null);
+    }
   };
 
-  const handleEdit = (transaction) => {
-    // In a real app, this would navigate to edit page with transaction data
-    alert(
-      `Edit transaction: ${transaction.category} - ${currency(
-        transaction.amount
-      )}`
-    );
-  };
+  const handleEdit = (row) =>
+    navigate(`/admin/finance/new_transaction?edit=${row.id}`);
 
-  const handleAddNew = () => {
-    alert("Navigate to Add New Transaction page");
-  };
+  const handleAddNew = () => navigate("/admin/finance/new_transaction");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
@@ -129,7 +189,7 @@ export default function TransactionsPage() {
                     </svg>
                   </div>
                   <input
-                    placeholder="Search category, note, date…"
+                    placeholder="Search category, description, date…"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-inner bg-white/80 backdrop-blur-sm transition-all duration-200"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
@@ -147,8 +207,8 @@ export default function TransactionsPage() {
                     onChange={(e) => setTypeFilter(e.target.value)}
                   >
                     <option value="all">🔄 All Types</option>
-                    <option value="income">💰 Income Only</option>
-                    <option value="expense">💸 Expenses Only</option>
+                    <option value="INCOME">💰 Income Only</option>
+                    <option value="EXPENSE">💸 Expenses Only</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg
@@ -268,99 +328,47 @@ export default function TransactionsPage() {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  <Link to="/admin/finance/new_transaction">Add New</Link>
+                  Add New
                 </button>
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Note
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filtered.length === 0 && (
+              {loading ? (
+                <div className="p-8 text-center text-gray-600">Loading…</div>
+              ) : err ? (
+                <div className="p-8 text-center text-red-600">{err}</div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center">
-                          <svg
-                            className="w-12 h-12 text-gray-400 mb-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                            />
-                          </svg>
-                          <p className="text-gray-500 text-lg">
-                            No transactions found
-                          </p>
-                          <p className="text-gray-400 text-sm">
-                            Try adjusting your filters or add a new transaction
-                          </p>
-                        </div>
-                      </td>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  )}
-                  {filtered.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {r.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            r.type === "income"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {r.type === "income" ? "💰" : "💸"} {r.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {r.category}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                        {r.note || "—"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {currency(r.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleEdit(r)}
-                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                          >
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center">
                             <svg
-                              className="w-3 h-3 mr-1"
+                              className="w-12 h-12 text-gray-400 mb-4"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -369,36 +377,95 @@ export default function TransactionsPage() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                               />
                             </svg>
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteModal(r.id)}
-                            className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
+                            <p className="text-gray-500 text-lg">
+                              No transactions found
+                            </p>
+                            <p className="text-gray-400 text-sm">
+                              Try adjusting your filters or add a new
+                              transaction
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {filtered.map((r) => (
+                      <tr
+                        key={r.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {shortDate(r.date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              r.type === "INCOME"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
                           >
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                            {r.type === "INCOME" ? "💰" : "💸"} {r.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {r.category || "—"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                          {r.description || "—" /* ✅ correct field shown */}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {currency(r.amount)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEdit(r)}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                              <svg
+                                className="w-3 h-3 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteModal(r.id)}
+                              className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
+                            >
+                              <svg
+                                className="w-3 h-3 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 

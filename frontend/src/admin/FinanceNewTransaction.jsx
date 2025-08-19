@@ -1,65 +1,97 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
+
+const CATEGORY_OPTIONS = ["crop", "milk", "store", "staff", "others"];
 
 export default function AddTransactionPage() {
   const [form, setForm] = useState({
-    type: "expense",
+    type: "",
     date: new Date().toISOString().slice(0, 10),
-    category: "",
+    category: "others", // default value
     amount: "",
-    note: "",
+    description: "",
   });
-
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // Check if we're editing (in a real app, this would come from URL params or props)
+  // Check if we're editing (this would come from URL params or props)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get("edit");
-    if (editId) {
-      setIsEditing(true);
-      setEditingId(editId);
-      // In a real app, you would fetch the transaction data here based on the ID
-      // For now, we'll keep the form empty since there's no dummy data
-    }
+    if (!editId) return;
+
+    setIsEditing(true);
+    setEditingId(editId);
+
+    // Fetch the existing transaction from backend
+    (async () => {
+      try {
+        const { data } = await api.get(`/transactions/${editId}`);
+        // Expecting: { type, date, category, amount, description }
+        setForm({
+          type: data.type || "expense",
+          date: (data.date || new Date().toISOString()).slice(0, 10),
+          category: data.category || "others",
+          amount: String(data.amount ?? ""),
+          description: data.description || "",
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load transaction to edit.");
+      }
+    })();
   }, []);
 
-  function handleSubmit(e) {
+  //submit data
+  async function handleSubmit(e) {
     e.preventDefault();
+
     const amt = Number(form.amount);
-    if (!form.date || !form.category || !amt || amt <= 0) {
+    if (!form.date || !form.category?.trim() || !amt || amt <= 0) {
       alert("Please fill date, category and a positive amount.");
       return;
     }
 
-    const transaction = {
-      ...form,
+    const payload = {
+      type: form.type || "EXPENSE",
+      date: form.date,
+      category: form.category.trim(),
       amount: amt,
-      id: editingId || crypto.randomUUID(),
+      description: form.description?.trim() || "",
     };
 
-    // In a real app, you would save to database here
-    console.log("Saving transaction:", transaction);
-    alert(
-      `${isEditing ? "Updated" : "Added"} transaction: ${
-        form.category
-      } - LKR ${amt.toLocaleString()}`
-    );
-
-    // Navigate back to transactions page
-    handleCancel();
+    try {
+      if (isEditing && editingId) {
+        // UPDATE
+        await api.patch(`/transactions/${editingId}`, payload);
+        alert("Transaction updated successfully.");
+      } else {
+        // CREATE
+        await api.post("/transactions", payload);
+        alert("Transaction added successfully.");
+      }
+      // Navigate back after success
+      navigate("/admin/finance/transaction");
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ||
+        (isEditing ? "Failed to update." : "Failed to add.");
+      alert(msg);
+    }
   }
 
   function handleCancel() {
     setForm({
       type: "expense",
       date: new Date().toISOString().slice(0, 10),
-      category: "",
+      category: "others",
       amount: "",
-      note: "",
+      description: "",
     });
-    // In a real app, this would navigate back to transactions page
-    alert("Navigate back to Transactions page");
+    navigate("/admin/finance/transaction");
   }
 
   return (
@@ -104,24 +136,9 @@ export default function AddTransactionPage() {
                         setForm((f) => ({ ...f, type: e.target.value }))
                       }
                     >
-                      <option value="expense">💸 Expense</option>
-                      <option value="income">💰 Income</option>
+                      <option value="EXPENSE">💸 Expense</option>
+                      <option value="INCOME">💰 Income</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg
-                        className="h-5 w-5 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -139,19 +156,44 @@ export default function AddTransactionPage() {
                 </div>
               </div>
 
+              {/* Category dropdown */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Category
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Feed, Fertilizer, Milk Sales, Crop Sales"
-                  className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                />
+                <div className="relative">
+                  <select
+                    className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200 appearance-none font-medium"
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -176,15 +218,15 @@ export default function AddTransactionPage() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Notes (Optional)
+                  Description
                 </label>
                 <textarea
                   placeholder="Additional details about this transaction..."
                   className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200 resize-none"
                   rows={4}
-                  value={form.note}
+                  value={form.description}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, note: e.target.value }))
+                    setForm((f) => ({ ...f, description: e.target.value }))
                   }
                 />
               </div>
@@ -196,106 +238,16 @@ export default function AddTransactionPage() {
                     onClick={handleSubmit}
                     className="inline-flex items-center px-8 py-4 border border-transparent text-base font-bold rounded-xl text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   >
-                    {isEditing ? (
-                      <>
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                          />
-                        </svg>
-                        Update Transaction
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
-                        Add Transaction
-                      </>
-                    )}
+                    {isEditing ? "Update Transaction" : "Add Transaction"}
                   </button>
                   <button
                     type="button"
                     onClick={handleCancel}
                     className="inline-flex items-center px-8 py-4 border-2 border-gray-300 text-base font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
                     Cancel
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Tips */}
-          <div className="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6 border border-emerald-100">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-emerald-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-emerald-800 mb-2">
-                  Quick Tips
-                </h3>
-                <ul className="text-sm text-emerald-700 space-y-1">
-                  <li>
-                    • Use clear category names like "Feed", "Fertilizer", "Milk
-                    Sales"
-                  </li>
-                  <li>
-                    • Add detailed notes to track specific purchases or sales
-                  </li>
-                  <li>
-                    • Record transactions promptly for accurate financial
-                    tracking
-                  </li>
-                  <li>
-                    • Consider setting up recurring transactions for regular
-                    expenses
-                  </li>
-                </ul>
               </div>
             </div>
           </div>
