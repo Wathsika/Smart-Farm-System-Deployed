@@ -45,12 +45,17 @@ const Sidebar = () => {
       location.pathname.startsWith("/admin/fields"),
     [location.pathname]
   );
+  const isOnLivestock = useMemo(
+    () => location.pathname.startsWith("/admin/livestock"),
+    [location.pathname]
+  );
 
-  // Accordions (Store & Crop open by default as requested)
+  // Accordions (Store & Crop open by default)
   const [isStoreOpen, setStoreOpen] = useState(isOnStore || true);
   const [isFinanceOpen, setFinanceOpen] = useState(isOnFinance || false);
   const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
   const [isCropOpen, setCropOpen] = useState(isOnCrop || true);
+  const [isLivestockOpen, setLivestockOpen] = useState(isOnLivestock || false);
 
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
@@ -59,8 +64,11 @@ const Sidebar = () => {
 
   const handleCropClick = () => {
     setCropOpen((v) => !v);
+  };
 
-    // navigate("/admin/crop"); // keep current behavior commented out
+  const handleLivestockClick = () => {
+    setLivestockOpen((v) => !v);
+    navigate("/admin/livestock");
   };
 
   return (
@@ -86,9 +94,44 @@ const Sidebar = () => {
         <div className="text-xs uppercase tracking-wider text-gray-400 px-3 mb-2 mt-4">
           Farm
         </div>
-        <SidebarLink to="/admin/livestock" icon="fas fa-cow">
-          Livestock
-        </SidebarLink>
+
+        {/* Livestock accordion */}
+        <button
+          onClick={handleLivestockClick}
+          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fas fa-cow w-5 text-center" />
+            <span>Livestock</span>
+          </div>
+          <motion.i
+            animate={{ rotate: isLivestockOpen ? 0 : -90 }}
+            className="fas fa-chevron-down text-xs"
+          />
+        </button>
+        <AnimatePresence>
+          {isLivestockOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden pl-6 space-y-1"
+            >
+              <SidebarLink to="/admin/livestock/profile" icon="fas fa-id-card">
+                Cow Profile
+              </SidebarLink>
+              <SidebarLink to="/admin/livestock/milk" icon="fas fa-tint">
+                Milk Production
+              </SidebarLink>
+              <SidebarLink to="/admin/livestock/health" icon="fas fa-heartbeat">
+                Health Records
+              </SidebarLink>
+              <SidebarLink to="/admin/livestock/breeding" icon="fas fa-venus-mars">
+                Breeding Records
+              </SidebarLink>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Crop accordion */}
         <button
@@ -119,8 +162,6 @@ const Sidebar = () => {
               <SidebarLink to="/admin/fields" icon="fas fa-map-marked-alt">
                 Farm Fields
               </SidebarLink>
-
-              {/* ⬇️ ADDED: Plans links under Crop */}
               <SidebarLink to="/admin/crop/plans" icon="fas fa-clipboard-list">
                 Plans
               </SidebarLink>
@@ -170,7 +211,7 @@ const Sidebar = () => {
           )}
         </AnimatePresence>
 
-        {/* Store accordion (unchanged) */}
+        {/* Store accordion */}
         <button
           type="button"
           onClick={handleStoreClick}
@@ -209,10 +250,7 @@ const Sidebar = () => {
               <SidebarLink to="/admin/store/discounts" icon="fas fa-tags">
                 Discounts
               </SidebarLink>
-              <SidebarLink
-                to="/admin/store/customers"
-                icon="fas fa-user-friends"
-              >
+              <SidebarLink to="/admin/store/customers" icon="fas fa-user-friends">
                 Customers
               </SidebarLink>
               <SidebarLink to="/admin/store/reports" icon="fas fa-chart-bar">
@@ -222,7 +260,7 @@ const Sidebar = () => {
           )}
         </AnimatePresence>
 
-        {/* Finance accordion (unchanged) */}
+        {/* Finance accordion */}
         <button
           type="button"
           onClick={() => setFinanceOpen((v) => !v)}
@@ -246,14 +284,12 @@ const Sidebar = () => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden pl-6 space-y-1"
             >
-              {/* Matches /admin/finance/overview etc. from App.jsx */}
               <SidebarLink
                 to="/admin/finance/overview"
                 icon="fas fa-chart-line"
               >
                 Overview
               </SidebarLink>
-
               <SidebarLink
                 to="/admin/finance/transaction"
                 icon="fas fa-receipt"
@@ -266,7 +302,6 @@ const Sidebar = () => {
               >
                 Add New Transaction
               </SidebarLink>
-
               <SidebarLink
                 to="/admin/finance/payroll_management"
                 icon="fas fa-file-invoice-dollar"

@@ -18,6 +18,12 @@ import { stripeWebhookHandler } from "./controllers/order.controller.js";
 // --- Routes (ESM imports; .js extensions required) ---
 import productRoutes from "./routes/product.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+
+import cowRoutes from "./routes/cow.routes.js";
+import milkRoutes from "./routes/milk.routes.js";
+import healthRoutes from "./routes/health.routes.js";
+import breedingRoutes from "./routes/breeding.routes.js";
+
 import staffOwnerRoutes from "./routes/staffOwner.routes.js";
 import employeeRoutes from "./routes/employee.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -27,6 +33,7 @@ import taskRoutes from "./routes/task.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import discountRoutes from "./routes/discount.routes.js";
+
 
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
@@ -87,6 +94,12 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/cows", cowRoutes);
+app.use("/api/milk", milkRoutes);
+app.use("/api/health", healthRoutes);
+app.use("/api/breeding", breedingRoutes);  
+
 app.use("/api/discounts", discountRoutes);
 app.use("/api/admin/users", staffOwnerRoutes);
 app.use("/api/employee", employeeRoutes);
@@ -95,6 +108,7 @@ app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
 
 app.use("/api/transactions", transactionRoutes);
+
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
