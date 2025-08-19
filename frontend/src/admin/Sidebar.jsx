@@ -125,9 +125,6 @@ const Sidebar = () => {
               <SidebarLink to="/admin/crop/plans" icon="fas fa-clipboard-list">
                 Plans
               </SidebarLink>
-              <SidebarLink to="/admin/crop/plan/new" icon="fas fa-plus-circle">
-                Add Plan
-              </SidebarLink>
             </motion.div>
           )}
         </AnimatePresence>
