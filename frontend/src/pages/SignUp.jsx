@@ -12,6 +12,8 @@ import {
   Shield,
 } from "lucide-react";
 
+import { useNavigate } from "react-router-dom";
+
 export default function SignupPage() {
   const [form, setForm] = useState({
     firstName: "",
@@ -27,6 +29,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const navigate = useNavigate();
 
   const calculatePasswordStrength = (password) => {
     let strength = 0;
@@ -446,8 +449,11 @@ export default function SignupPage() {
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
             <p className="text-gray-600">
               Already have an account?{" "}
-              <button className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline">
-                Sign in here
+              <button
+                className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline"
+                onClick={() => navigate("/login")}
+              >
+                Log In
               </button>
             </p>
           </div>
