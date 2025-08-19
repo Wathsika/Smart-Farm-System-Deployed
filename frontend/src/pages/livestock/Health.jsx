@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FaPlus, FaSearch, FaCalendarAlt, FaEllipsisV } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { api } from "../../lib/api";
 import {
   AddHealthModal, EditHealthModal, ViewHealthModal,
   AddVaccModal, EditVaccModal, ViewVaccModal,
 } from "./HealthModals";
 
 /* ================== Config ================== */
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 const DAYS_WINDOW = 180;
 
 /* ================== Utils ================== */
@@ -151,20 +151,23 @@ export default function Health() {
   /* load cows */
   useEffect(() => {
     (async () => {
-      try { const r = await fetch(`${API}/api/cows`); const j = await r.json(); setCows(Array.isArray(j)? j: []); }
-      catch { setCows([]); }
+      try {
+        const r = await api.get("/cows");
+        setCows(Array.isArray(r.data) ? r.data : []);
+      } catch {
+        setCows([]);
+      }
     })();
   }, []);
 
   /* load health (not vaccination) */
   async function loadHealth() {
     try {
-      const url = new URL(`${API}/api/health`);
-      if (cowId !== "all") url.searchParams.set("cow", cowId);
-      if (dateFilter) { url.searchParams.set("from", dateFilter); url.searchParams.set("to", dateFilter); }
-      url.searchParams.set("limit","200"); url.searchParams.set("page","1");
-      const r = await fetch(url.toString()); const j = await r.json();
-      let items = Array.isArray(j?.items) ? j.items : [];
+      const params = { limit: "200", page: "1" };
+      if (cowId !== "all") params.cow = cowId;
+      if (dateFilter) { params.from = dateFilter; params.to = dateFilter; }
+      const r = await api.get("/health", { params });
+      let items = Array.isArray(r.data?.items) ? r.data.items : [];
       items = items.filter(x => (x.type || "").toUpperCase() !== "VACCINATION");
       const q = search.trim().toLowerCase();
       if (q) {
@@ -174,7 +177,9 @@ export default function Health() {
       }
       items.sort((a,b) => new Date(b.date) - new Date(a.date) || new Date(b.createdAt||0) - new Date(a.createdAt||0));
       setHealth(items);
-    } catch { setHealth([]); }
+    } catch {
+      setHealth([]);
+    }
   }
   useEffect(() => { loadHealth(); }, [cowId, dateFilter]);
   useEffect(() => { const t = setTimeout(loadHealth, 250); return () => clearTimeout(t); }, [search]);
@@ -182,11 +187,10 @@ export default function Health() {
   /* load vaccinations (type VACCINATION only) */
   async function loadVaccs() {
     try {
-      const url = new URL(`${API}/api/health`);
-      if (cowId !== "all") url.searchParams.set("cow", cowId);
-      url.searchParams.set("limit","400"); url.searchParams.set("page","1");
-      const r = await fetch(url.toString()); const j = await r.json();
-      let rows = Array.isArray(j?.items) ? j.items : [];
+      const params = { limit: "400", page: "1" };
+      if (cowId !== "all") params.cow = cowId;
+      const r = await api.get("/health", { params });
+      let rows = Array.isArray(r.data?.items) ? r.data.items : [];
       rows = rows
         .filter(x => (x.type || "").toUpperCase() === "VACCINATION" && x.nextDueDate)
         .sort((a,b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
@@ -200,7 +204,9 @@ export default function Health() {
         );
       }
       setVaccs(rows);
-    } catch { setVaccs([]); }
+    } catch {
+      setVaccs([]);
+    }
   }
   useEffect(() => { loadVaccs(); }, [cowId, dateFilter]);
   useEffect(() => { const t = setTimeout(loadVaccs, 250); return () => clearTimeout(t); }, [search]);
@@ -209,10 +215,11 @@ export default function Health() {
   const onDeleteRecord = async (row) => {
     if (!confirm(`Delete record for ${(row.cow?.name || row.cow?.tagId || "cow")} on ${fmtDate(row.date)}?`)) return;
     try {
-      const r = await fetch(`${API}/api/health/${row._id}`, { method:"DELETE" });
-      if (!r.ok) throw new Error("delete");
+      await api.delete(`/health/${row._id}`);
       await Promise.all([loadHealth(), loadVaccs()]);
-    } catch { alert("Failed to delete"); }
+    } catch {
+      alert("Failed to delete");
+    }
   };
 
   const soonestVacc = useMemo(() => {
