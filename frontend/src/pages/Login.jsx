@@ -6,9 +6,12 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  CheckCircle,
   AlertCircle,
 } from "lucide-react";
+
+import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -19,7 +22,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors = {};
@@ -48,29 +52,24 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrors({});
 
+    // const response = await fetch('/api/auth/login', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ email: form.email, password: form.password, rememberMe: form.rememberMe })
+    // });
+
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Mock successful login
-      setLoginSuccess(true);
-
-      // In a real app, you would:
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email: form.email, password: form.password, rememberMe: form.rememberMe })
-      // });
-
-      setTimeout(() => {
-        alert("Login successful! 🎉\nRedirecting to dashboard...");
-        setLoginSuccess(false);
-        setIsLoading(false);
-      }, 1000);
-    } catch (error) {
-      setErrors({
-        submit: "Login failed. Please check your credentials and try again.",
+      const { data } = await api.post("/auth/login", {
+        email: form.email,
+        password: form.password,
+        rememberMe: form.rememberMe,
       });
+      login({ token: data.token, user: data.user });
+      navigate("/");
+    } catch (error) {
+      setErrors({ submit: error.response?.data?.message });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -203,21 +202,14 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              disabled={isLoading || loginSuccess}
+              disabled={isLoading}
               className={`w-full py-4 rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
-                loginSuccess
-                  ? "bg-green-600 hover:bg-green-700"
-                  : isLoading
+                isLoading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg"
               }`}
             >
-              {loginSuccess ? (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Login Successful!
-                </>
-              ) : isLoading ? (
+              {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Signing in...
