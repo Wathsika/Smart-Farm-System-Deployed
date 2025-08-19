@@ -27,6 +27,8 @@ import orderRoutes from "./routes/order.routes.js";
 // --- 1. IMPORT THE NEW DISCOUNT ROUTE FILE ---
 import discountRoutes from './routes/discount.routes.js'; 
 
+import performanceRoutes from "./routes/performance.routes.js";
+
 
 // --- Initialize App & DB ---
 const app = express();
@@ -77,7 +79,7 @@ app.use("/api/leave-requests", leaveRequestRoutes); // future employee self-serv
 app.use("/api/tasks", taskRoutes);
 // Health check
 app.get("/", (_req, res) => res.json({ ok: true }));
-
+app.use("/api/performance", performanceRoutes);
 
 // --- Error Handling Middleware (must be last) ---
 

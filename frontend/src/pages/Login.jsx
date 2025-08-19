@@ -22,8 +22,11 @@ export default function Login() {
       // Navigate based on user role
       if (data.user.role === 'Admin') {
         navigate("/admin/users");
-      } else {
-        navigate("/"); // Navigate to home for other roles
+      } else if (data.user.role === 'Employee') {
+        navigate("/dashboard"); // Navigate to home for other roles
+      }
+      else{
+        navigate("/")
       }
 
     } catch (err) {
