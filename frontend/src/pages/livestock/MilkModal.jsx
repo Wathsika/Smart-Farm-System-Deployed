@@ -1,6 +1,5 @@
 import React from "react";
-
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+import { api } from "../../lib/api";
 const todayKey = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -42,12 +41,7 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
         shift: form.shift,
         volumeLiters: Number(form.liters || 0),
       };
-      const r = await fetch(`${API}/api/milk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error("Failed to add record");
+      await api.post("/milk", body);
       onSaved?.();
       onClose();
     } catch (err) {
@@ -161,20 +155,12 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
 
   // --- helper upserts ---
   const postOne = (cowId, date, shift, liters) =>
-    fetch(`${API}/api/milk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cow: cowId, date, shift, volumeLiters: Number(liters) }),
-    });
+    api.post("/milk", { cow: cowId, date, shift, volumeLiters: Number(liters) });
 
   const putOne = (id, date, shift, liters) =>
-    fetch(`${API}/api/milk/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, shift, volumeLiters: Number(liters) }),
-    });
+    api.put(`/milk/${id}`, { date, shift, volumeLiters: Number(liters) });
 
-  const delOne = (id) => fetch(`${API}/api/milk/${id}`, { method: "DELETE" });
+  const delOne = (id) => api.delete(`/milk/${id}`);
 
   async function saveBoth() {
     const { cowId: oldCow, date: oldDate } = originalRef.current;   // ← use ORIGINAL
@@ -182,9 +168,15 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
     const newDate = form.date;
 
     // fetch existing AM/PM docs for the ORIGINAL identity
-    const qsOld = new URLSearchParams({ cow: oldCow, from: oldDate, to: oldDate, limit: 10 }).toString();
-    const r0 = await fetch(`${API}/api/milk?${qsOld}`);
-    const { items: oldItems = [] } = r0.ok ? await r0.json() : { items: [] };
+    let oldItems = [];
+    try {
+      const r0 = await api.get("/milk", {
+        params: { cow: oldCow, from: oldDate, to: oldDate, limit: 10 },
+      });
+      oldItems = r0.data?.items || [];
+    } catch {
+      oldItems = [];
+    }
     const amOld = oldItems.find((i) => i.shift === "AM");
     const pmOld = oldItems.find((i) => i.shift === "PM");
 
@@ -227,7 +219,7 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
       await saveBoth();
       onSaved?.();
       onClose();
-    } catch (e) {
+    } catch {
       alert("Failed to save changes");
     } finally {
       setSaving(false);
