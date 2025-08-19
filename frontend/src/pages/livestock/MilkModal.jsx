@@ -1,6 +1,6 @@
 import React from "react";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 const todayKey = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);

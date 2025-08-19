@@ -31,7 +31,8 @@ Smart Farm System is a full-stack application for managing farm operations. The 
 ## Frontend Setup
 1. `cd frontend`
 2. `npm install`
-3. `npm run dev` to launch the Vite dev server
+3. Create a `.env` file with the variables listed below
+4. `npm run dev` to launch the Vite dev server
 
 ### Frontend Environment Variables
 | Variable | Description |
