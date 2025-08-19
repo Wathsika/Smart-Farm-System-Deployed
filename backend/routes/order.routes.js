@@ -1,25 +1,41 @@
 import express from 'express';
+
+// Controllers
 import {
   createCheckoutSession,
   stripeWebhookHandler,
   getAllOrders,
   getOrderById,
-  updateOrderStatus
+  updateOrderStatus,
+  getMyOrders,
+  cancelOrder,
+  getOrderBySessionId
 } from '../controllers/order.controller.js';
-// import { protect, admin } from '../middlewares/auth.js'; // You will uncomment these later
+
+// Auth
+import { requireAuth as protect, requireRole } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-// --- Customer Facing Routes ---
+// --- Public & Customer-Facing ---
+
 router.post('/create-checkout-session', express.json(), createCheckoutSession);
-router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
+// This path remains for compatibility with your existing setup
+router.post('/webhook', stripeWebhookHandler);
 
-// --- Admin Facing Routes ---
-// For now, these are public. Later, you'll add `protect` and `admin` middleware.
-router.get('/', getAllOrders);
-router.get('/:id', getOrderById);
-router.put('/:id/status', express.json(), updateOrderStatus);
+// ✅ Make the session lookup PUBLIC so success page works without login
+router.get('/session/:sessionId', getOrderBySessionId);
 
+// User’s own orders (requires auth)
+router.get('/myorders', protect, getMyOrders);
+
+// Cancel own order (requires auth)
+router.put('/:id/cancel', protect, cancelOrder);
+
+// --- Admin-only ---
+router.get('/', protect, requireRole('Admin'), getAllOrders);
+router.get('/:id', protect, requireRole('Admin'), getOrderById);
+router.put('/:id/status', protect, requireRole('Admin'), express.json(), updateOrderStatus);
 
 export default router;

@@ -9,6 +9,17 @@ const orderItemSchema = new mongoose.Schema({
   image: { type: String },
 });
 
+// Optional discount applied to the order
+const discountSchema = new mongoose.Schema(
+  {
+    discountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Discount' },
+    code: { type: String },
+    amount: { type: Number },
+    type: { type: String },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     // Customer info (for guest checkout)
@@ -26,9 +37,17 @@ const orderSchema = new mongoose.Schema(
       country: { type: String, default: "Sri Lanka" }
     },
 
-    totalPrice: { 
-      type: Number, 
-      required: true 
+      // Final price after discount (if any)
+       discount: {
+      discountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Discount' },
+      amount: { type: Number },
+      code: { type: String },
+      type: { type: String }
+    },
+
+    totalPrice: {
+      type: Number,
+      required: true
     },
     
     // Payment Status - from Stripe

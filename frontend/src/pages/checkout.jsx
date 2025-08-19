@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCart } from '../context/CartContext'; // Correct: using your CartContext
-import { Link, Navigate } from 'react-router-dom'; // Using Navigate for empty cart
+import { Navigate } from 'react-router-dom'; // Using Navigate for empty cart
 import { api } from '../lib/api'; // Correct: using your configured axios instance
 
 // This is a great reusable component! No changes needed here.
@@ -24,19 +24,36 @@ const InputField = ({ id, label, value, onChange, placeholder, required = false,
 
 
 export default function CheckoutPage() {
-    const { cartItems, cartTotal } = useCart();
+   const { cartItems, cartTotal, discountAmount, totalAfterDiscount, discount, applyDiscountCode, removeDiscount } = useCart();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
     const [customerInfo, setCustomerInfo] = useState({
         name: '', email: '', phone: '',
         addressLine1: '', city: '', postalCode: ''
     });
+const [promoCode, setPromoCode] = useState('');
+    const [promoMessage, setPromoMessage] = useState(null);
+    const totalRef = useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setCustomerInfo(prevState => ({ ...prevState, [name]: value }));
     };
 
+    const handleApplyPromo = async () => {
+        try {
+            await applyDiscountCode(promoCode);
+            setPromoMessage({ type: 'success', text: 'Discount applied!' });
+        } catch (e) {
+            setPromoMessage({ type: 'error', text: e.response?.data?.message || 'Invalid promo code.' });
+        }
+    };
+
+    const handleRemovePromo = () => {
+        removeDiscount();
+        setPromoCode('');
+        setPromoMessage(null);
+    };
     // --- THIS IS THE MAIN LOGIC CHANGE ---
     // This function now sends data to our backend to create a Stripe session.
     const handleProceedToPayment = async (e) => {
@@ -55,10 +72,14 @@ export default function CheckoutPage() {
 
         try {
             // Send cart and customer info to the backend
-            const { data } = await api.post('/orders/create-checkout-session', {
-                cartItems,
-                customerInfo
-            });
+            const payload = {
+                 cartItems,
+                  customerInfo,
+            };
+            if (discount && discountAmount > 0) {
+                payload.discountId = discount._id;
+            }
+            const { data } = await api.post('/orders/create-checkout-session', payload);
             
             // If the backend successfully creates a session, it will return a URL.
             // Redirect the user to this Stripe-hosted payment page.
@@ -73,6 +94,14 @@ export default function CheckoutPage() {
             setIsProcessing(false);
         }
     };
+    
+
+    useEffect(() => {
+        if (totalRef.current) {
+            const displayed = parseFloat(totalRef.current.textContent.replace('Rs', '').trim());
+            console.assert(Math.abs(displayed - totalAfterDiscount) < 0.01, 'Displayed total does not match totalAfterDiscount');
+        }
+    }, [totalAfterDiscount]);
     
     // If the cart is empty, redirect the user to the store page.
     if (cartItems.length === 0 && !isProcessing) {
@@ -128,11 +157,44 @@ export default function CheckoutPage() {
                                             </div>
                                         ))}
                                     </div>
-
+                                     <div className="mt-6">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={promoCode}
+                                                onChange={e => setPromoCode(e.target.value)}
+                                                placeholder="Promo code"
+                                                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleApplyPromo}
+                                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {promoMessage && (
+                                            <p className={`mt-2 text-sm ${promoMessage.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{promoMessage.text}</p>
+                                        )}
+                                    </div>
                                     <div className="mt-6 border-t pt-6 space-y-4">
+                                         <div className="flex justify-between">
+                                            <span>Subtotal</span>
+                                            <span>Rs {cartTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Discount {discount ? `(${discount.code})` : ''}</span>
+                                            <span>-Rs {discountAmount.toFixed(2)}</span>
+                                        </div>
+                                        {discount && (
+                                            <div className="text-right -mt-2">
+                                                <button type="button" onClick={handleRemovePromo} className="text-xs text-blue-600 underline">Remove</button>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between font-bold text-xl text-gray-800">
                                             <span>Total</span>
-                                            <span>Rs {cartTotal.toFixed(2)}</span>
+                                             <span ref={totalRef}>Rs {totalAfterDiscount.toFixed(2)}</span>
                                         </div>
 
                                         {error && (
