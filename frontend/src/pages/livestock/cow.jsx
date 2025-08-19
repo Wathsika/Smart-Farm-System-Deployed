@@ -2,8 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { FaPlus, FaSearch, FaEllipsisV } from "react-icons/fa";
 import { ActionsMenuPortal, CowFormModal, ViewCowModal  } from "./CowModals";
-
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+import { api } from "../../lib/api";
 
 const StatusPill = ({ children, tone = "active" }) => (
   <span
@@ -63,9 +62,7 @@ export default function CowProfilePage() {
   useEffect(() => {
   (async () => {
     try {
-      const r = await fetch(`${API}/api/cows`);
-      if (!r.ok) throw new Error("Could not fetch data");
-      const data = await r.json();
+      const { data } = await api.get("/cows");
       setCows(sortByCowIdAsc(Array.isArray(data) ? data : []));
     } catch (err) {
       setError("Failed to load cows. Please check API connection.");
@@ -118,13 +115,7 @@ export default function CowProfilePage() {
     setError("");
     try {
       // JSON only for now. Switch to FormData if you add file upload.
-      const r = await fetch(`${API}/api/cows`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      if (!r.ok) throw new Error("Backend validation failed");
-      const created = await r.json();
+      const { data: created } = await api.post("/cows", values);
       setCows((prev) => [created, ...prev]);
       setAddOpen(false);
     } catch (err) {
@@ -155,13 +146,7 @@ export default function CowProfilePage() {
     setSaving(true);
     setError("");
     try {
-      const r = await fetch(`${API}/api/cows/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      if (!r.ok) throw new Error("Failed to update cow");
-      const updated = await r.json();
+      const { data: updated } = await api.put(`/cows/${editId}`, values);
       setCows((prev) => prev.map((c) => (c._id === editId ? updated : c)));
       setEditOpen(false);
       setEditId(null);
@@ -175,7 +160,7 @@ export default function CowProfilePage() {
   async function deleteCow(id) {
     if (!window.confirm("Are you sure you want to delete this cow?")) return;
     try {
-      await fetch(`${API}/api/cows/${id}`, { method: "DELETE" });
+      await api.delete(`/cows/${id}`);
       setCows((prev) => prev.filter((c) => c._id !== id));
       closeMenu();
     } catch {
