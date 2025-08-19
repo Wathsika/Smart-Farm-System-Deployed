@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { FaPlus, FaSearch, FaEllipsisV } from "react-icons/fa";
 import { ActionsMenuPortal, CowFormModal, ViewCowModal  } from "./CowModals";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 
 const StatusPill = ({ children, tone = "active" }) => (
   <span

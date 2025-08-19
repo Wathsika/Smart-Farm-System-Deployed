@@ -1,7 +1,7 @@
 // HealthModals.jsx (Updated and Fixed Code)
 import React, { useEffect, useState } from "react";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
 const pad = (n) => String(n).padStart(2, "0");
 const liso = (d) => { 
   if (!d) return "";
