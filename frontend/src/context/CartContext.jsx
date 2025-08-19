@@ -1,69 +1,100 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { api } from '../lib/api';
 
 // 1. Create the context
 const CartContext = createContext();
 
-// 2. Create a custom hook to use the context easily
-export const useCart = () => {
-  return useContext(CartContext);
-};
+// 2. Create the custom hook
+export const useCart = () => useContext(CartContext);
 
-// 3. Create the Provider component
+
+// 3. Create the ONE and ONLY Provider component
+//    (This was previously named 'FullCartProvider')
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
-
-  // Function to add a product to the cart
-  const addToCart = (product) => {
-    setCartItems(prevItems => {
-      // Check if the item already exists in the cart
-      const existingItem = prevItems.find(item => item._id === product._id);
-
-      if (existingItem) {
-        // If it exists, map through and increase the quantity of that item
-        return prevItems.map(item =>
-          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        // If it's a new item, add it to the cart with quantity 1
-        return [...prevItems, { ...product, quantity: 1 }];
-      }
+    // State for cart items, initialized from localStorage
+    const [cartItems, setCartItems] = useState(() => {
+        try {
+            const data = localStorage.getItem('smartfarm_cart_items');
+            return data ? JSON.parse(data) : [];
+        } catch {
+            return [];
+        }
     });
-  };
 
-  // Function to remove an item from the cart
-  const removeFromCart = (productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
-  };
-
-  // Function to update the quantity of an item
-  const updateQuantity = (productId, newQuantity) => {
-    const quantity = Number(newQuantity);
-    setCartItems(prevItems => {
-      if (quantity < 1) {
-        // If quantity is less than 1, remove the item
-        return prevItems.filter(item => item._id !== productId);
-      }
-      return prevItems.map(item =>
-        item._id === productId ? { ...item, quantity: quantity } : item
-      );
+    // State for applied discount, initialized from localStorage
+    const [discount, setDiscount] = useState(() => {
+        try {
+            const data = localStorage.getItem('smartfarm_cart_discount');
+            return data ? JSON.parse(data) : null;
+        } catch {
+            return null;
+        }
     });
-  };
 
-  // Calculate total items for the badge
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+    // Save state to localStorage whenever it changes
+    useEffect(() => { localStorage.setItem('smartfarm_cart_items', JSON.stringify(cartItems)); }, [cartItems]);
+    useEffect(() => { localStorage.setItem('smartfarm_cart_discount', JSON.stringify(discount)); }, [discount]);
 
-  // The value that will be available to all children
-  const value = {
-    cartItems,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    totalItems,
-  };
+     // --- Calculated Values ---
+    const cartTotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
+    const totalItemsInCart = cartItems.reduce((t, i) => t + i.quantity, 0);
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
+
+    // --- All Cart & Discount Functions ---
+    const addToCart = useCallback((product) => setCartItems(p => {
+        const exist = p.find(i => i._id === product._id);
+        return exist
+            ? p.map(i => i._id === product._id ? { ...i, quantity: i.quantity + 1 } : i)
+            : [...p, { ...product, quantity: 1 }];
+    }), []);
+    const updateQuantity = useCallback((id, q) => setCartItems(p => p.map(i => i._id === id ? { ...i, quantity: Math.max(0, Number(q)) } : i).filter(i => i.quantity > 0)), []);
+    const removeFromCart = useCallback((id) => setCartItems(p => p.filter(i => i._id !== id)), []);
+    const clearCart = useCallback(() => { setCartItems([]); setDiscount(null); }, []);
+
+    const applyDiscountCode = useCallback(async (code) => {
+        try {
+       const { data } = await api.post('/discounts/validate', { code });
+            if (cartTotal >= data.minPurchase) {
+                setDiscount({ ...data, source: 'CODE' });
+                return { success: true };
+            }
+            return { success: false };
+        } catch (e) {
+            setDiscount(null);
+            throw e;
+        }
+    }, [cartTotal]);
+
+    const fetchAutoDiscount = useCallback(async () => {
+        try {
+            const { data } = await api.get('/discounts/active');
+            if (cartTotal >= data.minPurchase && (!discount || discount.source !== 'CODE')) {
+                setDiscount({ ...data, source: 'AUTO' });
+            } else if (discount?.source === 'AUTO') {
+                setDiscount(null);
+            }
+        } catch {
+            if (discount?.source === 'AUTO') setDiscount(null);
+        }
+    }, [cartTotal, discount]);
+
+    const removeDiscount = useCallback(() => setDiscount(null), []);
+
+    // --- Calculated Values ---
+    useEffect(() => { fetchAutoDiscount(); }, [cartTotal]);
+    useEffect(() => { if (!discount) fetchAutoDiscount(); }, [discount]);
+
+    let discountAmount = 0;
+    let isDiscountValid = false;
+    if (discount && cartTotal >= discount.minPurchase) {
+        isDiscountValid = true;
+        discountAmount = discount.type === 'PERCENTAGE' ? cartTotal * (discount.value / 100) : discount.value;
+        discountAmount = Math.min(discountAmount, cartTotal);
+    }
+    const totalAfterDiscount = cartTotal - discountAmount;
+    
+    // The value provided to all consuming components
+    const value = { cartItems, addToCart, updateQuantity, removeFromCart, clearCart, cartTotal, totalItemsInCart, discount, discountAmount, totalAfterDiscount, isDiscountValid, applyDiscountCode, removeDiscount };
+    
+    return (<CartContext.Provider value={value}>{children}</CartContext.Provider>);
 };
