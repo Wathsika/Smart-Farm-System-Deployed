@@ -1,7 +1,16 @@
 // backend/routes/milk.routes.js
-const express = require("express");
-const ctrl = require("../controllers/milk.controller");
-const mongoose = require("mongoose");
+import express from "express";
+import mongoose from "mongoose";
+import {
+  createMilk,
+  listMilk,
+  getMilk,
+  updateMilk,
+  deleteMilk,
+  farmDailyTotals,
+  cowDailyTimeline,
+  cowMonthlyStats,
+} from "../controllers/milk.controller.js";
 
 const router = express.Router();
 
@@ -15,15 +24,15 @@ const oid = (param = "id") => (req, res, next) => {
 };
 
 /* --- analytics first (more specific paths) --- */
-router.get("/summary/farm/daily", ctrl.farmDailyTotals);
-router.get("/cow/:cowId/daily", oid("cowId"), ctrl.cowDailyTimeline);
-router.get("/cow/:cowId/monthly", oid("cowId"), ctrl.cowMonthlyStats);
+router.get("/summary/farm/daily", farmDailyTotals);
+router.get("/cow/:cowId/daily", oid("cowId"), cowDailyTimeline);
+router.get("/cow/:cowId/monthly", oid("cowId"), cowMonthlyStats);
 
 /* --- CRUD --- */
-router.post("/", ctrl.createMilk);
-router.get("/", ctrl.listMilk);
-router.get("/:id", oid("id"), ctrl.getMilk);
-router.put("/:id", oid("id"), ctrl.updateMilk);
-router.delete("/:id", oid("id"), ctrl.deleteMilk);
+router.post("/", createMilk);
+router.get("/", listMilk);
+router.get("/:id", oid("id"), getMilk);
+router.put("/:id", oid("id"), updateMilk);
+router.delete("/:id", oid("id"), deleteMilk);
 
-module.exports = router;
+export default router;

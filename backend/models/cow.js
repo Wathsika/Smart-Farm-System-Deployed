@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const counterSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
@@ -38,4 +38,6 @@ cowSchema.pre('save', async function (next) {
   } catch (e) { next(e); }
 });
 
-module.exports = mongoose.model('Cow', cowSchema);
+const Cow = mongoose.model('Cow', cowSchema);
+
+export default Cow;

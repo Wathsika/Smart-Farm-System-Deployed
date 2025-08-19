@@ -1,7 +1,14 @@
 // backend/routes/health.routes.js
-const express = require("express");
-const mongoose = require("mongoose");
-const ctrl = require("../controllers/health.controller");
+import express from "express";
+import mongoose from "mongoose";
+import {
+  createHealth,
+  listHealth,
+  getHealth,
+  updateHealth,
+  deleteHealth,
+  upcomingDue,
+} from "../controllers/health.controller.js";
 
 const router = express.Router();
 const oid = (param = "id") => (req, res, next) => {
@@ -11,15 +18,15 @@ const oid = (param = "id") => (req, res, next) => {
 };
 
 /* analytics */
-router.get("/due", ctrl.upcomingDue);
+router.get("/due", upcomingDue);
 
 /* CRUD */
-router.post("/", ctrl.createHealth);
-router.get("/", ctrl.listHealth);
-router.get("/:id", oid("id"), ctrl.getHealth);
-router.put("/:id", oid("id"), ctrl.updateHealth);
-router.delete("/:id", oid("id"), ctrl.deleteHealth);
+router.post("/", createHealth);
+router.get("/", listHealth);
+router.get("/:id", oid("id"), getHealth);
+router.put("/:id", oid("id"), updateHealth);
+router.delete("/:id", oid("id"), deleteHealth);
 
-router.get("/upcoming-due", ctrl.upcomingDue);
+router.get("/upcoming-due", upcomingDue);
 
-module.exports = router;
+export default router;

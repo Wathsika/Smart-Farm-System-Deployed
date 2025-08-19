@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const breedingSchema = new mongoose.Schema(
   {
@@ -90,4 +90,6 @@ breedingSchema.pre("save", function (next) {
 breedingSchema.index({ cow: 1, eventType: 1, serviceDate: -1 });
 breedingSchema.index({ nextDueDate: 1 });
 
-module.exports = mongoose.models.Breeding || mongoose.model("Breeding", breedingSchema);
+const Breeding = mongoose.models.Breeding || mongoose.model("Breeding", breedingSchema);
+
+export default Breeding;

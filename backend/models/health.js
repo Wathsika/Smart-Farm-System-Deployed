@@ -1,5 +1,5 @@
 // backend/models/health.js
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const healthSchema = new mongoose.Schema(
   {
@@ -28,4 +28,6 @@ const healthSchema = new mongoose.Schema(
 // helpful compound index for ranges
 healthSchema.index({ cow: 1, date: -1, type: 1 });
 
-module.exports = mongoose.models.Health || mongoose.model("Health", healthSchema);
+const Health = mongoose.models.Health || mongoose.model("Health", healthSchema);
+
+export default Health;

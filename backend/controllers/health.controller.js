@@ -1,7 +1,7 @@
 // backend/controllers/health.controller.js
-const mongoose = require("mongoose");
-const Health = require("../models/health");
-const Cow = require("../models/cow");
+import mongoose from "mongoose";
+import Health from "../models/health.js";
+import Cow from "../models/cow.js";
 
 function startOfDay(input) {
   const d = new Date(input);
@@ -11,7 +11,7 @@ function startOfDay(input) {
 }
 
 /* ----------- CRUD ----------- */
-exports.createHealth = async (req, res, next) => {
+export const createHealth = async (req, res, next) => {
   try {
     const { cow, date, type = "CHECKUP", temperatureC, weightKg, symptoms, diagnosis, medication, dosage, vet, nextDueDate, notes, recordedBy } = req.body;
     if (!cow || !date) return res.status(400).json({ message: "cow and date are required" });
@@ -30,7 +30,7 @@ exports.createHealth = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.listHealth = async (req, res, next) => {
+export const listHealth = async (req, res, next) => {
   try {
     const { cow, type, from, to, page = 1, limit = 20 } = req.query;
     const q = {};
@@ -56,7 +56,7 @@ exports.listHealth = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.getHealth = async (req, res, next) => {
+export const getHealth = async (req, res, next) => {
   try {
     const doc = await Health.findById(req.params.id).populate("cow","name tagId breed gender bday");
     if (!doc) return res.status(404).json({ message: "Record not found" });
@@ -64,7 +64,7 @@ exports.getHealth = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.updateHealth = async (req, res, next) => {
+export const updateHealth = async (req, res, next) => {
   try {
     const payload = { ...req.body };
     if (payload.date) {
@@ -82,7 +82,7 @@ exports.updateHealth = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-exports.deleteHealth = async (req, res, next) => {
+export const deleteHealth = async (req, res, next) => {
   try {
     const del = await Health.findByIdAndDelete(req.params.id);
     if (!del) return res.status(404).json({ message: "Record not found" });
@@ -92,7 +92,7 @@ exports.deleteHealth = async (req, res, next) => {
 
 /* ----------- Extras ----------- */
 // upcoming due (default next 14 days)
-exports.upcomingDue = async (req, res, next) => {
+export const upcomingDue = async (req, res, next) => {
   try {
     const days = Number(req.query.days || 14);
     const from = startOfDay(new Date());

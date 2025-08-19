@@ -1,9 +1,9 @@
-const mongoose = require("mongoose");
-const Breeding = require("../models/breeding");
-const Cow = require("../models/cow"); // optional: to validate cow exists
+import mongoose from "mongoose";
+import Breeding from "../models/breeding.js";
+import Cow from "../models/cow.js"; // optional: to validate cow exists
 
 /* Create */
-exports.createBreeding = async (req, res, next) => {
+export const createBreeding = async (req, res, next) => {
   try {
     const body = req.body;
 
@@ -27,7 +27,7 @@ exports.createBreeding = async (req, res, next) => {
 };
 
 /* List with filters */
-exports.listBreeding = async (req, res, next) => {
+export const listBreeding = async (req, res, next) => {
   try {
     const { cow, eventType, status, from, to, dueFrom, dueTo, limit = 50, page = 1 } = req.query;
     const q = {};
@@ -59,7 +59,7 @@ exports.listBreeding = async (req, res, next) => {
 };
 
 /* Get one */
-exports.getBreeding = async (req, res, next) => {
+export const getBreeding = async (req, res, next) => {
   try {
     const { id } = req.params;
     const doc = await Breeding.findById(id).populate("cow", "cowId name breed gender bday");
@@ -71,7 +71,7 @@ exports.getBreeding = async (req, res, next) => {
 };
 
 /* Update */
-exports.updateBreeding = async (req, res, next) => {
+export const updateBreeding = async (req, res, next) => {
   try {
     const { id } = req.params;
     const body = req.body;
@@ -90,7 +90,7 @@ exports.updateBreeding = async (req, res, next) => {
 };
 
 /* Delete */
-exports.deleteBreeding = async (req, res, next) => {
+export const deleteBreeding = async (req, res, next) => {
   try {
     const { id } = req.params;
     const ok = await Breeding.findByIdAndDelete(id);
@@ -104,7 +104,7 @@ exports.deleteBreeding = async (req, res, next) => {
 /* ------- Analytics / helper endpoints ------- */
 
 /** Upcoming dues (preg check, calvings) within a window */
-exports.upcomingDue = async (req, res, next) => {
+export const upcomingDue = async (req, res, next) => {
   try {
     const { days = 30 } = req.query;
     const from = new Date();
@@ -124,7 +124,7 @@ exports.upcomingDue = async (req, res, next) => {
 };
 
 /** Repeat breeders: cows with >=3 inseminations in last 90 days */
-exports.repeatBreeders = async (_req, res, next) => {
+export const repeatBreeders = async (_req, res, next) => {
   try {
     const since = new Date();
     since.setDate(since.getDate() - 90);

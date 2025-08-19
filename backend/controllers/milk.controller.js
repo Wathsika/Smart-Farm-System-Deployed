@@ -1,7 +1,7 @@
 // backend/controllers/milk.controller.js
-const mongoose = require("mongoose");
-const Milk = require("../models/milk");
-const Cow = require("../models/cow");
+import mongoose from "mongoose";
+import Milk from "../models/milk.js";
+import Cow from "../models/cow.js";
 
 // normalize any input date to local midnight
 function startOfDay(input) {
@@ -16,7 +16,7 @@ function startOfDay(input) {
 }
 
 /* ------------ CRUD ------------ */
-exports.createMilk = async (req, res, next) => {
+export const createMilk = async (req, res, next) => {
   try {
     const { cow, date, shift = "AM", volumeLiters, fatPct, snfPct, notes, recordedBy } = req.body;
 
@@ -40,7 +40,7 @@ exports.createMilk = async (req, res, next) => {
   }
 };
 
-exports.listMilk = async (req, res, next) => {
+export const listMilk = async (req, res, next) => {
   try {
     const { cow, shift, from, to, page = 1, limit = 20 } = req.query;
     const q = {};
@@ -72,7 +72,7 @@ exports.listMilk = async (req, res, next) => {
   }
 };
 
-exports.getMilk = async (req, res, next) => {
+export const getMilk = async (req, res, next) => {
   try {
     const doc = await Milk.findById(req.params.id).populate("cow", "name tagId breed gender bday");
     if (!doc) return res.status(404).json({ message: "Record not found" });
@@ -82,7 +82,7 @@ exports.getMilk = async (req, res, next) => {
   }
 };
 
-exports.updateMilk = async (req, res, next) => {
+export const updateMilk = async (req, res, next) => {
   try {
     const payload = { ...req.body };
     if (payload.date) {
@@ -105,7 +105,7 @@ exports.updateMilk = async (req, res, next) => {
   }
 };
 
-exports.deleteMilk = async (req, res, next) => {
+export const deleteMilk = async (req, res, next) => {
   try {
     const del = await Milk.findByIdAndDelete(req.params.id);
     if (!del) return res.status(404).json({ message: "Record not found" });
@@ -118,7 +118,7 @@ exports.deleteMilk = async (req, res, next) => {
 /* ------------ Analytics / Summaries ------------ */
 
 // Farm daily totals between dates
-exports.farmDailyTotals = async (req, res, next) => {
+export const farmDailyTotals = async (req, res, next) => {
   try {
     const { from, to } = req.query;
     const match = {};
@@ -144,7 +144,7 @@ exports.farmDailyTotals = async (req, res, next) => {
 };
 
 // Per-cow daily totals with AM/PM split
-exports.cowDailyTimeline = async (req, res, next) => {
+export const cowDailyTimeline = async (req, res, next) => {
   try {
     const cowId = req.params.cowId;
     const { from, to } = req.query;
@@ -181,7 +181,7 @@ exports.cowDailyTimeline = async (req, res, next) => {
 };
 
 // Monthly totals & averages for one cow
-exports.cowMonthlyStats = async (req, res, next) => {
+export const cowMonthlyStats = async (req, res, next) => {
   try {
     const cowId = req.params.cowId;
     const { year } = req.query;

@@ -1,5 +1,5 @@
 // backend/models/milk.js
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const milkSchema = new mongoose.Schema(
   {
@@ -37,4 +37,6 @@ const milkSchema = new mongoose.Schema(
 // avoid duplicates for same cow + day + shift
 milkSchema.index({ cow: 1, date: 1, shift: 1 }, { unique: true });
 
-module.exports = mongoose.models.Milk || mongoose.model("Milk", milkSchema);
+const Milk = mongoose.models.Milk || mongoose.model("Milk", milkSchema);
+
+export default Milk;
