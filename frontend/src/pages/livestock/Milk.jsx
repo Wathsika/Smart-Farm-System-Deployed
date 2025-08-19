@@ -11,8 +11,7 @@ import {
 import { FaDownload, FaPlus, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import { AddRecordModal, EditRecordModal } from "./MilkModal";
-
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001";
+import { api } from "../../lib/api";
 
 /* ---------- date helpers ---------- */
 const pad = (n) => String(n).padStart(2, "0");
@@ -296,8 +295,7 @@ export default function Milk() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`${API}/api/cows`);
-        const data = await r.json();
+        const { data } = await api.get("/cows");
         setCows(Array.isArray(data) ? data.filter(isFemale) : []);
       } catch {
         setCows([]);
@@ -330,16 +328,14 @@ export default function Milk() {
       }
 
       // fetch timeline
-      const qs = new URLSearchParams({ from, to }).toString();
+      const params = { from, to };
       let rows = [];
       if (cowId === "all") {
-        const r = await fetch(`${API}/api/milk/summary/farm/daily?${qs}`);
-        if (!r.ok) throw new Error("analytics");
-        rows = await r.json(); // [{date,totalLiters}]
+        const { data } = await api.get("/milk/summary/farm/daily", { params });
+        rows = Array.isArray(data) ? data : []; // [{date,totalLiters}]
       } else {
-        const r = await fetch(`${API}/api/milk/cow/${cowId}/daily?${qs}`);
-        if (!r.ok) throw new Error("analytics");
-        const raw = await r.json(); // [{date, liters}]
+        const { data } = await api.get(`/milk/cow/${cowId}/daily`, { params });
+        const raw = Array.isArray(data) ? data : []; // [{date, liters}]
         rows = raw.map((x) => ({ date: x.date, totalLiters: x.liters }));
       }
 
@@ -381,17 +377,22 @@ export default function Milk() {
       const addCow = (p) => (cowId !== "all" ? { ...p, cow: cowId } : p);
       const sum = (arr) => arr.reduce((s, it) => s + Number(it.volumeLiters || 0), 0);
 
-      const [rT, rY, rW, rM] = await Promise.all([
-        fetch(`${API}/api/milk?${new URLSearchParams(addCow({ from: today, to: today, limit: 2000 }))}`),
-        fetch(`${API}/api/milk?${new URLSearchParams(addCow({ from: yday, to: yday, limit: 2000 }))}`),
-        fetch(`${API}/api/milk?${new URLSearchParams(addCow({ from: weekFrom, to: weekTo, limit: 5000 }))}`),
-        fetch(`${API}/api/milk?${new URLSearchParams(addCow({ from: monthFrom, to: today, limit: 10000 }))}`),
+      const paramsT = addCow({ from: today, to: today, limit: 2000 });
+      const paramsY = addCow({ from: yday, to: yday, limit: 2000 });
+      const paramsW = addCow({ from: weekFrom, to: weekTo, limit: 5000 });
+      const paramsM = addCow({ from: monthFrom, to: today, limit: 10000 });
+
+      const [{ data: dT }, { data: dY }, { data: dW }, { data: dM }] = await Promise.all([
+        api.get("/milk", { params: paramsT }),
+        api.get("/milk", { params: paramsY }),
+        api.get("/milk", { params: paramsW }),
+        api.get("/milk", { params: paramsM }),
       ]);
 
-      const { items: TI = [] } = rT.ok ? await rT.json() : { items: [] };
-      const { items: YI = [] } = rY.ok ? await rY.json() : { items: [] };
-      const { items: WI = [] } = rW.ok ? await rW.json() : { items: [] };
-      const { items: MI = [] } = rM.ok ? await rM.json() : { items: [] };
+      const TI = dT.items || [];
+      const YI = dY.items || [];
+      const WI = dW.items || [];
+      const MI = dM.items || [];
 
       const todayTotal = sum(TI);
       const yesterdayTotal = sum(YI);
@@ -439,8 +440,8 @@ export default function Milk() {
       const params = { limit: 80, page: 1 };
       if (cowId !== "all") params.cow = cowId;
       if (dateFilter) params.from = params.to = dateFilter;
-      const r = await fetch(`${API}/api/milk?${new URLSearchParams(params)}`);
-      const { items = [] } = r.ok ? await r.json() : { items: [] };
+      const { data } = await api.get("/milk", { params });
+      const { items = [] } = data;
       const rows = groupDaily(items);
       setAllRows(rows);
       setVisible(Math.min(10, rows.length)); // start with 10
@@ -459,10 +460,10 @@ export default function Milk() {
   async function handleDeleteRow(row) {
     if (!confirm(`Delete AM/PM records for ${row.cowName || row.tagId || "cow"} on ${row.date}?`)) return;
     try {
-      const qs = new URLSearchParams({ cow: row.cowId, from: row.date, to: row.date, limit: 10 }).toString();
-      const r = await fetch(`${API}/api/milk?${qs}`);
-      const { items = [] } = r.ok ? await r.json() : { items: [] };
-      for (const it of items) await fetch(`${API}/api/milk/${it._id}`, { method: "DELETE" });
+      const params = { cow: row.cowId, from: row.date, to: row.date, limit: 10 };
+      const { data } = await api.get("/milk", { params });
+      const { items = [] } = data;
+      for (const it of items) await api.delete(`/milk/${it._id}`);
       await loadAllRows();
       await loadSeriesAndSummary();
     } catch {
@@ -633,7 +634,7 @@ export default function Milk() {
               <p className="text-lg font-semibold">{fmtL(summary.month)}</p>
             </div>
             <button
-              onClick={() => window.open(`${API}/api/reports/milk?period=month`, "_blank")}
+              onClick={() => window.open(`${api.defaults.baseURL}/reports/milk?period=month`, "_blank")}
               className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50"
             >
               <FaDownload /> Export Report
