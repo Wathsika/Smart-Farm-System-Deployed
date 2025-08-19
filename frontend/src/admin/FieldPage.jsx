@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// පියවර 1: පොදු 'api' instance එක axios.js එකෙන් import කරගන්න, api.js එකෙන් functions import කරන්නේ නෑ
-import { api } from '../lib/axios'; // වැදගත්: ඔයාගේ axios.js එකේ path එක හරියටම දෙන්න
+// පියවර 1: පොදු 'api' instance එක api.js එකෙන් import කරගන්න, වෙනම functions import කරන්නේ නෑ
+import { api } from '../lib/api.js'; // වැදගත්: ඔයාගේ api.js එකේ path එක හරියටම දෙන්න
 
 const FieldPage = () => {
   const [fields, setFields] = useState([]);

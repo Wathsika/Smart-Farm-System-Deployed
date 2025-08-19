@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// අපි දැන් team එකේ common axios instance එක විතරක් import කරනවා
-import { api } from '../lib/axios.js';
+// අපි දැන් team එකේ common API client එක විතරක් import කරනවා
+import { api } from '../lib/api.js';
 
 const AddFieldPage = () => {
   const navigate = useNavigate();
