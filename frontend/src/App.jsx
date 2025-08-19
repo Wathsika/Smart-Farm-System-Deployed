@@ -11,6 +11,8 @@ import Storefront from "./pages/Storefront";
 import AboutUs from "./pages/aboutus.jsx";
 import ContactUs from "./pages/contactus.jsx";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp.jsx";
+
 import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
 import MyOrdersPage from "./pages/MyOrdersPage";
@@ -79,7 +81,6 @@ const Private = ({ children }) =>
 const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 
-
 // Livestock management pages
 import CowProfilePage from "./pages/livestock/cow.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
@@ -107,6 +108,7 @@ export default function App() {
 
       {/* STANDALONE */}
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
 
       {/* AUTH USER */}
       <Route
@@ -163,20 +165,19 @@ export default function App() {
       >
         <Route index element={<FarmDashboard />} />
 
-
         {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} /> 
+        <Route path="livestock" element={<LivestockPage />} />
         {/* Livestock sub-pages */}
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
         <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
 
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
+        <Route path="staff" element={<StaffPage />} />
+        <Route path="revenue" element={<RevenuePage />} />
 
-          {/* Crop management */}
-          <Route path="crop" element={<CropPage />} />
+        {/* Crop management */}
+        <Route path="crop" element={<CropPage />} />
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
 
@@ -210,8 +211,6 @@ export default function App() {
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
 
-
-
         {/* Finance (nested) */}
         <Route path="finance">
           <Route index element={<Navigate to="overview" replace />} />
@@ -224,8 +223,6 @@ export default function App() {
             element={<FinancePayrollManagement />}
           />
         </Route>
-
-
       </Route>
 
       {/* FALLBACK */}
