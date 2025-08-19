@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
-const Cow = require('../models/cow');
+import mongoose from 'mongoose';
+import Cow from '../models/cow.js';
 
 //add a new cow
-const addCow = async (req, res, next) => {
+export const addCow = async (req, res, next) => {
   try {
     let { name, breed, bday, gender } = req.body;
 
@@ -20,7 +20,7 @@ const addCow = async (req, res, next) => {
 };
 
 //
-const listCows = async (_req, res, next) => {
+export const listCows = async (_req, res, next) => {
   try {
     const cows = await Cow.find().sort({ cowId: -1 }); 
     res.json(cows);
@@ -30,7 +30,7 @@ const listCows = async (_req, res, next) => {
 };
 
 //
-const getCow = async (req, res, next) => {
+export const getCow = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -43,7 +43,7 @@ const getCow = async (req, res, next) => {
 };
 
 // Update cow details
-const updateCow = async (req, res, next) => {
+export const updateCow = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -70,7 +70,7 @@ const updateCow = async (req, res, next) => {
 };
 
 // Delete a cow
-const deleteCow = async (req, res, next) => {
+export const deleteCow = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -81,5 +81,3 @@ const deleteCow = async (req, res, next) => {
     res.json({ ok: true });
   } catch (err) { next(err); }
 };
-
-module.exports = { addCow, listCows, getCow, updateCow, deleteCow };

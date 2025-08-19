@@ -1,6 +1,14 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const ctrl = require("../controllers/breeding.controller");
+import express from "express";
+import mongoose from "mongoose";
+import {
+  createBreeding,
+  listBreeding,
+  getBreeding,
+  updateBreeding,
+  deleteBreeding,
+  upcomingDue,
+  repeatBreeders,
+} from "../controllers/breeding.controller.js";
 
 const router = express.Router();
 
@@ -11,14 +19,14 @@ const oid = (param = "id") => (req, res, next) => {
 };
 
 /* Analytics / helpers */
-router.get("/due", ctrl.upcomingDue);
-router.get("/repeat-breeders", ctrl.repeatBreeders);
+router.get("/due", upcomingDue);
+router.get("/repeat-breeders", repeatBreeders);
 
 /* CRUD */
-router.post("/", ctrl.createBreeding);
-router.get("/", ctrl.listBreeding);
-router.get("/:id", oid("id"), ctrl.getBreeding);
-router.put("/:id", oid("id"), ctrl.updateBreeding);
-router.delete("/:id", oid("id"), ctrl.deleteBreeding);
+router.post("/", createBreeding);
+router.get("/", listBreeding);
+router.get("/:id", oid("id"), getBreeding);
+router.put("/:id", oid("id"), updateBreeding);
+router.delete("/:id", oid("id"), deleteBreeding);
 
-module.exports = router;
+export default router;
