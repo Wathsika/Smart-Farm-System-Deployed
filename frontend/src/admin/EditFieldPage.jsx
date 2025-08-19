@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../lib/axios.js'; // Team එකේ common axios instance එක
+import { api } from '../lib/api.js'; // Team එකේ common API client එක
 
 const EditFieldPage = () => {
   const { id } = useParams(); // URL එකෙන් (:id) අදාළ field එකේ ID එක ගන්නවා
