@@ -1,4 +1,3 @@
-// ✅ සම්පූර්ණ කරන ලද file එක: frontend/src/admin/pages/EditInputPage.jsx
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -8,7 +7,7 @@ const EditInputPage = () => {
     const { id } = useParams(); 
     const navigate = useNavigate();
 
-    // Form එකේ දත්ත තියාගන්න state
+    // Form data state
     const [formData, setFormData] = useState({
         name: '', category: 'fertilizer', stockQty: '',
         activeIngredient: '', dilutionRate: '', method: '',
@@ -18,12 +17,12 @@ const EditInputPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Page එක load වෙනකොට අදාළ data ටික backend එකෙන් ගෙන්නගන්නවා
+    // Gather data to the back end if while page is loading
     useEffect(() => {
         const fetchInputData = async () => {
             try {
                 const response = await api.get(`/inputs/${id}`);
-                // form එකේ state එක, ගෙන්නගත්තු data වලින් update කරනවා
+                // form sate
                 setFormData(response.data);
             } catch (err) {
                 setError("Could not load data for this input.");
@@ -35,7 +34,7 @@ const EditInputPage = () => {
         fetchInputData();
     }, [id]);
 
-    // Input fields වල වෙනස්කම් handle කරන function එක
+    // Handling the Input Field Function
     const handleChange = (e) => {
         const { name, value, type } = e.target;
         setFormData(prevState => ({
@@ -44,7 +43,7 @@ const EditInputPage = () => {
         }));
     };
 
-    // Form එක submit කරන function එක
+    // Form submit function
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
@@ -60,7 +59,7 @@ const EditInputPage = () => {
     if (loading) return <div className="p-8">Loading Input Data...</div>;
     if (error) return <div className="p-8 text-red-500 font-semibold">{error}</div>;
 
-    // --- මෙන්න අලුතෙන් සම්පූර්ණ කරපු Form JSX එක ---
+    // --- New Form JSX ---
     return (
         <div className="p-8 bg-gray-100 min-h-screen">
             <h1 className="text-4xl font-bold text-gray-800 mb-8">Edit Farm Input: {formData.name}</h1>

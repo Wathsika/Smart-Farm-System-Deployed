@@ -5,7 +5,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { auth } from "./lib/auth";
 import Layout from "./components/common/Layout";
 
-
+// --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
 import Storefront from "./pages/Storefront"; 
 import AboutUs from "./pages/AboutUs";
@@ -16,7 +16,11 @@ import CheckoutPage from "./pages/checkout";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
+
+// --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
+
+// --- ADMIN (direct imports) ---
 import AdminUsers from "./pages/AdminUsers";
 import StaffAttendance from "./admin/StaffAttendance";
 import LeaveManagement from "./admin/LeaveManagement";
@@ -24,6 +28,8 @@ import TaskManagement from "./admin/TaskManagement";
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import AdminDiscountsPage from "./admin/DiscountsPage";
+
+// --- ADMIN FARM MODULES ---
 import AddCrop from "./admin/AddCrop.jsx";
 import CropPage from "./admin/CropPage.jsx";
 import EditCrop from "./admin/EditCrop.jsx";
@@ -35,21 +41,27 @@ import PlanList from "./admin/PlanList.jsx";
 import InputListPage from './admin/InputListPage.jsx';
 import AddInputPage from './admin/AddInputPage.jsx';
 import EditInputPage from './admin/EditInputPage.jsx';
+
+// --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
 import FinanceTransaction from "./admin/FinanceTransaction";
 import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 import FinancePayrollManagement from "./admin/FinancePayrollManagement";
 import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
+
+// --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
 
-// --- (TEMP PLACEHOLDERS සහ GUARDS වල කිසිදු වෙනසක් නැත) ---
+// --- TEMP PLACEHOLDERS ---
 const FarmDashboard = () => (<div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>);
 const LivestockPage = () => (<div className="p-6 text-2xl font-bold">Livestock Management</div>);
 const StaffPage = () => (<div className="p-6 text-2xl font-bold">Staff Management</div>);
 const RevenuePage = () => (<div className="p-6 text-2xl font-bold">Revenue & Financials</div>);
 const CustomersPage = () => (<div className="p-6 text-2xl font-bold">Customer Management</div>);
 const ReportsPage = () => (<div className="p-6 text-2xl font-bold">Store Reports</div>);
+
+// --- GUARDS ---
 const Private = ({ children }) => auth.token ? children : <Navigate to="/login" replace />;
 const AdminOnly = ({ children }) => auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 const EmployeeOnly = ({ children }) => auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
@@ -57,7 +69,7 @@ const EmployeeOnly = ({ children }) => auth.user?.role === "Employee" ? children
 export default function App() {
   return (
     <Routes>
-      {/* PUBLIC routes - මෙහි කිසිදු වෙනසක් කර නැත */}
+      {/* PUBLIC (wrapped with main layout) */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="/store" element={<Storefront />} />
@@ -67,11 +79,15 @@ export default function App() {
         <Route path="/order/cancel" element={<OrderCancelPage />} />
       </Route>
 
-      {/* STANDALONE, AUTH USER, EMPLOYEE routes - මෙහි කිසිදු වෙනසක් කර නැත */}
+      {/* STANDALONE */}
       <Route path="/login" element={<Login />} />
+
+      {/* AUTH USER */}
       <Route path="/profile" element={<Private><UserProfile /></Private>} />
       <Route path="/checkout" element={<Private><CheckoutPage /></Private>} />
       <Route path="/my-orders" element={<Private><MyOrdersPage /></Private>} />
+
+      {/* EMPLOYEE */}
       <Route path="/dashboard" element={<EmployeeOnly><EmployeeDashboard /></EmployeeOnly>} />
 
       {/* --- ADMIN --- */}
@@ -101,24 +117,24 @@ export default function App() {
         
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />
-        {/* === START: ADDED MISSING ROUTES === */}
-        {/* The Add and Edit routes for Inputs are now correctly registered */}
+        
+        {/* === START: ADDED MISSING ROUTES / මෙතනයි නැතිවුණු routes ටික එකතු කළේ === */}
         <Route path="crop/inputs/add" element={<AddInputPage />} />
         <Route path="crop/inputs/edit/:id" element={<EditInputPage />} />
-        {/* === END: ADDED MISSING ROUTES === */}
+        {/* === END: ADDED MISSING ROUTES / මෙතනින් ඉවරයි === */}
         
         {/* Field management */}
         <Route path="fields" element={<FieldPage />} />
         <Route path="fields/add" element={<AddFieldPage />} />
         <Route path="fields/edit/:id" element={<EditFieldPage />} />
 
-        {/* HR management - No changes here */}
+        {/* HR management */}
         <Route path="users" element={<AdminUsers />} />
         <Route path="tasks" element={<TaskManagement />} />
         <Route path="attendance" element={<StaffAttendance />} />
         <Route path="leave" element={<LeaveManagement />} />
 
-        {/* Store (nested) - No changes here */}
+        {/* Store (nested) */}
         <Route path="store/dashboard" element={<Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense>} />
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
@@ -126,7 +142,7 @@ export default function App() {
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<ReportsPage />} />
 
-        {/* Finance (nested) - No changes here */}
+        {/* Finance (nested) */}
         <Route path="finance">
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<FinanceOverview />} />
@@ -137,7 +153,7 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* FALLBACK (No change) */}
+      {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

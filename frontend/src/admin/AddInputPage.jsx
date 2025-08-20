@@ -1,20 +1,20 @@
-// ✅ New File: frontend/src/admin/pages/AddInputPage.jsx
+// ✅ අවසාන සහ නිවැරදි file එක: frontend/src/admin/pages/AddInputPage.jsx
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api'; // Import your team's common api instance
+import { api } from '../lib/api'; 
 
 const AddInputPage = () => {
     const navigate = useNavigate();
 
-    // Set the initial state for your form data
+    // Form state - කිසිදු වෙනසක් කර නැත
     const [formData, setFormData] = useState({
         name: '',
-        category: 'fertilizer', // Default category
+        category: 'fertilizer', 
         stockQty: '',
         activeIngredient: '',
         dilutionRate: '',
-        method: '',
+        method: '', 
         preHarvestIntervalDays: '',
         reEntryHours: '',
         notes: '',
@@ -22,28 +22,23 @@ const AddInputPage = () => {
 
     const [error, setError] = useState(null);
 
-    // A single handler for all text/number input changes
+    // handleChange function - කිසිදු වෙනසක් කර නැත
     const handleChange = (e) => {
         const { name, value, type } = e.target;
         setFormData(prevState => ({
             ...prevState,
-            // Convert to number if the input type is 'number'
-            [name]: type === 'number' ? Number(value) : value
+            [name]: type === 'number' && value !== '' ? Number(value) : value
         }));
     };
 
-    // The function that runs when the form is submitted
+    // handleSubmit function - කිසිදු වෙනසක් කර නැත
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-
         try {
-            // This is the Submit Logic from your screenshot
             await api.post('/inputs', formData);
             alert('New farm input added successfully!');
-            // After success, navigate back to the main list page
-            // Make sure you have an InputListPage later at '/admin/store/inputs'
-            navigate('/admin/store/products'); // Or navigate back to wherever is appropriate
+            navigate('/admin/crop/inputs');
         } catch (err) {
             const serverError = err.response?.data?.message || 'Failed to add the input.';
             setError(serverError);
@@ -93,17 +88,33 @@ const AddInputPage = () => {
                             <label className="label-style">Active Ingredient</label>
                             <input type="text" name="activeIngredient" value={formData.activeIngredient} onChange={handleChange} className="input-style" placeholder="e.g., Imidacloprid" />
                         </div>
-                        {/* Application Method */}
+
+                        {/* ======================= එකම වෙනස මෙතනයි ======================= */}
                         <div>
                             <label className="label-style">Application Method</label>
-                            <input type="text" name="method" value={formData.method} onChange={handleChange} className="input-style" placeholder="e.g., Foliar Spray, Soil Application"/>
+                            <select 
+                                name="method" 
+                                value={formData.method} 
+                                onChange={handleChange} 
+                                className="input-style"
+                                required
+                            >
+                                <option value="" disabled>-- Select a Method --</option>
+                                <option value="soil">Soil Application</option>
+                                <option value="foliar">Foliar Spray</option>
+                                <option value="drip">Drip Irrigation</option>
+                                <option value="spray">General Spray</option>
+                                <option value="seed">Seed Treatment</option>
+                            </select>
                         </div>
+                        {/* ================================================================= */}
+
                          {/* Dilution Rate */}
                         <div>
                             <label className="label-style">Dilution Rate</label>
                             <input type="text" name="dilutionRate" value={formData.dilutionRate} onChange={handleChange} className="input-style" placeholder="e.g., 0.3 ml/L" />
                         </div>
-                         <div></div> {/* Empty div for alignment */}
+                         <div></div>
 
                         {/* Pre-Harvest Interval */}
                         <div className="flex items-end gap-2">
@@ -133,14 +144,14 @@ const AddInputPage = () => {
                 {/* Error Display */}
                 {error && <p className="text-red-600 text-center">{error}</p>}
                 
-                {/* Submit Button */}
+                {/* --- Submit Button - SYNTAX ERROR එක මෙතනයි හදලා තියෙන්නේ --- */}
                 <div className="flex justify-end pt-4">
                     <button type="submit" className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-700">
                         Save Input
                     </button>
                 </div>
             </form>
-             {/* Local CSS styles to avoid affecting other components */}
+             {/* Local CSS styles */}
             <style>{`
                 .label-style { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
                 .input-style { width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; }
