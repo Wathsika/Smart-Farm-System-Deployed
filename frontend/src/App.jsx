@@ -54,6 +54,7 @@ import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 import CowProfilePage from "./pages/livestock/cow.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
+import BreedingPage from "./pages/livestock/Breeding.jsx";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -90,10 +91,6 @@ const AdminOnly = ({ children }) =>
 
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
-
-const BreedingRecordsPage = () => (
-  <div className="p-6 text-2xl font-bold">Breeding Records</div>
-);
 
 export default function App() {
   return (
@@ -173,7 +170,7 @@ export default function App() {
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
-        <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
+        <Route path="livestock/breeding" element={<BreedingPage />} />
 
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
