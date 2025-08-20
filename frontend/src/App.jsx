@@ -50,6 +50,11 @@ import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 import FinancePayrollManagement from "./admin/FinancePayrollManagement";
 import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
+// Livestock management pages
+import CowProfilePage from "./pages/livestock/cow.jsx";
+import MilkProduction from "./pages/livestock/Milk.jsx";
+import HealthPage from "./pages/livestock/Health.jsx";
+
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
@@ -81,10 +86,7 @@ const Private = ({ children }) =>
 const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 
-// Livestock management pages
-import CowProfilePage from "./pages/livestock/cow.jsx";
-import MilkProduction from "./pages/livestock/Milk.jsx";
-import HealthPage from "./pages/livestock/Health.jsx";
+
 
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
