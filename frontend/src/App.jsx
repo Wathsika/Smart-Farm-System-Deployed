@@ -50,7 +50,7 @@ import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
-const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
+const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
 const FarmDashboard = () => (

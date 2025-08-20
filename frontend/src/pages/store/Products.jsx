@@ -1,6 +1,6 @@
 // src/pages/store/Products.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { api } from "../../lib/api";
 import ProductModal from "./ProductModal";
 
@@ -45,7 +45,7 @@ const StatusBadge = ({ status, stock = 0 }) => {
 const ProductRow = ({ product, onEdit, onDelete, index }) => {
   const qty = product?.stock?.qty ?? 0;
   return (
-    <motion.tr
+      <Motion.tr
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -54,7 +54,7 @@ const ProductRow = ({ product, onEdit, onDelete, index }) => {
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-4">
-          <motion.div
+          <Motion.div
             className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-gray-100"
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.18 }}
@@ -66,7 +66,7 @@ const ProductRow = ({ product, onEdit, onDelete, index }) => {
               onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/48"; }}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-          </motion.div>
+          </Motion.div>
           <div className="flex flex-col">
             <span className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
               {product.name}
@@ -110,7 +110,7 @@ const ProductRow = ({ product, onEdit, onDelete, index }) => {
 
       <td className="px-6 py-4">
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <motion.button
+          <Motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.92 }}
             onClick={() => onEdit(product)}
@@ -118,8 +118,8 @@ const ProductRow = ({ product, onEdit, onDelete, index }) => {
             title="Edit Product"
           >
             <i className="fas fa-edit text-sm" />
-          </motion.button>
-          <motion.button
+          </Motion.button>
+          <Motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.92 }}
             onClick={() => onDelete(product._id)}
@@ -127,10 +127,10 @@ const ProductRow = ({ product, onEdit, onDelete, index }) => {
             title="Delete Product"
           >
             <i className="fas fa-trash text-sm" />
-          </motion.button>
+          </Motion.button>
         </div>
       </td>
-    </motion.tr>
+    </Motion.tr>
   );
 };
 
@@ -196,7 +196,7 @@ export default function ProductsPage() {
   // ui
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = items.length || 1000;
 
   // fetch (keeps list on screen after first load)
   const loadProducts = async () => {
@@ -206,7 +206,7 @@ export default function ProductsPage() {
       } else {
         setRefreshing(true);
       }
-      const res = await api.get("/products");
+     const res = await api.get("/products", { params: { limit: 1000 } });
       const data = Array.isArray(res?.data?.items)
         ? res.data.items
         : Array.isArray(res?.data)
@@ -233,7 +233,7 @@ export default function ProductsPage() {
   useEffect(() => {
     const tp = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
     if (currentPage > tp) setCurrentPage(tp);
-  }, [items, currentPage]);
+   }, [items, currentPage, ITEMS_PER_PAGE]);
 
   // handlers
   const handleOpenModal = (product = null) => {
@@ -359,21 +359,21 @@ export default function ProductsPage() {
   ];
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
       className="p-4 sm:p-6 bg-gray-50 min-h-screen"
     >
       {/* Stats */}
-      <motion.div
+      <Motion.div
         initial={{ y: -12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.08 }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
       >
         {statCards.map((c, i) => (
-          <motion.div
+          <Motion.div
             key={c.title}
             initial={{ y: 12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -389,12 +389,12 @@ export default function ProductsPage() {
                 <i className={`${c.icon} ${c.s.icon} text-xl`} />
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
         ))}
-      </motion.div>
+      </Motion.div>
 
       {/* Card */}
-      <motion.div
+      <Motion.div
         initial={{ y: 12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.15 }}
@@ -425,7 +425,7 @@ export default function ProductsPage() {
                 />
                 <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleOpenModal()}
@@ -433,7 +433,7 @@ export default function ProductsPage() {
               >
                 <i className="fas fa-plus" />
                 <span className="hidden sm:inline font-medium">Add Product</span>
-              </motion.button>
+              </Motion.button>
             </div>
           </div>
         </div>
@@ -486,7 +486,7 @@ export default function ProductsPage() {
             <tbody className="divide-y divide-gray-100">
               <AnimatePresence mode="popLayout">
                 {loading && (
-                  <motion.tr
+                  <Motion.tr
                     key="loading"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -498,11 +498,11 @@ export default function ProductsPage() {
                         <p className="text-gray-500">Loading inventory...</p>
                       </div>
                     </td>
-                  </motion.tr>
+                  </Motion.tr>
                 )}
 
                 {!loading && pageItems.length === 0 && (
-                  <motion.tr
+                  <Motion.tr
                     key="empty"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -525,7 +525,7 @@ export default function ProductsPage() {
                         </div>
                       </div>
                     </td>
-                  </motion.tr>
+                  </Motion.tr>
                 )}
 
                 {!loading &&
@@ -545,7 +545,7 @@ export default function ProductsPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > 0 && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between"
@@ -554,40 +554,44 @@ export default function ProductsPage() {
               Showing {start + 1} to {Math.min(start + ITEMS_PER_PAGE, filtered.length)} of {filtered.length} products
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous page"
-              >
-                <i className="fas fa-chevron-left" />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+           {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+              
                 <button
-                  key={pg}
-                  onClick={() => setCurrentPage(pg)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    currentPage === pg ? "bg-green-600 text-white" : "border border-gray-200 hover:bg-gray-50"
-                  }`}
+                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous page"
                 >
-                  {pg}
+                  <i className="fas fa-chevron-left" />
                 </button>
-              ))}
+             {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                  <button
+                    key={pg}
+                    onClick={() => setCurrentPage(pg)}
+                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === pg ? "bg-green-600 text-white" : "border border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {pg}
+                  </button>
+                ))}
 
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next page"
-              >
-                <i className="fas fa-chevron-right" />
-              </button>
-            </div>
-          </motion.div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next page"
+                >
+                  <i className="fas fa-chevron-right" />
+                </button>
+              </div>
+            )}
+          </Motion.div>
+
+             
         )}
-      </motion.div>
+      </Motion.div>
 
       {/* Modal */}
       <ProductModal
@@ -597,6 +601,6 @@ export default function ProductsPage() {
         productToEdit={editingProduct}
         isSaving={isSaving}
       />
-    </motion.div>
+    </Motion.div>
   );
 }
