@@ -320,7 +320,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
                 Customers
               </SidebarLink>
               <SidebarLink
-                to="/admin/reports"
+                to="/admin/store/reports"
                 icon="fas fa-chart-bar"
                 onNavigate={onNavigate}
               >

@@ -268,9 +268,11 @@ export const cancelOrder = async (req, res, next) => {
 
     // Refund on Stripe
     try {
-      const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
-      const paymentIntentId = session?.payment_intent;
-      if (paymentIntentId) await stripe.refunds.create({ payment_intent: paymentIntentId });
+        if (order.isPaid && order.stripeSessionId) {
+        const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
+        const paymentIntentId = session?.payment_intent;
+        if (paymentIntentId) await stripe.refunds.create({ payment_intent: paymentIntentId });
+      }
     } catch (refundError) {
       console.error('Stripe refund failed:', refundError);
       return res.status(500).json({ message: 'Failed to refund payment.' });
