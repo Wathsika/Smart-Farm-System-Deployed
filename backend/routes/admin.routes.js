@@ -1,31 +1,37 @@
-// backend/routes/admin.routes.js
 import express from "express";
-
-// CORRECT: Import ONLY the functions that are actually exported from the controller.
-// 'getLowStockTable' and 'getRecentOrdersTable' have been removed from this list.
-import {
-  getOverview,
-  getStoreSummary,
-  getSalesLast30Days,
-  getInventoryByCategory,
-} from "../controllers/admin.controller.js";
+import User from "../models/User.js";
+import Employee from "../models/Employee.js";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 
-// --- Main Dashboard Routes ---
-// Dashboard overview (cards + previews)
-router.get("/overview", getOverview);
-// Store summary cards
-router.get("/store/summary", getStoreSummary);
+// Add Employee (adds to both Users + Employees tables)
+router.post("/employees", async (req, res) => {
+  try {
+    const { fullName, email, password, jobTitle, basicSalary } = req.body;
 
-// --- Chart-Specific Routes ---
-router.get("/charts/sales-30d", getSalesLast30Days);
-router.get("/charts/inventory-by-category", getInventoryByCategory);
+    // 1️⃣ Create user
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({
+      fullName,
+      email,
+      password: hashed,
+      role: "Employee",
+    });
+    await user.save();
 
-// --- DELETED ROUTES ---
-// The following routes have been removed because their controller functions no longer exist.
-// This prevents the server from crashing on startup.
-// router.get("/tables/low-stock", getLowStockTable);
-// router.get("/tables/recent-orders", getRecentOrdersTable);
+    // 2️⃣ Create employee record
+    const employee = new Employee({
+      user: user._id,
+      jobTitle,
+      basicSalary,
+    });
+    await employee.save();
+
+    res.status(201).json({ message: "Employee created", user, employee });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 export default router;
