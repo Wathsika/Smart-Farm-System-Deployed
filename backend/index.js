@@ -34,6 +34,8 @@ import transactionRoutes from "./routes/transaction.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import discountRoutes from "./routes/discount.routes.js";
 
+import performanceRoutes from "./routes/performance.routes.js";
+
 
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
@@ -106,6 +108,11 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
+
+// Health check
+app.get("/", (_req, res) => res.json({ ok: true }));
+app.use("/api/performance", performanceRoutes);
+
 
 app.use("/api/transactions", transactionRoutes);
 

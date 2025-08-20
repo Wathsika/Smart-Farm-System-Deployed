@@ -1,113 +1,453 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api'; // Correct path from src/admin/ to src/lib/
-import { PlusCircle, Search, Edit, Trash2, Loader2, Tag } from 'lucide-react';
-import DiscountModal from './DiscountModal'; // Correct path for file in same directory
+// src/admin/AdminDiscountsPage.jsx
+import React, { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../lib/api"; // correct path from src/admin to src/lib
+import {
+  PlusCircle,
+  Search,
+  Edit,
+  Trash2,
+  Loader2,
+  Tag,
+  Calendar,
+  DollarSign,
+  Percent,
+  Users,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import DiscountModal from "./DiscountModal";
 
-const Badge = ({ text, type }) => {
-    const types = { ACTIVE: 'bg-green-100 text-green-800', EXPIRED: 'bg-gray-200 text-gray-800' };
-    return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${types[type]}`}>{text}</span>;
+/* -------------------------
+   Small UI helpers
+------------------------- */
+const formatDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "-";
+const formatCurrency = (n) => `Rs ${Number(n || 0).toFixed(2)}`;
+const getStatus = (discount) => {
+  const now = new Date();
+  const end = discount?.endDate ? new Date(discount.endDate) : null;
+  if (!discount?.isActive || (end && now > end)) return "Expired";
+  return "Active";
 };
 
-export default function AdminDiscountsPage() { // Renamed to match import in App.jsx
-    const queryClient = useQueryClient();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingDiscount, setEditingDiscount] = useState(null);
+const Badge = ({ text, type }) => {
+  const styles = {
+    ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    EXPIRED: "bg-gray-50 text-gray-700 border-gray-200",
+  };
+  return (
+    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${styles[type] || styles.EXPIRED}`}>
+      {text}
+    </span>
+  );
+};
 
-    const { data, isLoading, isError } = useQuery({
-        queryKey: ['discounts'],
-        queryFn: async () => (await api.get('/discounts')).data
-    });
-    const discounts = data?.items || [];
-    
-    const { mutate: saveDiscount, isLoading: isSaving } = useMutation({
-        mutationFn: ({ payload, id }) => id ? api.put(`/discounts/${id}`, payload) : api.post('/discounts', payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['discounts'] });
-            handleCloseModal();
-        },
-        onError: (error) => alert(error.response?.data?.message || "Failed to save discount."),
-    });
+const StatCard = ({ icon: Icon, title, value, subtitle, tone = "green" }) => {
+  const toneBox = {
+    green: "bg-emerald-50",
+    blue: "bg-blue-50",
+    gray: "bg-gray-50",
+    purple: "bg-purple-50",
+    yellow: "bg-yellow-50",
+  }[tone];
+  const toneIcon = {
+    green: "text-emerald-600",
+    blue: "text-blue-600",
+    gray: "text-gray-600",
+    purple: "text-purple-600",
+    yellow: "text-yellow-600",
+  }[tone];
 
-    const { mutate: deleteDiscount } = useMutation({
-        mutationFn: (id) => api.delete(`/discounts/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['discounts'] });
-        },
-        onError: (error) => alert(error.response?.data?.message || "Failed to delete discount."),
-    });
-
-    const handleOpenModal = (discount = null) => {
-        setEditingDiscount(discount);
-        setIsModalOpen(true);
-    };
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setEditingDiscount(null);
-    };
-    const handleSave = (payload, id = null) => {
-        saveDiscount({ payload, id });
-    };
-    const handleDelete = (id) => {
-        if (window.confirm("Are you sure? This will permanently delete the discount code.")) {
-            deleteDiscount(id);
-        }
-    };
-    
-    const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
-    const getStatus = (discount) => {
-        const now = new Date();
-        const endDate = new Date(discount.endDate);
-        if (!discount.isActive || now > endDate) return "Expired";
-        return "Active";
-    };
-
-    if (isLoading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin" /></div>;
-    if (isError) return <div className="p-8 text-red-500 text-center">Failed to load discounts.</div>;
-
-    return (
-        <div className="p-6 bg-gray-50 min-h-full">
-            <header className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Discounts</h1>
-                    <p className="text-gray-500">Create and manage coupon codes for your store.</p>
-                </div>
-                <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                    <PlusCircle size={20} /> Create Discount
-                </button>
-            </header>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-4 border-b flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800">All Discounts</h2>
-                    <div className="relative"><input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 border rounded-md" /><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /></div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50"><tr><th className="p-3 text-left">Name</th><th className="p-3 text-left">Code</th><th className="p-3 text-left">Value</th><th className="p-3 text-left">Min Purchase</th><th className="p-3 text-left">Start Date</th><th className="p-3 text-left">End Date</th><th className="p-3 text-left">Status</th><th className="p-3 text-right">Actions</th></tr></thead>
-                        <tbody className="divide-y">
-                            {discounts.map(discount => (
-                                <tr key={discount._id} className="hover:bg-gray-50">
-                                    <td className="p-3 font-medium">{discount.name}</td>
-                                    <td className="p-3"><span className="font-mono bg-gray-100 text-gray-700 px-2 py-1 rounded">{discount.code}</span></td>
-                                    <td className="p-3">{discount.type === 'PERCENTAGE' ? `${discount.value}%` : `Rs ${discount.value.toFixed(2)}`}</td>
-                                    <td className="p-3">{discount.minPurchase > 0 ? `Rs ${discount.minPurchase.toFixed(2)}` : '–'}</td>
-                                    <td className="p-3 text-gray-500">{formatDate(discount.startDate)}</td>
-                                    <td className="p-3 text-gray-500">{formatDate(discount.endDate)}</td>
-                                    <td className="p-3"><Badge text={getStatus(discount)} type={getStatus(discount) === 'Active' ? 'ACTIVE' : 'EXPIRED'} /></td>
-                                    <td className="p-3 text-right">
-                                        <div className="flex gap-4 justify-end">
-                                            <button onClick={() => handleOpenModal(discount)} className="text-gray-500 hover:text-blue-600" title="Edit"><Edit size={16} /></button>
-                                            <button onClick={() => handleDelete(discount._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                {discounts.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500"><Tag className="mx-auto mb-2 text-gray-400" size={48} /> No discounts found.</div>}
-            </div>
-            <DiscountModal isOpen={isModalOpen} onClose={handleCloseModal} onSave={handleSave} discountToEdit={editingDiscount} isSaving={isSaving}/>
+  return (
+    <motion.div
+      initial={{ y: 12, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
         </div>
+        <div className={`p-3 rounded-xl ${toneBox}`}>
+          <Icon size={24} className={toneIcon} />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/* -------------------------
+   Page
+------------------------- */
+export default function AdminDiscountsPage() {
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  // Load
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["discounts"],
+    queryFn: async () => (await api.get("/discounts")).data,
+  });
+  const discounts = data?.items || [];
+
+  // Mutations
+  const { mutate: saveDiscount, isLoading: isSaving } = useMutation({
+    mutationFn: ({ payload, id }) =>
+      id ? api.put(`/discounts/${id}`, payload) : api.post("/discounts", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discounts"] });
+      handleCloseModal();
+    },
+    onError: (err) => alert(err?.response?.data?.message || "Failed to save discount."),
+  });
+
+  const { mutate: deleteDiscount } = useMutation({
+    mutationFn: (id) => api.delete(`/discounts/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discounts"] }),
+    onError: (err) => alert(err?.response?.data?.message || "Failed to delete discount."),
+  });
+
+  // Handlers
+  const handleOpenModal = (discount = null) => {
+    setEditingDiscount(discount);
+    setIsModalOpen(true);
+  };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingDiscount(null);
+  };
+  const handleSave = (payload, id = null) => saveDiscount({ payload, id });
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure? This will permanently delete the discount code.")) {
+      deleteDiscount(id);
+    }
+  };
+
+  // Derived: search + filter
+  const filteredDiscounts = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return discounts.filter((d) => {
+      const status = getStatus(d);
+      const matchesSearch =
+        d.name?.toLowerCase().includes(q) ||
+        d.code?.toLowerCase().includes(q);
+      const matchesFilter = statusFilter === "ALL" || status.toUpperCase() === statusFilter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [discounts, searchTerm, statusFilter]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const active = discounts.filter((d) => getStatus(d) === "Active").length;
+    const expired = discounts.filter((d) => getStatus(d) === "Expired").length;
+    const percentage = discounts.filter((d) => d.type === "PERCENTAGE").length;
+    return {
+      total: discounts.length,
+      active,
+      expired,
+      percentage,
+      pctActive: ((active / (discounts.length || 1)) * 100).toFixed(0),
+      pctPercentage: ((percentage / (discounts.length || 1)) * 100).toFixed(0),
+    };
+  }, [discounts]);
+
+  /* Loading / Error */
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-xl shadow-sm text-center">
+          <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+          <p className="text-gray-600">Loading discounts...</p>
+        </div>
+      </div>
     );
+  }
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+          <div className="text-red-600 text-xl font-semibold mb-2">Failed to load discounts</div>
+          <p className="text-red-500 mb-4">Please try refreshing the page.</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* Page */
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.header initial={{ y: -12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mb-8">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Discount Management</h1>
+              <p className="text-gray-600 mt-1">Create and manage coupon codes to boost your sales</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refetch()}
+                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <RefreshCw size={18} className="text-gray-600" />
+                Refresh
+              </button>
+              <button
+                onClick={() => handleOpenModal()}
+                className="flex items-center gap-2 bg-emerald-600 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm"
+              >
+                <PlusCircle size={20} />
+                Create Discount
+              </button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <StatCard icon={Tag} title="Total Discounts" value={stats.total} tone="green" />
+            <StatCard
+              icon={Users}
+              title="Active"
+              value={stats.active}
+              subtitle={`${stats.pctActive}% of total`}
+              tone="green"
+            />
+            <StatCard icon={Calendar} title="Expired" value={stats.expired} tone="gray" />
+            <StatCard
+              icon={Percent}
+              title="Percentage Based"
+              value={stats.percentage}
+              subtitle={`${stats.pctPercentage}% of total`}
+              tone="purple"
+            />
+          </div>
+        </motion.header>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ y: 12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6"
+        >
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <Filter size={20} className="text-emerald-600" />
+              All Discounts <span className="text-gray-500 font-normal">({filteredDiscounts.length})</span>
+            </h2>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Search */}
+              <div className="relative flex-1 sm:w-72">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Search by name or code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
+                />
+              </div>
+
+              {/* Status */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
+              >
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE">Active Only</option>
+                <option value="EXPIRED">Expired Only</option>
+              </select>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Content */}
+        <motion.div
+          initial={{ y: 12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
+        >
+          {/* Table (md and up) */}
+          {filteredDiscounts.length > 0 ? (
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-4 text-left font-semibold text-gray-700">Discount</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Code</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Value</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Min Purchase</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Duration</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Status</th>
+                      <th className="p-4 text-right font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredDiscounts.map((d, i) => (
+                      <tr key={d._id} className="hover:bg-emerald-50/40 transition-colors">
+                        <td className="p-4">
+                          <div className="font-semibold text-gray-900">{d.name}</div>
+                          <div className="text-xs text-gray-500">ID: {d._id?.slice(-6)}</div>
+                        </td>
+                        <td className="p-4">
+                          <span className="font-mono bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg text-sm border">
+                            {d.code}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            {d.type === "PERCENTAGE" ? (
+                              <Percent size={16} className="text-emerald-600" />
+                            ) : (
+                              <DollarSign size={16} className="text-emerald-600" />
+                            )}
+                            <span className="font-semibold text-gray-900">
+                              {d.type === "PERCENTAGE" ? `${d.value}%` : formatCurrency(d.value)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {d.minPurchase > 0 ? (
+                            <span className="text-gray-800">{formatCurrency(d.minPurchase)}</span>
+                          ) : (
+                            <span className="text-gray-400 italic">No minimum</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-sm">
+                          <div className="text-gray-900">{formatDate(d.startDate)}</div>
+                          <div className="text-gray-500">to {formatDate(d.endDate)}</div>
+                        </td>
+                        <td className="p-4">
+                          <Badge
+                            text={getStatus(d)}
+                            type={getStatus(d) === "Active" ? "ACTIVE" : "EXPIRED"}
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleOpenModal(d)}
+                              className="p-2 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(d._id)}
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {filteredDiscounts.map((d) => (
+                  <div key={d._id} className="p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-semibold text-gray-900">{d.name}</div>
+                      <Badge text={getStatus(d)} type={getStatus(d) === "Active" ? "ACTIVE" : "EXPIRED"} />
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <div className="mt-1">
+                        <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{d.code}</span>
+                      </div>
+                      <div className="mt-1">
+                        Value:{" "}
+                        <span className="font-semibold text-gray-900">
+                          {d.type === "PERCENTAGE" ? `${d.value}%` : formatCurrency(d.value)}
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        Min Purchase:{" "}
+                        {d.minPurchase > 0 ? (
+                          <span>{formatCurrency(d.minPurchase)}</span>
+                        ) : (
+                          <span className="text-gray-400 italic">No minimum</span>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        {formatDate(d.startDate)} – {formatDate(d.endDate)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 mt-3">
+                      <button
+                        onClick={() => handleOpenModal(d)}
+                        className="px-3 py-1.5 text-sm text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d._id)}
+                        className="px-3 py-1.5 text-sm text-red-700 bg-red-50 hover:bg-red-100 rounded-lg"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-16">
+              <div className="bg-emerald-50/60 rounded-2xl p-10 mx-4 sm:mx-8">
+                <Tag className="mx-auto mb-4 text-emerald-500" size={56} />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No discounts {searchTerm || statusFilter !== "ALL" ? "match your filters" : "created yet"}
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  {searchTerm || statusFilter !== "ALL"
+                    ? "Try adjusting your search term or status filter."
+                    : "Create your first discount to attract more customers."}
+                </p>
+                {!searchTerm && statusFilter === "ALL" && (
+                  <button
+                    onClick={() => handleOpenModal()}
+                    className="inline-flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700"
+                  >
+                    <PlusCircle size={18} />
+                    Create Discount
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Modal */}
+      <DiscountModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        discountToEdit={editingDiscount}
+        isSaving={isSaving}
+      />
+    </div>
+  );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import {
   Leaf,
   Eye,
@@ -9,11 +10,13 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -22,6 +25,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -69,6 +73,7 @@ export default function LoginPage() {
       navigate("/");
     } catch (error) {
       setErrors({ submit: error.response?.data?.message });
+
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +87,7 @@ export default function LoginPage() {
   };
 
   return (
+
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
@@ -94,8 +100,10 @@ export default function LoginPage() {
           </h1>
           <p className="text-gray-600">
             Sign in to your GreenLeaf Store account
+
           </p>
         </div>
+
 
         {/* Login Form */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
@@ -125,7 +133,9 @@ export default function LoginPage() {
                   {errors.email}
                 </p>
               )}
+
             </div>
+
 
             {/* Password Field */}
             <div className="space-y-2">
@@ -220,8 +230,10 @@ export default function LoginPage() {
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
+
             </button>
           </div>
+
 
           {/* Sign Up Link */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
@@ -240,6 +252,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>© 2025 GreenLeaf Store. Fresh products, delivered with care.</p>
+
         </div>
       </div>
     </div>
