@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Shield,
 } from "lucide-react";
-
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
@@ -60,14 +59,8 @@ export default function SignupPage() {
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!form.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!form.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
+    if (!form.firstName.trim()) newErrors.firstName = "First name is required";
+    if (!form.lastName.trim()) newErrors.lastName = "Last name is required";
 
     if (!form.email.trim()) {
       newErrors.email = "Email address is required";
@@ -105,40 +98,30 @@ export default function SignupPage() {
     setErrors({});
 
     try {
-      const resp = await fetch(`${API_BASE}/api/auth/sighup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          password: form.password,
-          confirmPassword: form.confirmPassword,
-          // NOTE: we don't send agreeToTerms to backend
-        }),
-      });
+      // ✅ Backend expects: { fullName, email, password } at /auth/signup
+      const payload = {
+        fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.replace(
+          /\s+/g,
+          " "
+        ),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      };
 
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        setErrors({ submit: data.message || "Signup failed. Try again." });
-        setIsLoading(false);
-        return;
-      }
+      await api.post("/auth/signup", payload);
 
       setSignupSuccess(true);
-
-      // Optional: go to login after success
       setTimeout(() => {
         setSignupSuccess(false);
         setIsLoading(false);
         navigate("/login");
-      }, 1000);
-    } catch (error) {
-      setErrors({ submit: "Network error. Please try again." });
+      }, 900);
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        (typeof err?.response?.data === "string" ? err.response.data : null) ||
+        "Signup failed. Please try again.";
+      setErrors({ submit: message });
       setIsLoading(false);
     }
   };
@@ -173,7 +156,7 @@ export default function SignupPage() {
 
         {/* Signup Form */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-          <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -294,7 +277,6 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              {/* Password Strength Indicator */}
               {form.password && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -304,7 +286,7 @@ export default function SignupPage() {
                           passwordStrength
                         )}`}
                         style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                      ></div>
+                      />
                     </div>
                     <span className="text-xs font-medium text-gray-600">
                       {getPasswordStrengthText(passwordStrength)}
@@ -422,7 +404,7 @@ export default function SignupPage() {
 
             {/* Submit Button */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading || signupSuccess}
               className={`w-full py-4 rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
                 signupSuccess
@@ -439,7 +421,7 @@ export default function SignupPage() {
                 </>
               ) : isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Creating Account...
                 </>
               ) : (
@@ -450,7 +432,7 @@ export default function SignupPage() {
                 </>
               )}
             </button>
-          </div>
+          </form>
 
           {/* Login Link */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
