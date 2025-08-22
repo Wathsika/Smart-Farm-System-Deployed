@@ -42,6 +42,7 @@ import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
+import sighupRoutes from "./routes/sighup.routes.js";
 
 // --- Initialize App ---
 const app = express();
@@ -79,6 +80,9 @@ app.use(morgan("dev")); // HTTP request logger
  *   - /api/orders/webhook  (kept for compatibility)
  *   - /api/stripe/webhook  (matches Stripe CLI --forward-to)
  */
+
+app.use("/api/auth", sighupRoutes);
+
 app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 

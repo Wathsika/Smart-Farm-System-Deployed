@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -98,40 +99,46 @@ export default function SignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const resp = await fetch(`${API_BASE}/api/auth/sighup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          password: form.password,
+          confirmPassword: form.confirmPassword,
+          // NOTE: we don't send agreeToTerms to backend
+        }),
+      });
 
-      // Mock successful signup
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        setErrors({ submit: data.message || "Signup failed. Try again." });
+        setIsLoading(false);
+        return;
+      }
+
       setSignupSuccess(true);
 
-      // In a real app, you would:
-      // const response = await fetch('/api/auth/signup', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     firstName: form.firstName,
-      //     lastName: form.lastName,
-      //     email: form.email,
-      //     password: form.password
-      //   })
-      // });
-
+      // Optional: go to login after success
       setTimeout(() => {
-        alert(
-          "Account created successfully! 🎉\nPlease check your email to verify your account."
-        );
         setSignupSuccess(false);
         setIsLoading(false);
-      }, 1500);
+        navigate("/login");
+      }, 1000);
     } catch (error) {
-      setErrors({ submit: "Signup failed. Please try again later." });
+      setErrors({ submit: "Network error. Please try again." });
       setIsLoading(false);
     }
   };
