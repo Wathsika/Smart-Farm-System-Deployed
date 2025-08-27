@@ -1,7 +1,6 @@
-// /backend/routes/application.routes.js
+// ✅ Corrected and Complete File: /backend/routes/application.routes.js
 import { Router } from 'express';
-import { create, list } from '../controllers/application.controller.js';
-// The auth middleware is kept imported but is commented out in the routes below.
+import { create, list, listByField } from '../controllers/application.controller.js'; // The new function 'listByField' is added to the import.
 import { auth } from '../middlewares/auth.js';
 
 const router = Router();
@@ -10,6 +9,10 @@ const router = Router();
 // TODO: Uncomment 'auth' before final deployment.
 router.post('/', /* auth, */ create);
 router.get('/', /* auth, */ list);
-// --- End of temporarily disabled section ---
 
+// --- New Route for fetching applications by field ID ---
+// This is the missing route that your frontend needs.
+router.get('/field/:fieldId', /* auth, */ listByField);
+
+// --- The default export remains as it was ---
 export default router;

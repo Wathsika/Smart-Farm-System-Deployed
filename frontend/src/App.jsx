@@ -7,9 +7,11 @@ import Layout from "./components/common/Layout";
 
 // --- PUBLIC-FACING PAGES ---
 import Home from "./pages/Home";
+
 import Storefront from "./pages/Storefront";
 import AboutUs from "./pages/aboutus.jsx";
 import ContactUs from "./pages/contactus.jsx";
+
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp.jsx";
 
@@ -30,6 +32,7 @@ import TaskManagement from "./admin/TaskManagement";
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import AdminDiscountsPage from "./admin/DiscountsPage";
+import StoreReports from "./admin/StoreReports";
 
 // --- ADMIN FARM MODULES ---
 import AddCrop from "./admin/AddCrop.jsx";
@@ -38,10 +41,12 @@ import EditCrop from "./admin/EditCrop.jsx";
 import FieldPage from "./admin/FieldPage.jsx";
 import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
-
-// ⬇️ ADDED: Plan pages (no other changes)
+import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
+import InputListPage from './admin/InputListPage.jsx';
+import AddInputPage from './admin/AddInputPage.jsx';
+import EditInputPage from './admin/EditInputPage.jsx';
 
 // --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
@@ -54,12 +59,14 @@ import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 import CowProfilePage from "./pages/livestock/cow.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
+import BreedingPage from "./pages/livestock/Breeding.jsx";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
-const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
+const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
+
 const FarmDashboard = () => (
   <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
 );
@@ -75,9 +82,7 @@ const RevenuePage = () => (
 const CustomersPage = () => (
   <div className="p-6 text-2xl font-bold">Customer Management</div>
 );
-const ReportsPage = () => (
-  <div className="p-6 text-2xl font-bold">Store Reports</div>
-);
+
 
 // --- GUARDS ---
 const Private = ({ children }) =>
@@ -91,9 +96,6 @@ const AdminOnly = ({ children }) =>
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
 
-const BreedingRecordsPage = () => (
-  <div className="p-6 text-2xl font-bold">Breeding Records</div>
-);
 
 export default function App() {
   return (
@@ -113,53 +115,19 @@ export default function App() {
       <Route path="/signup" element={<SignUp />} />
 
       {/* AUTH USER */}
-      <Route
-        path="/profile"
-        element={
-          <Private>
-            <UserProfile />
-          </Private>
-        }
-      />
-      <Route
-        path="/checkout"
-        element={
-          <Private>
-            <CheckoutPage />
-          </Private>
-        }
-      />
-      <Route
-        path="/my-orders"
-        element={
-          <Private>
-            <MyOrdersPage />
-          </Private>
-        }
-      />
+      <Route path="/profile" element={<Private><UserProfile /></Private>} />
+      <Route path="/checkout" element={<Private><CheckoutPage /></Private>} />
+      <Route path="/my-orders" element={<Private><MyOrdersPage /></Private>} />
 
       {/* EMPLOYEE */}
-      <Route
-        path="/dashboard"
-        element={
-          <EmployeeOnly>
-            <EmployeeDashboard />
-          </EmployeeOnly>
-        }
-      />
+      <Route path="/dashboard" element={<EmployeeOnly><EmployeeDashboard /></EmployeeOnly>} />
 
-      {/* ADMIN */}
+      {/* --- ADMIN --- */}
       <Route
         path="/admin"
         element={
           <AdminOnly>
-            <Suspense
-              fallback={
-                <div className="w-full h-screen flex items-center justify-center text-lg">
-                  Loading Admin…
-                </div>
-              }
-            >
+            <Suspense fallback={<div className="w-full h-screen flex items-center justify-center text-lg">Loading Admin…</div>}>
               <AdminLayout />
             </Suspense>
           </AdminOnly>
@@ -173,7 +141,7 @@ export default function App() {
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
-        <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
+        <Route path="livestock/breeding" element={<BreedingPage />} />
 
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
@@ -182,15 +150,22 @@ export default function App() {
         <Route path="crop" element={<CropPage />} />
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
-
-        {/* ⬇️ ADDED: Plan pages under Crop (distinct paths, no conflicts) */}
+        
+        {/* Plan management */}
         <Route path="crop/plans" element={<PlanList />} />
         <Route path="crop/plan/new" element={<AddPlan />} />
-
+        
+        {/* Input Inventory management */}
+        <Route path="crop/inputs" element={<InputListPage />} />
+        <Route path="crop/inputs/add" element={<AddInputPage />} />
+        <Route path="crop/inputs/edit/:id" element={<EditInputPage />} />
+        
         {/* Field management */}
         <Route path="fields" element={<FieldPage />} />
         <Route path="fields/add" element={<AddFieldPage />} />
         <Route path="fields/edit/:id" element={<EditFieldPage />} />
+        {/* ✅ ROUTE ADDED FOR THE NEW DETAILS PAGE */}
+        <Route path="fields/:id" element={<FieldDetailsPage />} /> 
 
         {/* HR management */}
         <Route path="users" element={<AdminUsers />} />
@@ -199,19 +174,14 @@ export default function App() {
         <Route path="leave" element={<LeaveManagement />} />
 
         {/* Store (nested) */}
-        <Route
-          path="store/dashboard"
-          element={
-            <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}>
-              <StoreDashboard />
-            </Suspense>
-          }
-        />
+        <Route path="store/dashboard" element={<Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense>} />
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
-        <Route path="store/reports" element={<ReportsPage />} />
+
+        <Route path="store/reports" element={<StoreReports />} />
+
 
         {/* Finance (nested) */}
         <Route path="finance">
@@ -220,10 +190,7 @@ export default function App() {
           <Route path="transaction" element={<FinanceTransaction />} />
           <Route path="new_transaction" element={<FinanceNewTransaction />} />
           <Route path="edit_rule" element={<FinanceEditPayrollRule />} />
-          <Route
-            path="payroll_management"
-            element={<FinancePayrollManagement />}
-          />
+          <Route path="payroll_management" element={<FinancePayrollManagement />} />
         </Route>
       </Route>
 

@@ -1,17 +1,20 @@
+// ✅ නිවැරදි කරන ලද file එක: frontend/src/admin/EditCrop.jsx
+
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-// --- 1. වැදගත්ම වෙනස: api.js එකෙන් පොදු 'api' instance එක import කරගන්නවා ---
+// --- 1. මෙන්න අලුතෙන් එකතු කළ import එක ---
+// 'useParams' සහ 'useNavigate' එක්කම, 'Link' එකත් import කරගන්නවා.
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 
 const EditCrop = () => {
-    const { id } = useParams(); // URL එකෙන් crop ID එක ගන්නවා
+    const { id } = useParams();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         cropName: '',
         plantingDate: '',
         expectedHarvestDate: '',
-        status: '' // Status එකත් handle කරන්න state එකට add කරා
+        status: ''
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -20,11 +23,9 @@ const EditCrop = () => {
     useEffect(() => {
         const fetchCrop = async () => {
             try {
-                // --- 2. වඩාත් කාර්යක්ෂම API Call එක ---
-                // කලින් වගේ bütün crops list එකම ගන්නේ නැතුව,
-                // අදාළ ID එක තියෙන crop එක විතරක් backend එකෙන් කෙලින්ම ඉල්ලනවා.
+                // Backend එකෙන් අදාළ crop එකේ data ටික ගෙන්නගන්නවා
                 const response = await api.get(`/crops/${id}`);
-                const crop = response.data; // Backend එකෙන් එන්නේ එක crop object එකක්
+                const crop = response.data.crop; // Backend response structure එකට අනුව වෙනස් වෙන්න පුළුවන්
                 
                 if (crop) {
                     setFormData({
@@ -44,7 +45,7 @@ const EditCrop = () => {
         };
 
         fetchCrop();
-    }, [id]); // id එක වෙනස් උනොත් ආයෙත් මේක run වෙනවා.
+    }, [id]);
 
     const handleChange = (e) => {
         setFormData({
@@ -58,11 +59,10 @@ const EditCrop = () => {
         setError('');
         setMessage('');
         try {
-            // --- 3. Update API Call එක කෙලින්ම මෙතන කරනවා ---
+            // Update API call එක කරනවා
             await api.put(`/crops/${id}`, formData);
 
             setMessage('Crop updated successfully!');
-            // සාර්ථක උනාම ටික වෙලාවකින් ආපහු list page එකට යවනවා
             setTimeout(() => navigate('/admin/crop'), 1500);
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message;
@@ -75,8 +75,13 @@ const EditCrop = () => {
     }
 
     if (error) {
-        // Error එකක් ආවොත්, ආපහු යන්න link එකක් එක්ක පෙන්නනවා.
-        return <div className="p-8"><p className="text-red-500">{error}</p><Link to="/admin/crop">Go Back</Link></div>
+        // දැන් මේ Link component එක හරියටම වැඩ කරයි
+        return (
+            <div className="p-8">
+                <p className="text-red-500 mb-4">{error}</p>
+                <Link to="/admin/crop" className="text-blue-600 hover:underline">Go Back to Crop List</Link>
+            </div>
+        )
     }
 
     return (
@@ -85,7 +90,6 @@ const EditCrop = () => {
 
             <div className="max-w-2xl bg-white p-8 rounded-lg shadow-md">
                 <form onSubmit={handleSubmit}>
-                    {/* Input fields ටික එහෙමමයි, value එක state එකෙන් එනවා */}
                     <div className="mb-6">
                         <label htmlFor="cropName" className="block text-gray-700 text-sm font-bold mb-2">Crop Name</label>
                         <input
@@ -129,7 +133,6 @@ const EditCrop = () => {
                 </form>
 
                 {message && <div className="mt-4 p-3 bg-green-100 text-green-800 rounded-md">{message}</div>}
-                {error && <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-md">{error}</div>}
             </div>
         </div>
     );

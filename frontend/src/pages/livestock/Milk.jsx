@@ -12,6 +12,8 @@ import { FaDownload, FaPlus, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import { AddRecordModal, EditRecordModal } from "./MilkModal";
 import { api } from "../../lib/api";
+import { pdf } from "@react-pdf/renderer";
+import { MilkReportPDF } from "./MilkReport";
 
 /* ---------- date helpers ---------- */
 const pad = (n) => String(n).padStart(2, "0");
@@ -291,6 +293,10 @@ export default function Milk() {
   const [editOpen, setEditOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [reportKey, setReportKey] = useState(0);
+
   /* cows (female only) */
   useEffect(() => {
     (async () => {
@@ -471,6 +477,66 @@ export default function Milk() {
     }
   }
 
+  async function handleExport() {
+    setIsExporting(true);
+    setReportData(null);
+    try {
+      const selectedYear = yearSel;                    // use selected year
+      const currentMonthName = labelsYear[monthIdx];
+      const from = liso(new Date(selectedYear, monthIdx, 1));
+      const to   = liso(new Date(selectedYear, monthIdx + 1, 0));
+
+      const params = { from, to, limit: 5000 };
+      if (cowId !== "all") params.cow = cowId;
+
+      const { data } = await api.get("/milk", { params });
+      const items = data?.items || [];
+      if (!items.length) {
+        alert(`No data for ${currentMonthName} ${selectedYear}. Try another month/year.`);
+        return;
+      }
+
+      // If your MilkReportPDF expects grouped daily rows, switch to: const rows = groupDaily(items);
+      const rows = items;
+
+      const selectedCow = cows.find(c => c._id === cowId);
+      const cowName = cowId === "all" ? "All Cows" : (selectedCow?.name || selectedCow?.tagId || "N/A");
+
+      setReportData({ records: rows, monthName: currentMonthName, year: selectedYear, cowName });
+      setReportKey(k => k + 1);                        // force PDF re-render
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to prepare report data. Check console for details.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function downloadMonthlyPdf(report) {
+    try {
+      const doc = (
+        <MilkReportPDF
+          records={report.records}
+          monthName={report.monthName}
+          year={report.year}
+          cowName={report.cowName}
+        />
+      );
+      const blob = await pdf(doc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Milk_Report_${report.monthName}_${report.year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("PDF build failed", e);
+      alert("PDF build failed");
+    }
+  }
+
   const title = useMemo(() => (
     period === "week" ? "Weekly Milk Production" :
     period === "month" ? "Monthly Milk Production" :
@@ -490,15 +556,27 @@ export default function Milk() {
         />
       )}
       {period === "month" && (
-        <select
-          value={monthIdx}
-          onChange={(e) => setMonthIdx(Number(e.target.value))}
-          className="px-3 py-2 border rounded-lg text-sm bg-white"
-        >
-          {labelsYear.map((m, i) => (
-            <option key={i} value={i}>{m}</option>
-          ))}
-        </select>
+        <>
+          <select
+                value={monthIdx}
+                onChange={(e) => setMonthIdx(Number(e.target.value))}
+                className="px-3 py-2 border rounded-lg text-sm bg-white"
+              >
+                {labelsYear.map((m, i) => (
+                  <option key={i} value={i}>{m}</option>
+                ))}
+              </select>
+          <input
+            type="number"
+            min="2000"
+            max="2100"
+            step="1"
+            value={yearSel}
+            onChange={(e) => setYearSel(Number(e.target.value || new Date().getFullYear()))}
+            className="w-28 px-3 py-2 border rounded-lg text-sm bg-white"
+            title="Select year"
+          />
+        </>
       )}
       {period === "year" && (
         <input
@@ -633,12 +711,25 @@ export default function Milk() {
               <p className="text-gray-500 text-sm">This Month</p>
               <p className="text-lg font-semibold">{fmtL(summary.month)}</p>
             </div>
-            <button
-              onClick={() => window.open(`${api.defaults.baseURL}/reports/milk?period=month`, "_blank")}
-              className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50"
-            >
-              <FaDownload /> Export Report
-            </button>
+            <div>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaDownload />
+                {isExporting ? "Generating Report..." : "Export Monthly Report"}
+              </button>
+
+              {reportData && (
+                <button
+                  onClick={() => downloadMonthlyPdf(reportData)}
+                  className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg py-2 bg-green-600 text-white hover:bg-green-700"
+                >
+                  Download PDF Now
+                </button>
+              )}
+            </div>
           </div>
         </aside>
       </div>

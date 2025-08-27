@@ -207,5 +207,7 @@ export const getRecentOrders = async (req, res, next) => {
   } catch (err) {
     console.error("Error fetching recent orders:", err);
     next(err);
-  }
+
+  }
 };
+

@@ -91,7 +91,7 @@ const CropPage = () => {
                   {/* --- 4. Edit button එක නිවැරදි කරා --- */}
                   {/* <button> එකක් ඇතුළේ <Link> එකක් දාන්නේ නැතුව, කෙලින්ම <Link> එක දානවා */}
                   <Link
-                    to={`/admin/crop/edit/${crop._id}`} // නිවැරදි edit path එක (අපි App.jsx එකේ හදනවා)
+                    to={`/admin/crop/${crop._id}/edit`} // නිවැරදි edit path එක (App.jsx file)
                     className="text-indigo-600 hover:text-indigo-900 font-semibold mr-4"
                   >
                     Edit
