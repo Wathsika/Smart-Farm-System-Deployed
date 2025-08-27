@@ -37,10 +37,6 @@ import discountRoutes from "./routes/discount.routes.js";
 
 import performanceRoutes from "./routes/performance.routes.js";
 
-
-
-
-
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
 import inputRoutes from "./routes/input.routes.js";
@@ -112,8 +108,10 @@ app.use("/api/health", healthRoutes);
 app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
+
 app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
 app.use("/api/employees", employeeRoutes);
+
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
