@@ -1,8 +1,10 @@
 // ✅ Form එක සම්පූර්ණ කරන ලද file එක: frontend/src/admin/pages/EditFieldPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { api } from '../lib/axios.js';
+
+import { useParams, useNavigate } from 'react-router-dom';
+import { api } from '../lib/api.js'; // Team එකේ common API client එක
+
 
 const EditFieldPage = () => {
     const { id } = useParams();
