@@ -1,7 +1,6 @@
 // controllers/attendance.controller.js
 import Attendance from "../models/Attendance.js";
-import User from "../models/User.js";
-import Employee from "../models/Employee.js"; // ✅ employee model
+import Employee from "../models/Employee.js";
 import mongoose from "mongoose";
 
 // --- Helper to get the start of a given date ---
@@ -19,13 +18,13 @@ export const clockIn = async (req, res) => {
     const userId = req.user.id;
     const today = startOfDay(new Date());
 
-    // ✅ දැනටමත් check out නොකළ වාර්තාවක් ඇත්දැයි පරීක්ෂා කිරීම
+    // Check out නොකළ active session එකක් ඇත්දැයි පරීක්ෂා කිරීම
     const activeSession = await Attendance.findOne({ user: userId, date: today, checkOut: null });
     if (activeSession) {
       return res.status(400).json({ message: "You must clock out before you can clock in again." });
     }
 
-    // ✅ සෑම විටම නව පැමිණීමේ වාර්තාවක් සාදන්න
+    // සෑම විටම නව වාර්තාවක් නිර්මාණය කිරීම
     const newAttendance = await Attendance.create({
       user: userId,
       date: today,
@@ -35,6 +34,7 @@ export const clockIn = async (req, res) => {
 
     res.status(201).json({ message: "Clocked in successfully.", attendance: newAttendance });
   } catch (error) {
+    console.error("Clock-in error:", error); // Server console එකේ දෝෂය පෙන්වීමට
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -47,7 +47,7 @@ export const clockOut = async (req, res) => {
     const userId = req.user.id;
     const today = startOfDay(new Date());
 
-    // ✅ Check out කිරීමට අදාළ (checkOut: null) නවතම වාර්තාව සොයාගැනීම
+    // Check out කිරීමට අදාළ (checkOut: null) නවතම වාර්තාව සොයාගැනීම
     const attendance = await Attendance.findOne({ user: userId, date: today, checkOut: null }).sort({ checkIn: -1 });
 
     if (!attendance) {
@@ -60,9 +60,9 @@ export const clockOut = async (req, res) => {
     let hoursWorked = 0;
     if (attendance.checkIn && attendance.checkOut) {
       const diffMs = new Date(attendance.checkOut) - new Date(attendance.checkIn);
-      hoursWorked = diffMs / (1000 * 60 * 60); // ms → hrs
+      hoursWorked = diffMs / (1000 * 60 * 60); // ms -> hrs
 
-      // ✅ සේවකයාගේ මුළු වැඩකළ පැය ගණනට මෙම session එකේ පැය ගණන එකතු කිරීම
+      // `$inc` මගින් පැරණි workingHours අගයට නව අගය එකතු කිරීම
       await Employee.findOneAndUpdate(
         { user: userId },
         { $inc: { workingHours: hoursWorked } }
@@ -76,11 +76,33 @@ export const clockOut = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Clock-out error:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
-// @desc Get attendance records
+// @desc Get current day attendance records for the logged-in employee (FOR DASHBOARD)
+// @route GET /api/attendance/today
+// @access Private (Employee)
+export const getTodaysAttendance = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const todayStart = startOfDay(new Date());
+
+    const records = await Attendance.find({
+      user: userId,
+      date: todayStart,
+    }).sort({ checkIn: 1 }); // පැමිණි පිළිවෙලට සකස් කිරීම
+
+    res.json({ items: records });
+
+  } catch (error) {
+    console.error("Get today's attendance error:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc Get attendance records (FOR ADMIN/REPORTS)
 // @route GET /api/attendance
 // @access Private (Admin, Employee)
 export const getAttendanceRecords = async (req, res) => {
@@ -107,7 +129,7 @@ export const getAttendanceRecords = async (req, res) => {
     const [items, total] = await Promise.all([
       Attendance.find(filter)
         .populate("user", "fullName email jobTitle")
-        .sort({ checkIn: 1 }) // ✅ පැමිණි පිළිවෙලට පෙන්වීමට sort එක වෙනස් කිරීම
+        .sort({ checkIn: 1 })
         .skip((pg - 1) * lm)
         .limit(lm),
       Attendance.countDocuments(filter),
@@ -120,6 +142,7 @@ export const getAttendanceRecords = async (req, res) => {
       pages: Math.ceil(total / lm),
     });
   } catch (error) {
+    console.error("Get attendance records error:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -131,21 +154,14 @@ export const updateAttendanceByAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const { checkIn, checkOut, status, remarks } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid attendance ID" });
-    }
-
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid attendance ID" });
     const attendance = await Attendance.findById(id);
     if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
-
     if (checkIn) attendance.checkIn = checkIn;
     if (checkOut !== undefined) attendance.checkOut = checkOut;
     if (status) attendance.status = status;
     if (remarks !== undefined) attendance.remarks = remarks;
-
     const updatedAttendance = await attendance.save();
-
     res.json({ message: "Attendance updated successfully", attendance: updatedAttendance });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -158,14 +174,9 @@ export const updateAttendanceByAdmin = async (req, res) => {
 export const deleteAttendanceByAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid attendance ID" });
-    }
-
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid attendance ID" });
     const del = await Attendance.findByIdAndDelete(id);
     if (!del) return res.status(404).json({ message: "Record not found" });
-
     res.json({ message: "Attendance record deleted" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -178,29 +189,9 @@ export const deleteAttendanceByAdmin = async (req, res) => {
 export const createAttendanceByAdmin = async (req, res) => {
   try {
     const { user, date, checkIn, checkOut, status, remarks } = req.body;
-
-    if (!user || !date || !checkIn) {
-      return res.status(400).json({ message: "User ID, date, and checkIn time are required." });
-    }
-
+    if (!user || !date || !checkIn) return res.status(400).json({ message: "User ID, date, and checkIn time are required." });
     const recordDate = startOfDay(new Date(date));
-
-    // Admin can create multiple records too, so we remove the duplicate check or modify it
-    // For simplicity, we allow creating it. You might want to add a different logic here.
-    // const existingRecord = await Attendance.findOne({ user, date: recordDate });
-    // if (existingRecord) {
-    //   return res.status(409).json({ message: "Attendance already exists for this user on this date." });
-    // }
-
-    const newAttendance = await Attendance.create({
-      user,
-      date: recordDate,
-      checkIn,
-      checkOut: checkOut || null,
-      status: status || "Present",
-      remarks,
-    });
-
+    const newAttendance = await Attendance.create({ user, date: recordDate, checkIn, checkOut: checkOut || null, status: status || "Present", remarks });
     res.status(201).json({ message: "Attendance record created successfully.", attendance: newAttendance });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
