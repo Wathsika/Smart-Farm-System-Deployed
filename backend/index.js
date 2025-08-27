@@ -6,7 +6,7 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import bcrypt from "bcryptjs"; // ok to keep, even if unused
+// ok to keep, even if unused
 
 // --- DB & Error Middleware ---
 import { connectDB } from "./config/db.js";
@@ -28,6 +28,7 @@ import staffOwnerRoutes from "./routes/staffOwner.routes.js";
 import employeeRoutes from "./routes/employee.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import attendanceRoutes from "./routes/attendance.routes.js";
+
 import leaveRequestRoutes from "./routes/leaveRequest.routes.js";
 import taskRoutes from "./routes/task.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
@@ -36,12 +37,18 @@ import discountRoutes from "./routes/discount.routes.js";
 
 import performanceRoutes from "./routes/performance.routes.js";
 
+
+
+
+
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
 import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
+import reportRoutes from "./routes/report.routes.js";
+
 
 // --- Initialize App ---
 const app = express();
@@ -95,6 +102,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.use("/api/admin", adminRoutes);
 
@@ -104,14 +112,15 @@ app.use("/api/health", healthRoutes);
 app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
-app.use("/api/admin/users", staffOwnerRoutes);
-app.use("/api/employee", employeeRoutes);
+app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
+app.use("/api/employees", employeeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
 
+
 // Health check
-app.get("/", (_req, res) => res.json({ ok: true }));
+
 app.use("/api/performance", performanceRoutes);
 
 app.use("/api/transactions", transactionRoutes);
@@ -123,6 +132,7 @@ app.use("/api/fields", fieldRoutes);
 app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
+
 
 // --- Health Check ---
 app.get("/", (_req, res) =>

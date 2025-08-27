@@ -96,17 +96,32 @@ export default function Storefront() {
 
   // Fetch products ONCE on component mount
   useEffect(() => {
-    setLoading(true);
-    api.get("/products")
-      .then((res) => {
-        const productData = res.data.items || res.data;
-        setAllProducts(Array.isArray(productData) ? productData : []);
-      })
-      .catch((e) => {
+    const fetchAllProducts = async () => {
+      setLoading(true);
+      try {
+        const limit = 1000; // high limit to minimize number of requests
+        const collected = [];
+        let page = 1;
+        let totalPages = 1;
+
+        while (page <= totalPages) {
+          const res = await api.get("/products", { params: { page, limit } });
+          const items = res.data.items || res.data;
+          if (Array.isArray(items)) collected.push(...items);
+          totalPages = res.data.pages || 1;
+          page += 1;
+        }
+
+        setAllProducts(collected);
+      } catch (e) {
         console.error("Failed to fetch products:", e);
         setAllProducts([]);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllProducts();
   }, []);
 
   // Get unique categories for filter dropdown

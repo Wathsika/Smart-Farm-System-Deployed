@@ -136,7 +136,7 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
   });
   const [saving, setSaving] = React.useState(false);
 
-  // 🔒 keep ORIGINAL identity (what user is editing right now)
+  
   const originalRef = React.useRef({ cowId: "", date: "" });
 
   React.useEffect(() => {

@@ -30,6 +30,7 @@ import TaskManagement from "./admin/TaskManagement";
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import AdminDiscountsPage from "./admin/DiscountsPage";
+import StoreReports from "./admin/StoreReports";
 
 // --- ADMIN FARM MODULES ---
 import AddCrop from "./admin/AddCrop.jsx";
@@ -50,9 +51,15 @@ import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 import FinancePayrollManagement from "./admin/FinancePayrollManagement";
 import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
+// Livestock management pages
+import CowProfilePage from "./pages/livestock/cow.jsx";
+import MilkProduction from "./pages/livestock/Milk.jsx";
+import HealthPage from "./pages/livestock/Health.jsx";
+import BreedingPage from "./pages/livestock/Breeding.jsx";
+
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
-const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
+const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
 const FarmDashboard = () => (
@@ -70,9 +77,7 @@ const RevenuePage = () => (
 const CustomersPage = () => (
   <div className="p-6 text-2xl font-bold">Customer Management</div>
 );
-const ReportsPage = () => (
-  <div className="p-6 text-2xl font-bold">Store Reports</div>
-);
+
 
 // --- GUARDS ---
 const Private = ({ children }) =>
@@ -81,17 +86,10 @@ const Private = ({ children }) =>
 const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 
-// Livestock management pages
-import CowProfilePage from "./pages/livestock/cow.jsx";
-import MilkProduction from "./pages/livestock/Milk.jsx";
-import HealthPage from "./pages/livestock/Health.jsx";
+
 
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
-
-const BreedingRecordsPage = () => (
-  <div className="p-6 text-2xl font-bold">Breeding Records</div>
-);
 
 export default function App() {
   return (
@@ -171,7 +169,7 @@ export default function App() {
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
-        <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
+        <Route path="livestock/breeding" element={<BreedingPage />} />
 
         <Route path="staff" element={<StaffPage />} />
         <Route path="revenue" element={<RevenuePage />} />
@@ -209,7 +207,7 @@ export default function App() {
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
-        <Route path="store/reports" element={<ReportsPage />} />
+        <Route path="store/reports" element={<StoreReports />} />
 
         {/* Finance (nested) */}
         <Route path="finance">
