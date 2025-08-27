@@ -1,5 +1,6 @@
 import Product from "../models/Product.js";
-// Since we have removed the Order model for now, we won't import it.
+import Order from "../models/Order.js";
+import Discount from "../models/Discount.js";
 
 // --- HELPER FUNCTIONS ---
 // These are useful for date-based queries, which you can use later.
@@ -66,17 +67,57 @@ export const getOverview = async (req, res, next) => {
 export const getStoreSummary = async (req, res, next) => {
     try {
         const productCount = await Product.countDocuments({});
+         const lowStockCount = await Product.countDocuments({
+            $expr: { $lte: ["$stock.qty", "$stock.lowStockThreshold"] }
+        });
 
-        // --- Placeholders for Future Data (when you have Order/User models) ---
-        const orderCount = 0;
-        const customers = 0;
-        const revenueAllTime = 0;
+        const todayStart = startOfToday();
+        const yesterdayStart = new Date(todayStart);
+        yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+        const [ordersToday, ordersYesterday] = await Promise.all([
+            Order.countDocuments({ createdAt: { $gte: todayStart } }),
+            Order.countDocuments({ createdAt: { $gte: yesterdayStart, $lt: todayStart } })
+        ]);
+
+        const revenueAgg = await Promise.all([
+            Order.aggregate([
+                { $match: { createdAt: { $gte: todayStart } } },
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+            ]),
+            Order.aggregate([
+                { $match: { createdAt: { $gte: yesterdayStart, $lt: todayStart } } },
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+            ])
+        ]);
+
+        const revenueToday = revenueAgg[0][0]?.total || 0;
+        const revenueYesterday = revenueAgg[1][0]?.total || 0;
+
+        const ordersTodayChangePct = ordersYesterday
+            ? ((ordersToday - ordersYesterday) / ordersYesterday) * 100
+            : null;
+        const revenueTodayChangePct = revenueYesterday
+            ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100
+            : null;
+
+        const customers = (await Order.distinct("customer.email")).length;
+        const now = new Date();
+        const activeDiscounts = await Discount.countDocuments({
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        });
 
         res.status(200).json({
             productCount,
-            orderCount,
+             lowStockCount,
+            ordersToday,
+            ordersTodayChangePct,
             customers,
-            revenueAllTime,
+            revenueToday,
+            revenueTodayChangePct,
+            activeDiscounts,
         });
     } catch (err) {
         console.error("Error fetching store summary:", err);
@@ -89,9 +130,20 @@ export const getStoreSummary = async (req, res, next) => {
 // This requires an Order model. For now, it returns an empty array to prevent frontend errors.
 export const getSalesLast30Days = async (req, res, next) => {
   try {
-    // When you have an Order model, your query will go here.
-    // const rows = await Order.aggregate([...]);
-    res.status(200).json([]); // Return empty data
+   const startDate = daysAgo(29);
+    startDate.setHours(0, 0, 0, 0);
+    const rows = await Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: { $sum: "$totalPrice" },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    res.status(200).json(rows.map(r => ({ date: r._id, revenue: r.revenue, orders: r.orders })));
   } catch (err) {
     console.error("Error fetching sales chart data:", err);
     next(err);
@@ -120,4 +172,40 @@ export const getInventoryByCategory = async (req, res, next) => {
     console.error("Error fetching inventory by category:", err);
     next(err);
   }
+  };
+
+// --- 5. CHARTS: Top Selling Products ---
+export const getTopSellers = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit || "5", 10);
+    const rows = await Order.aggregate([
+      { $unwind: "$orderItems" },
+      {
+        $group: {
+          _id: "$orderItems.product",
+          name: { $first: "$orderItems.name" },
+          qty: { $sum: "$orderItems.qty" },
+          revenue: { $sum: { $multiply: ["$orderItems.qty", "$orderItems.price"] } }
+        }
+      },
+      { $sort: { qty: -1 } },
+      { $limit: limit }
+    ]);
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error("Error fetching top sellers:", err);
+    next(err);
+  }
+};
+
+// --- 6. Recent Orders ---
+export const getRecentOrders = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit || "5", 10);
+    const orders = await Order.find({}).sort({ createdAt: -1 }).limit(limit);
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error("Error fetching recent orders:", err);
+    next(err);
+  }
 };

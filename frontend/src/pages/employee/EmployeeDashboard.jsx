@@ -4,36 +4,28 @@ import { motion } from "framer-motion";
 import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-
 import MyTasks from "./MyTasks";
 import MyLeaveRequests from "./MyLeaveRequests";
-import MyAttendance from "./MyAttendance";
 import PerformanceTab from "./Performance.jsx";
 import TaskCalendar from "./TaskCalendar.jsx";
-
 import { api } from "../../lib/api";
 
 export default function EmployeeDashboard() {
   const [status, setStatus] = useState("idle"); // idle | checked-in | checked-out
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("today");
-  const [todayRecords, setTodayRecords] = useState([]); // ✅ දවසේ සියලුම records තබාගැනීමට
+  const [todayRecords, setTodayRecords] = useState([]);
 
   const loadToday = useCallback(async () => {
     try {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
-      // ✅ දවසට අදාළ සියලුම records ලබාගැනීම
-      const { data } = await api.get(`/attendance?startDate=${today}&endDate=${today}`);
+      const { data } = await api.get("/attendance/today");
 
       if (data.items && data.items.length > 0) {
         setTodayRecords(data.items);
-        // ✅ checkOut: null ඇති වාර්තාවක් ඇත්නම්, සේවකයා තවමත් check in වී ඇත
         const hasActiveSession = data.items.some(record => !record.checkOut);
         setStatus(hasActiveSession ? "checked-in" : "checked-out");
       } else {
-        // No records for today found
         setTodayRecords([]);
         setStatus("idle");
       }
@@ -44,13 +36,10 @@ export default function EmployeeDashboard() {
     }
   }, []);
 
-
-  // Load today’s attendance on initial mount
   useEffect(() => {
     loadToday();
   }, [loadToday]);
 
-  // Check-In
   const handleCheckIn = async () => {
     try {
       setLoading(true);
@@ -58,14 +47,12 @@ export default function EmployeeDashboard() {
       await loadToday();
     } catch (err) {
       console.error("Check-in failed", err);
-      // You can add an alert or toast message here for the user
       alert(err?.response?.data?.message || "Check-in failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Check-Out
   const handleCheckOut = async () => {
     try {
       setLoading(true);
@@ -110,16 +97,13 @@ export default function EmployeeDashboard() {
         <div className="mb-8 space-x-4">
           <button
             onClick={handleCheckIn}
-            // ✅ Check out කර ඇත්නම් හෝ ආරම්භයේදී පමණක් Check in button එක enable කිරීම
             disabled={loading || status === "checked-in"}
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading && status !== "checked-in" ? "Checking in..." : "Check-In"}
           </button>
-
           <button
             onClick={handleCheckOut}
-            // ✅ Check in වී ඇත්නම් පමණක් Check out button එක enable කිරීම
             disabled={loading || status !== "checked-in"}
             className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -127,7 +111,7 @@ export default function EmployeeDashboard() {
           </button>
         </div>
 
-        {/* ✅ Show ALL times for the day */}
+        {/* Show ALL times for the day */}
         <div className="mb-8 text-green-700 space-y-2 p-4 bg-green-50 rounded-lg border border-green-100">
           <h3 className="font-bold text-green-800">Today's Sessions</h3>
           {loading ? (

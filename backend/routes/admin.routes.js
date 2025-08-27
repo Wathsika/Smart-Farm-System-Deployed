@@ -1,37 +1,21 @@
 import express from "express";
-import User from "../models/User.js";
-import Employee from "../models/Employee.js";
-import bcrypt from "bcryptjs";
+
+import {
+  getOverview,
+  getStoreSummary,
+  getSalesLast30Days,
+  getInventoryByCategory,
+  getTopSellers,
+  getRecentOrders,
+} from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
-// Add Employee (adds to both Users + Employees tables)
-router.post("/employees", async (req, res) => {
-  try {
-    const { fullName, email, password, jobTitle, basicSalary } = req.body;
+router.get("/overview", getOverview);
+router.get("/store/summary", getStoreSummary);
+router.get("/charts/sales-30d", getSalesLast30Days);
+router.get("/charts/inventory-by-category", getInventoryByCategory);
+router.get("/charts/top-sellers", getTopSellers);
+router.get("/orders/recent", getRecentOrders);
 
-    // 1️⃣ Create user
-    const hashed = await bcrypt.hash(password, 10);
-    const user = new User({
-      fullName,
-      email,
-      password: hashed,
-      role: "Employee",
-    });
-    await user.save();
-
-    // 2️⃣ Create employee record
-    const employee = new Employee({
-      user: user._id,
-      jobTitle,
-      basicSalary,
-    });
-    await employee.save();
-
-    res.status(201).json({ message: "Employee created", user, employee });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-export default router;
+export default router;
