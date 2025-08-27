@@ -19,11 +19,13 @@ export const clockIn = async (req, res) => {
     const userId = req.user.id;
     const today = startOfDay(new Date());
 
-    const existingAttendance = await Attendance.findOne({ user: userId, date: today });
-    if (existingAttendance) {
-      return res.status(400).json({ message: "You have already clocked in today." });
+    // ✅ දැනටමත් check out නොකළ වාර්තාවක් ඇත්දැයි පරීක්ෂා කිරීම
+    const activeSession = await Attendance.findOne({ user: userId, date: today, checkOut: null });
+    if (activeSession) {
+      return res.status(400).json({ message: "You must clock out before you can clock in again." });
     }
 
+    // ✅ සෑම විටම නව පැමිණීමේ වාර්තාවක් සාදන්න
     const newAttendance = await Attendance.create({
       user: userId,
       date: today,
@@ -45,14 +47,11 @@ export const clockOut = async (req, res) => {
     const userId = req.user.id;
     const today = startOfDay(new Date());
 
-    const attendance = await Attendance.findOne({ user: userId, date: today });
+    // ✅ Check out කිරීමට අදාළ (checkOut: null) නවතම වාර්තාව සොයාගැනීම
+    const attendance = await Attendance.findOne({ user: userId, date: today, checkOut: null }).sort({ checkIn: -1 });
 
     if (!attendance) {
-      return res.status(404).json({ message: "No clock-in record found for today." });
-    }
-
-    if (attendance.checkOut) {
-      return res.status(400).json({ message: "You have already clocked out today." });
+      return res.status(404).json({ message: "No active clock-in record found to clock out." });
     }
 
     attendance.checkOut = new Date();
@@ -63,7 +62,7 @@ export const clockOut = async (req, res) => {
       const diffMs = new Date(attendance.checkOut) - new Date(attendance.checkIn);
       hoursWorked = diffMs / (1000 * 60 * 60); // ms → hrs
 
-      // ✅ Update Employee record (not User)
+      // ✅ සේවකයාගේ මුළු වැඩකළ පැය ගණනට මෙම session එකේ පැය ගණන එකතු කිරීම
       await Employee.findOneAndUpdate(
         { user: userId },
         { $inc: { workingHours: hoursWorked } }
@@ -108,7 +107,7 @@ export const getAttendanceRecords = async (req, res) => {
     const [items, total] = await Promise.all([
       Attendance.find(filter)
         .populate("user", "fullName email jobTitle")
-        .sort({ date: -1 })
+        .sort({ checkIn: 1 }) // ✅ පැමිණි පිළිවෙලට පෙන්වීමට sort එක වෙනස් කිරීම
         .skip((pg - 1) * lm)
         .limit(lm),
       Attendance.countDocuments(filter),
@@ -186,10 +185,12 @@ export const createAttendanceByAdmin = async (req, res) => {
 
     const recordDate = startOfDay(new Date(date));
 
-    const existingRecord = await Attendance.findOne({ user, date: recordDate });
-    if (existingRecord) {
-      return res.status(409).json({ message: "Attendance already exists for this user on this date." });
-    }
+    // Admin can create multiple records too, so we remove the duplicate check or modify it
+    // For simplicity, we allow creating it. You might want to add a different logic here.
+    // const existingRecord = await Attendance.findOne({ user, date: recordDate });
+    // if (existingRecord) {
+    //   return res.status(409).json({ message: "Attendance already exists for this user on this date." });
+    // }
 
     const newAttendance = await Attendance.create({
       user,
