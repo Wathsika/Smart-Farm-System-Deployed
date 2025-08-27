@@ -11,6 +11,8 @@ import Storefront from "./pages/Storefront";
 import AboutUs from "./pages/aboutus.jsx";
 import ContactUs from "./pages/contactus.jsx";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp.jsx";
+
 import UserProfile from "./pages/UserProfile";
 import CheckoutPage from "./pages/checkout";
 import MyOrdersPage from "./pages/MyOrdersPage";
@@ -49,6 +51,12 @@ import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 import FinancePayrollManagement from "./admin/FinancePayrollManagement";
 import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
 
+// Livestock management pages
+import CowProfilePage from "./pages/livestock/cow.jsx";
+import MilkProduction from "./pages/livestock/Milk.jsx";
+import HealthPage from "./pages/livestock/Health.jsx";
+import BreedingPage from "./pages/livestock/Breeding.jsx";
+
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
@@ -79,17 +87,9 @@ const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 
 
-// Livestock management pages
-import CowProfilePage from "./pages/livestock/cow.jsx";
-import MilkProduction from "./pages/livestock/Milk.jsx";
-import HealthPage from "./pages/livestock/Health.jsx";
 
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
-
-const BreedingRecordsPage = () => (
-  <div className="p-6 text-2xl font-bold">Breeding Records</div>
-);
 
 export default function App() {
   return (
@@ -106,6 +106,7 @@ export default function App() {
 
       {/* STANDALONE */}
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
 
       {/* AUTH USER */}
       <Route
@@ -162,20 +163,19 @@ export default function App() {
       >
         <Route index element={<FarmDashboard />} />
 
-
         {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} /> 
+        <Route path="livestock" element={<LivestockPage />} />
         {/* Livestock sub-pages */}
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
-        <Route path="livestock/breeding" element={<BreedingRecordsPage />} />
+        <Route path="livestock/breeding" element={<BreedingPage />} />
 
-          <Route path="staff" element={<StaffPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
+        <Route path="staff" element={<StaffPage />} />
+        <Route path="revenue" element={<RevenuePage />} />
 
-          {/* Crop management */}
-          <Route path="crop" element={<CropPage />} />
+        {/* Crop management */}
+        <Route path="crop" element={<CropPage />} />
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
 
@@ -209,8 +209,6 @@ export default function App() {
         <Route path="store/customers" element={<CustomersPage />} />
         <Route path="store/reports" element={<StoreReports />} />
 
-
-
         {/* Finance (nested) */}
         <Route path="finance">
           <Route index element={<Navigate to="overview" replace />} />
@@ -223,8 +221,6 @@ export default function App() {
             element={<FinancePayrollManagement />}
           />
         </Route>
-
-
       </Route>
 
       {/* FALLBACK */}
