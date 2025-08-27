@@ -28,7 +28,7 @@
     "framer-motion": "^12.23.12",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
-    "lucide-react": "^0.539.0",
+    "lucide-react": "^0.542.0",
     "react": "^19.1.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.1.0",

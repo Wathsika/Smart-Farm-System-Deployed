@@ -226,7 +226,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   </SidebarLink>
 </motion.div>
 
-            </motion.div>
+            
           )}
         </AnimatePresence>
 
