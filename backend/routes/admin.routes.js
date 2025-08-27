@@ -1,7 +1,17 @@
 import express from "express";
-import User from "../models/User.js";
-import Employee from "../models/Employee.js";
-import bcrypt from "bcryptjs";
+
+
+// CORRECT: Import ONLY the functions that are actually exported from the controller.
+// 'getLowStockTable' and 'getRecentOrdersTable' have been removed from this list.
+import {
+  getOverview,
+  getStoreSummary,
+  getSalesLast30Days,
+  getInventoryByCategory,
+  getTopSellers,
+  getRecentOrders,
+} from "../controllers/admin.controller.js";
+
 
 const router = express.Router();
 
@@ -20,13 +30,13 @@ router.post("/employees", async (req, res) => {
     });
     await user.save();
 
-    // 2️⃣ Create employee record
-    const employee = new Employee({
-      user: user._id,
-      jobTitle,
-      basicSalary,
-    });
-    await employee.save();
+
+// --- Chart-Specific Routes ---
+router.get("/charts/sales-30d", getSalesLast30Days);
+router.get("/charts/inventory-by-category", getInventoryByCategory);
+router.get("/charts/top-sellers", getTopSellers);
+router.get("/orders/recent", getRecentOrders);
+
 
     res.status(201).json({ message: "Employee created", user, employee });
   } catch (err) {

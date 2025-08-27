@@ -30,6 +30,7 @@ import TaskManagement from "./admin/TaskManagement";
 import AdminProducts from "./pages/store/Products";
 import AdminOrders from "./pages/store/Orders";
 import AdminDiscountsPage from "./admin/DiscountsPage";
+import StoreReports from "./admin/StoreReports";
 
 // --- ADMIN FARM MODULES ---
 import AddCrop from "./admin/AddCrop.jsx";
@@ -58,7 +59,7 @@ import BreedingPage from "./pages/livestock/Breeding.jsx";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
-const StoreDashboard = lazy(() => import("./admin/AdminDashboard"));
+const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
 const FarmDashboard = () => (
@@ -76,9 +77,7 @@ const RevenuePage = () => (
 const CustomersPage = () => (
   <div className="p-6 text-2xl font-bold">Customer Management</div>
 );
-const ReportsPage = () => (
-  <div className="p-6 text-2xl font-bold">Store Reports</div>
-);
+
 
 // --- GUARDS ---
 const Private = ({ children }) =>
@@ -208,7 +207,7 @@ export default function App() {
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
-        <Route path="store/reports" element={<ReportsPage />} />
+        <Route path="store/reports" element={<StoreReports />} />
 
         {/* Finance (nested) */}
         <Route path="finance">
