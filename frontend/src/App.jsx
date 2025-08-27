@@ -36,6 +36,7 @@ import EditCrop from "./admin/EditCrop.jsx";
 import FieldPage from "./admin/FieldPage.jsx";
 import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
+import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
 import InputListPage from './admin/InputListPage.jsx';
@@ -117,16 +118,15 @@ export default function App() {
         
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />
-        
-        {/* === START: ADDED MISSING ROUTES / මෙතනයි නැතිවුණු routes ටික එකතු කළේ === */}
         <Route path="crop/inputs/add" element={<AddInputPage />} />
         <Route path="crop/inputs/edit/:id" element={<EditInputPage />} />
-        {/* === END: ADDED MISSING ROUTES / මෙතනින් ඉවරයි === */}
         
         {/* Field management */}
         <Route path="fields" element={<FieldPage />} />
         <Route path="fields/add" element={<AddFieldPage />} />
         <Route path="fields/edit/:id" element={<EditFieldPage />} />
+        {/* ✅ ROUTE ADDED FOR THE NEW DETAILS PAGE */}
+        <Route path="fields/:id" element={<FieldDetailsPage />} /> 
 
         {/* HR management */}
         <Route path="users" element={<AdminUsers />} />
