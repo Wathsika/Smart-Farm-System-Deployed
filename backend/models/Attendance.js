@@ -10,7 +10,7 @@ const attendanceSchema = new mongoose.Schema({
   remarks: { type: String, trim: true }, // Optional: Add remarks field used in StaffAttendance.jsx
 }, { timestamps: true });
 
-// ✅ Add an index for faster lookups
-attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
+// ✅ බහුවිධ check-in වලට ඉඩ දීම සඳහා මෙම index එක ඉවත් කරන ලදී
+// attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
 
 export default mongoose.model("Attendance", attendanceSchema);
