@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon index.js",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "stripe:listen": "stripe listen --forward-to http://localhost:5000/api/stripe/webhook"
   },
   "keywords": [],
   "author": "",

@@ -60,18 +60,24 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+   "http://localhost:5000", 
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      // ❗ Explicitly reject unknown origins (more secure)
-      return cb(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    // ❗ Explicitly reject unknown origins (more secure)
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
+
+// Apply CORS globally except for webhook endpoints
+app.use((req, res, next) => {
+  const webhookPaths = ["/api/stripe/webhook", "/api/orders/webhook"];
+  if (webhookPaths.includes(req.path)) return next();
+  return cors(corsOptions)(req, res, next);
+});
 
 app.use(morgan("dev")); // HTTP request logger
 
@@ -84,6 +90,7 @@ app.use(morgan("dev")); // HTTP request logger
  */
 app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
 // Attach handlers for both webhook paths
 app.post("/api/orders/webhook", stripeWebhookHandler);
