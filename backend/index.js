@@ -37,14 +37,14 @@ import discountRoutes from "./routes/discount.routes.js";
 
 import performanceRoutes from "./routes/performance.routes.js";
 
-
-
 import cropRoutes from "./routes/crop.routes.js";
 import fieldRoutes from "./routes/field.routes.js";
 import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
+import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+
 
 // --- Initialize App ---
 const app = express();
@@ -92,6 +92,7 @@ app.use(morgan("dev")); // HTTP request logger
  *   - /api/orders/webhook  (kept for compatibility)
  *   - /api/stripe/webhook  (matches Stripe CLI --forward-to)
  */
+
 app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
@@ -116,11 +117,13 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/cows", cowRoutes);
 app.use("/api/milk", milkRoutes);
 app.use("/api/health", healthRoutes);
-app.use("/api/breeding", breedingRoutes);  
+app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
+
 app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
 app.use("/api/employees", employeeRoutes);
+
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -130,9 +133,8 @@ app.use("/api/tasks", taskRoutes);
 
 app.use("/api/performance", performanceRoutes);
 
-
 app.use("/api/transactions", transactionRoutes);
-
+app.use("/api", payrollSettingsRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);

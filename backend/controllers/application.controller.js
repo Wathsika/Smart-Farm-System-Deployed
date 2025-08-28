@@ -1,4 +1,4 @@
-// /backend/controllers/application.controller.js
+// ✅ Corrected and Complete File: /backend/controllers/application.controller.js
 
 import Application from '../models/ApplicationRecord.js';
 import Product from '../models/Input.js';
@@ -51,5 +51,40 @@ export const list = async (req, res) => {
   }
 };
 
-// Keep default export for route files that import `ctrl` as default
-export default { create, list };
+
+/**
+ * ==========================================================
+ * === START: This is the new function that was missing    ===
+ * ==========================================================
+ *
+ * @desc    Get all application records for a specific field ID
+ * @route   GET /api/applications/field/:fieldId
+ */
+export const listByField = async (req, res) => {
+  try {
+    // Find all documents in the 'Application' collection where the 'field'
+    // property matches the 'fieldId' that comes from the URL parameters.
+    const docs = await Application
+      .find({ field: req.params.fieldId })
+      .populate('product', 'name category'); // Also fetch the name and category of the product used
+
+    if (!docs) {
+      // If nothing is found, it's not an error, just return an empty list.
+      return res.status(200).json([]);
+    }
+
+    return res.json(docs);
+  } catch (err) {
+    console.error('List Applications by Field error:', err);
+    return res.status(500).json({ message: 'Failed to fetch application records for this field' });
+  }
+};
+/**
+ * ==========================================================
+ * === END: End of the new function                         ===
+ * ==========================================================
+ */
+
+
+// --- IMPORTANT: The default export is updated to include the new function ---
+export default { create, list, listByField };

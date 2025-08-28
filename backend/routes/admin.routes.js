@@ -18,4 +18,6 @@ router.get("/charts/inventory-by-category", getInventoryByCategory);
 router.get("/charts/top-sellers", getTopSellers);
 router.get("/orders/recent", getRecentOrders);
 
+
 export default router;
+
