@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 // Ensure required env vars before importing Stripe config
 process.env.STRIPE_SECRET_KEY = 'test_key';
+process.env.STRIPE_WEBHOOK_SECRET = 'test_webhook_secret';
 process.env.CLIENT_URL = 'http://client';
 
 function createRes() {

@@ -21,9 +21,9 @@ const discountSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ['PERCENTAGE', 'FIXED_AMOUNT'],
+      enum: ['PERCENTAGE', 'FLAT'],
       default: 'PERCENTAGE',
-      description: "The type of discount: a percentage or a fixed monetary amount."
+       description: "The type of discount: a percentage or a flat monetary amount."
     },
     
     value: {
