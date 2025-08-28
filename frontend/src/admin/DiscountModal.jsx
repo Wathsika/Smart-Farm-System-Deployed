@@ -2,11 +2,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Percent, DollarSign, Calendar, Tag, ShoppingCart } from "lucide-react";
 
+const DISCOUNT_TYPES = { PERCENTAGE: "PERCENTAGE", FLAT: "FLAT" };
+
 export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit, isSaving }) {
   const [form, setForm] = useState({
     name: "",
     code: "",
-    type: "PERCENTAGE", // PERCENTAGE | FLAT
+    type: DISCOUNT_TYPES.PERCENTAGE,
     value: 0,
     minPurchase: 0,
     startDate: "",
@@ -21,7 +23,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       setForm({
         name: discountToEdit.name || "",
         code: (discountToEdit.code || "").toUpperCase(),
-        type: discountToEdit.type || "PERCENTAGE",
+        type: discountToEdit.type || DISCOUNT_TYPES.PERCENTAGE,
         value: Number(discountToEdit.value || 0),
         minPurchase: Number(discountToEdit.minPurchase || 0),
         startDate: discountToEdit.startDate ? discountToEdit.startDate.slice(0, 10) : "",
@@ -32,7 +34,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       setForm({
         name: "",
         code: "",
-        type: "PERCENTAGE",
+         type: DISCOUNT_TYPES.PERCENTAGE,
         value: 0,
         minPurchase: 0,
         startDate: "",
@@ -51,7 +53,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     }));
   };
 
-  const isPercent = form.type === "PERCENTAGE";
+ const isPercent = form.type === DISCOUNT_TYPES.PERCENTAGE;
   const valueSuffix = isPercent ? "%" : "Rs";
 
   const disabledSave = useMemo(() => {
@@ -149,9 +151,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, type: "PERCENTAGE" }))}
+                       onClick={() => setForm((p) => ({ ...p, type: DISCOUNT_TYPES.PERCENTAGE }))}
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border ${
-                        form.type === "PERCENTAGE"
+                        form.type === DISCOUNT_TYPES.PERCENTAGE
                           ? "border-green-600 bg-green-50 text-green-700"
                           : "border-gray-300 hover:border-gray-400"
                       }`}
@@ -161,9 +163,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                     </button>
                     <button
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, type: "FLAT" }))}
+                      onClick={() => setForm((p) => ({ ...p, type: DISCOUNT_TYPES.FLAT }))}
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border ${
-                        form.type === "FLAT"
+                        form.type === DISCOUNT_TYPES.FLAT
                           ? "border-green-600 bg-green-50 text-green-700"
                           : "border-gray-300 hover:border-gray-400"
                       }`}
