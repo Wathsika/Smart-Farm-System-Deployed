@@ -74,7 +74,11 @@ const corsOptions = {
 
 // Apply CORS globally except for webhook endpoints
 app.use((req, res, next) => {
-  const webhookPaths = ["/api/stripe/webhook", "/api/orders/webhook"];
+const webhookPaths = [
+    "/api/stripe/webhook",
+    "/api/orders/webhook",
+    "/api/payment/webhook",
+  ];
   if (webhookPaths.includes(req.path)) return next();
   return cors(corsOptions)(req, res, next);
 });
@@ -95,6 +99,7 @@ app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 // Attach handlers for both webhook paths
 app.post("/api/orders/webhook", stripeWebhookHandler);
 app.post("/api/stripe/webhook", stripeWebhookHandler);
+app.post("/api/payment/webhook", stripeWebhookHandler);
 
 // --- Body Parsers (after raw webhook parsers) ---
 app.use(express.json({ limit: "5mb" }));
