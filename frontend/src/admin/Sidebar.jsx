@@ -38,7 +38,7 @@ const drawerVariants = {
   },
   exit: { x: -320, opacity: 0, transition: { duration: 0.2 } },
 };
-
+    
 
 const SidebarInner = ({ location, navigate, closeMobile }) => {
   // Auto-open accordions based on current route
@@ -214,17 +214,11 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
     to="/admin/crop/plan/new"
     icon="fas fa-plus-circle"
     onNavigate={onNavigate}
-  >
-    Add Plan
-  </SidebarLink>
-  <SidebarLink
-    to="/admin/crop/inputs"
-    icon="fas fa-vial"
-    onNavigate={onNavigate}
-  >
+  > 
+ 
     Inputs Inventory
   </SidebarLink>
-</motion.div>
+</motion.div>    
 
             
           )}
