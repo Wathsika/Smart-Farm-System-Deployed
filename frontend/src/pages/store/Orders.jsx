@@ -32,6 +32,14 @@ const formatDate = (dateString) =>
     year: "numeric",
   });
 
+  const getOrderDisplayId = (order) => {
+  if (!order) return "#ORDER";
+  if (order.orderNumber) return order.orderNumber;
+  const fallback =
+    order.stripeSessionId?.slice(-10)?.toUpperCase() ||
+    (order._id ? String(order._id).slice(-6).toUpperCase() : undefined);
+  return fallback ? `#${fallback}` : "#ORDER";
+};
 /* ========================
    BADGE
 ======================== */
@@ -117,7 +125,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">
-                  Order #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                  Order {getOrderDisplayId(order)}
                 </h2>
                 <p className="text-green-100 mt-1">
                   Placed on{" "}
@@ -418,7 +426,9 @@ export default function AdminOrdersPage() {
       const matchesSearch =
         order.customer?.name?.toLowerCase().includes(q) ||
         order.customer?.email?.toLowerCase().includes(q) ||
-        order.stripeSessionId?.toLowerCase().includes(q);
+        order.orderNumber?.toLowerCase().includes(q) ||
+        order.stripeSessionId?.toLowerCase().includes(q) ||
+        order._id?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "ALL" || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -620,7 +630,7 @@ export default function AdminOrdersPage() {
                       >
                         <td className="px-6 py-4">
                           <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                            #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                            {getOrderDisplayId(order)}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -672,7 +682,7 @@ export default function AdminOrdersPage() {
                   <div key={order._id} className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                        #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                       {getOrderDisplayId(order)}
                       </span>
                       <Badge text={order.isPaid ? "PAID" : "PENDING"} />
                     </div>

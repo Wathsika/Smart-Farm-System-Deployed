@@ -41,7 +41,7 @@ const NAME_SANITIZE_REGEX = /[^A-Za-z0-9\s-]/g;
 
 const PRICE_MIN = 1.00;
 const PRICE_MAX = 100000;
-const QTY_MIN = 1;
+const QTY_MIN = 0;
 const TWO_DECIMAL_PATTERN = /^\d+(?:\.\d{1,2})?$/;
 const TWO_DECIMAL_INPUT_PATTERN = "\\d+(\\.\\d{1,2})?";
 
@@ -367,18 +367,31 @@ export default function ProductModal({
     let nextValue = value;
 
     if (name === "qty") {
-       if (value === "" || value === null) {
-        nextValue = "";
-      } else {
-        const numericValue = Number(value);
-      if (!Number.isNaN(numericValue)) {
-          if (numericValue < 0) {
-            nextValue = "0";
-          } else if (numericValue > QTY_MAX) {
-            nextValue = QTY_MAX.toString();
-          }
-        }
+      const sanitized = sanitizeDecimalInput(value);
+
+      if (sanitized === "") {
+        setForm((p) => ({ ...p, qty: "" }));
+        if (errors.qty) setErrors((prev) => ({ ...prev, qty: null }));
+        return;
       }
+      if (!TWO_DECIMAL_PATTERN.test(sanitized)) {
+        return;
+      }
+
+      const numericValue = Number(sanitized);
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      const clampedValue = Math.min(Math.max(numericValue, QTY_MIN), QTY_MAX);
+      const clampedString =
+        clampedValue === numericValue
+          ? sanitized
+          : sanitizeDecimalInput(clampedValue);
+
+      setForm((p) => ({ ...p, qty: clampedString }));
+      if (errors.qty) setErrors((prev) => ({ ...prev, qty: null }));
+      return;
     }
 
     setForm((p) => ({ ...p, [name]: nextValue }));
@@ -423,15 +436,16 @@ export default function ProductModal({
       }
     }
     if (form.qty === "" || form.qty === null) e.qty = "Stock quantity is required";
-    else {
+     else if (!TWO_DECIMAL_PATTERN.test(form.qty)) {
+      e.qty = `Enter a valid quantity with up to two decimal places (${QTY_MIN.toLocaleString()} to ${QTY_MAX.toLocaleString()}).`;
+    } else {
       const numericQty = Number(form.qty);
       if (
-        Number.isNaN(numericQty) ||
-        !Number.isInteger(numericQty) ||
-        numericQty < 1 ||
+        !Number.isFinite(numericQty) ||
+        numericQty < QTY_MIN ||
         numericQty > QTY_MAX
       ) {
-        e.qty = `Enter a valid whole number for stock (1 to ${QTY_MAX.toLocaleString()}).`;
+        e.qty = `Enter a valid quantity with up to two decimal places (${QTY_MIN.toLocaleString()} to ${QTY_MAX.toLocaleString()}).`;
       }
     }
     setErrors(e);
@@ -619,10 +633,9 @@ export default function ProductModal({
                       <StyledInput
                         id="qty"
                         name="qty"
-                        type="number"
-                        min={1}
-                        step={1}
-                        max={QTY_MAX}
+                         type="text"
+                        inputMode="decimal"
+                        pattern={TWO_DECIMAL_PATTERN.source}
                         value={form.qty}
                         onChange={handleChange}
                         placeholder="0"

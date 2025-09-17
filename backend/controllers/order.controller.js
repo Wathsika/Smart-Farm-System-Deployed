@@ -125,7 +125,10 @@ const fulfillOrder = async (session) => {
       }
     }
 
+     const orderNumber = await Order.generateOrderNumber();
+
     const order = new Order({
+      orderNumber,
       customer,
       orderItems,
       shippingAddress,

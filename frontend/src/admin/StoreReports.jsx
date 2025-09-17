@@ -13,7 +13,12 @@ import {
 } from "recharts";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
+import {
+  BRAND_CONTACT_LINE,
+  BRAND_DETAILS,
+  BRAND_DOCUMENT_TITLES,
+  formatDocumentTitle,
+} from "../constants/branding";
 const TABS = [
   { key: "sales", label: "Sales Reports" },
   { key: "inventory", label: "Inventory Reports" },
@@ -49,19 +54,75 @@ export default function StoreReports() {
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Smart Farm Report", 14, 22);
-    doc.setFontSize(12);
-    doc.text(`Section: ${TABS.find((t) => t.key === activeTab)?.label}`, 14, 32);
-    doc.text(`Range: ${RANGES.find((r) => r.key === range)?.label}`, 14, 38);
+    const sectionLabel = TABS.find((t) => t.key === activeTab)?.label || "";
+    const rangeLabel = RANGES.find((r) => r.key === range)?.label || "";
+    const generatedAt = new Date();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(22, 101, 52);
+    doc.text(BRAND_DETAILS.name, 14, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(55, 65, 81);
+    doc.text(BRAND_DETAILS.address, 14, 28);
+    doc.text(BRAND_CONTACT_LINE, 14, 34);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(75, 85, 99);
+    const headerTitle = formatDocumentTitle(
+      sectionLabel || BRAND_DOCUMENT_TITLES.report,
+    );
+    doc.text(headerTitle, 196, 20, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Generated: ${generatedAt.toLocaleDateString()}`, 196, 28, {
+      align: "right",
+    });
+    doc.text(generatedAt.toLocaleTimeString(), 196, 34, { align: "right" });
+
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(0.5);
+    doc.line(14, 38, 196, 38);
+
+    const metaStartY = 46;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(17, 24, 39);
+    doc.text("Section:", 14, metaStartY);
+    doc.setFont("helvetica", "normal");
+    doc.text(sectionLabel || "—", 36, metaStartY);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Range:", 14, metaStartY + 8);
+    doc.setFont("helvetica", "normal");
+    doc.text(rangeLabel || "—", 33, metaStartY + 8);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Generated:", 196, metaStartY, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.text(generatedAt.toLocaleString(), 196, metaStartY + 8, {
+      align: "right",
+    });
+
+    const tableStartY = metaStartY + 16;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+
     if (data.length) {
       const columns = Object.keys(data[0]).map((key) => ({
         header: key,
         dataKey: key,
       }));
-      doc.autoTable({ startY: 48, columns, body: data });
+      doc.autoTable({ startY: tableStartY, columns, body: data });
     } else {
-      doc.text("No data available", 14, 48);
+       doc.text("No data available", 14, tableStartY);
     }
     doc.save(`${activeTab}-report.pdf`);
   };

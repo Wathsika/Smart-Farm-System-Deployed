@@ -11,6 +11,7 @@ vi.mock('../lib/api', () => ({
           data: [
             {
               _id: 'o1',
+              orderNumber: 'ORD-2024-01-001',
               stripeSessionId: 'sess_123',
               createdAt: new Date().toISOString(),
               totalPrice: 20,
@@ -41,5 +42,5 @@ test('user can view orders', async () => {
     </QueryClientProvider>
   );
 
-  expect(await screen.findByText(/Order #/i)).toBeInTheDocument();
+expect(await screen.findByText(/Order ORD-2024-01-001/)).toBeInTheDocument();
 });

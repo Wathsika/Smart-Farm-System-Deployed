@@ -8,7 +8,13 @@ import { useAuth } from '../context/AuthContext';
 import { Package, XCircle, FileText, Loader2, Check } from 'lucide-react';
 import InvoiceModal from '../components/common/InvoiceModal'; // The new modal for receipts
 
-
+const getOrderDisplayId = (order) => {
+    if (!order) return '#ORDER';
+    if (order.orderNumber) return order.orderNumber;
+    const fallback = order.stripeSessionId?.slice(-10)?.toUpperCase()
+        || (order._id ? String(order._id).slice(-6).toUpperCase() : undefined);
+    return fallback ? `#${fallback}` : '#ORDER';
+};
 // --- Reusable Component for the Order Status Tracker ---
 const StatusTracker = ({ status }) => {
     const statuses = ['PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -159,7 +165,7 @@ export default function MyOrdersPage() {
                             <div key={order._id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 pb-4 border-b">
                                     <div>
-                                        <h2 className="font-bold text-lg text-gray-800">Order #{order.stripeSessionId?.slice(-10).toUpperCase() || order._id.slice(-6)}</h2>
+                                         <h2 className="font-bold text-lg text-gray-800">Order {getOrderDisplayId(order)}</h2>
                                         <p className="text-sm text-gray-500">
                                             Placed on: {new Date(order.createdAt).toLocaleDateString()}
                                         </p>
