@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import ReviewModal from '../pages/ReviewModal.jsx';
 
 // Import necessary components and icons
 import { Package, XCircle, FileText, Loader2, Check } from 'lucide-react';
@@ -61,7 +62,9 @@ export default function MyOrdersPage() {
     // This state will hold the order object that the user wants to view in the modal.
     // If it's `null`, the modal is closed.
     const [viewingOrder, setViewingOrder] = useState(null);
- const [autoPrint, setAutoPrint] = useState(false);
+  const [autoPrint, setAutoPrint] = useState(false);
+    const [selectedReviewItem, setSelectedReviewItem] = useState(null);
+
 
     // --- DATA FETCHING with React Query ---
     // Fetches data from the protected `/api/orders/myorders` route.
@@ -96,12 +99,25 @@ export default function MyOrdersPage() {
         onSuccess: () => {
             // After a successful cancellation, tell React Query to refetch the 'myOrders' data.
             // This ensures the UI updates instantly to show the "Cancelled" status.
-            queryClient.invalidateQueries({ queryKey: ['myOrders'] });
-             queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['myOrders', user?.email] });
+            queryClient.invalidateQueries({ queryKey: ['products'] });
             alert("Your order has been successfully cancelled.");
         },
         onError: (error) => {
             alert(error.response?.data?.message || "Failed to cancel the order.");
+        }
+    });
+
+     const { mutate: submitReview, isLoading: isSubmittingReview } = useMutation({
+        mutationFn: ({ orderId, orderItemId, rating, comment }) =>
+            api.post(`/orders/${orderId}/reviews`, { orderItemId, rating, comment }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['myOrders', user?.email] });
+            alert('Your review has been saved.');
+            setSelectedReviewItem(null);
+        },
+        onError: (error) => {
+            alert(error.response?.data?.message || 'Failed to save the review.');
         }
     });
 
@@ -133,7 +149,28 @@ export default function MyOrdersPage() {
         setViewingOrder(order);
         setAutoPrint(true);
     };
+const handleOpenReview = (order, item) => {
+        setSelectedReviewItem({
+            orderId: order._id,
+            orderItemId: item._id || item.product,
+            itemName: item.name,
+            existingReview: item.review || null,
+        });
+    };
 
+    const handleCloseReview = () => {
+        setSelectedReviewItem(null);
+    };
+
+    const handleSubmitReview = ({ rating, comment }) => {
+        if (!selectedReviewItem) return;
+        submitReview({
+            orderId: selectedReviewItem.orderId,
+            orderItemId: selectedReviewItem.orderItemId,
+            rating,
+            comment,
+        });
+    };
     // --- RENDER STATES ---
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin text-green-600" /></div>;
@@ -175,25 +212,85 @@ export default function MyOrdersPage() {
                                     </div>
                                 </div>
                                 <div className="mb-6"><StatusTracker status={order.status} /></div>
-                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-t pt-4">
-                                    <div className="text-sm text-gray-600 mb-4 md:mb-0">
-                                      Contains {order.orderItems.length} item(s): {order.orderItems.map(i => `${i.name} (Stock: ${productStock[i.product] ?? 0})`).join(', ')}
-                                    </div>
-                                    <div className="flex gap-3">
-                                          <button
-                                            onClick={() => handleDownloadInvoice(order)}
-                                             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
-                                            <FileText size={16} /> Download Invoice
-                                        </button>
-                                       {order.status !== 'CANCELLED' && (
-                                            <button
-                                                onClick={() => handleCancelOrder(order._id)}
-                                                disabled={isCancelling || ['SHIPPED', 'DELIVERED'].includes(order.status)}
-                                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                                <div className="flex flex-col gap-6 border-t pt-4">
+                                    <div className="space-y-4">
+                                        {order.orderItems.map((item) => (
+                                            <div
+                                                key={item._id || item.product}
+                                                className="flex flex-col md:flex-row gap-4 border border-gray-200 rounded-lg p-4 bg-gray-50"
                                             >
-                                               <XCircle size={16} /> Cancel Order
+                                                {item.image && (
+                                                    <img
+                                                        src={item.image}
+                                                        alt={item.name}
+                                                        className="w-24 h-24 object-cover rounded-md border"
+                                                    />
+                                                )}
+                                                <div className="flex-1 space-y-2">
+                                                    <div>
+                                                        <h3 className="text-base font-semibold text-gray-800">{item.name}</h3>
+                                                        <p className="text-sm text-gray-500">
+                                                            Qty: {item.qty} &bull; Unit Price: Rs {Number(item.price ?? 0).toFixed(2)}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            Current stock: {productStock[item.product] ?? 0}
+                                                        </p>
+                                                    </div>
+                                                    {item.review ? (
+                                                        <div className="bg-white border border-green-200 rounded-lg p-3 text-sm text-gray-700">
+                                                            <p className="font-semibold text-green-700">Your review</p>
+                                                            <p className="mt-1">Rating: {item.review.rating} / 5</p>
+                                                            {item.review.comment && (
+                                                                <p className="mt-2 text-gray-600 whitespace-pre-line">
+                                                                    {item.review.comment}
+                                                                </p>
+                                                            )}
+                                                            {order.status === 'DELIVERED' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleOpenReview(order, item)}
+                                                                    className="mt-3 inline-flex items-center justify-center px-3 py-1.5 text-sm font-semibold text-green-700 bg-green-100 rounded-md hover:bg-green-200"
+                                                                >
+                                                                    Edit review
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        order.status === 'DELIVERED' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenReview(order, item)}
+                                                                className="inline-flex items-center justify-center self-start px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700"
+                                                            >
+                                                                Leave review
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                                        <div className="text-sm text-gray-500">
+                                            Contains {order.orderItems.length} item(s)
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                 onClick={() => handleDownloadInvoice(order)}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200"
+                                            >
+                                                <FileText size={16} /> Download Invoice
                                             </button>
-                                        )}
+                                        {order.status !== 'CANCELLED' && (
+                                                <button
+                                                    onClick={() => handleCancelOrder(order._id)}
+                                                    disabled={isCancelling || ['SHIPPED', 'DELIVERED'].includes(order.status)}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                                                >
+                                                    <XCircle size={16} /> Cancel Order
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -208,6 +305,14 @@ export default function MyOrdersPage() {
                 onClose={() => { setViewingOrder(null); setAutoPrint(false); }}
                 order={viewingOrder}
                 autoPrint={autoPrint}
+            />
+            <ReviewModal
+                isOpen={!!selectedReviewItem}
+                onClose={handleCloseReview}
+                onSubmit={handleSubmitReview}
+                itemName={selectedReviewItem?.itemName}
+                isSubmitting={isSubmittingReview}
+                initialReview={selectedReviewItem?.existingReview}
             />
         </div>
     );

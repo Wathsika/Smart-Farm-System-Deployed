@@ -296,3 +296,123 @@ export const cancelOrder = async (req, res, next) => {
     next(error);
   }
 };
+
+// --- User: Review Order Item (auth) ---
+export const addOrderItemReview = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { orderItemId, rating, comment } = req.body || {};
+
+    if (!orderItemId) {
+      return res.status(400).json({ message: 'Order item is required.' });
+    }
+
+    const numericRating = Number(rating);
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ message: 'Rating must be a number between 1 and 5.' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    if (!req.user || order.customer.email !== req.user.email) {
+      return res.status(403).json({ message: 'Not authorized to review this order.' });
+    }
+
+    if (order.status !== 'DELIVERED') {
+      return res.status(400).json({ message: 'Reviews are only available for delivered orders.' });
+    }
+
+    const orderItem = order.orderItems.id(orderItemId);
+    if (!orderItem) {
+      return res.status(404).json({ message: 'Order item not found.' });
+    }
+
+    if (orderItem.review) {
+      return res.status(400).json({ message: 'Review already exists for this item.' });
+    }
+
+    orderItem.review = {
+      rating: numericRating,
+      comment,
+      createdAt: new Date(),
+    };
+
+    if (!order.deliveredAt) {
+      order.deliveredAt = new Date();
+    }
+
+    const updatedOrder = await order.save();
+
+    orderEvents.emit('reviewChange', {
+      orderId: order._id.toString(),
+      orderItemId: orderItem._id.toString(),
+      review: orderItem.review,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrderItemReview = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { orderItemId, rating, comment } = req.body || {};
+
+    if (!orderItemId) {
+      return res.status(400).json({ message: 'Order item is required.' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    if (!req.user || order.customer.email !== req.user.email) {
+      return res.status(403).json({ message: 'Not authorized to review this order.' });
+    }
+
+    if (order.status !== 'DELIVERED') {
+      return res.status(400).json({ message: 'Reviews are only available for delivered orders.' });
+    }
+
+    const orderItem = order.orderItems.id(orderItemId);
+    if (!orderItem) {
+      return res.status(404).json({ message: 'Order item not found.' });
+    }
+
+    if (!orderItem.review) {
+      return res.status(400).json({ message: 'No existing review to update for this item.' });
+    }
+
+    if (typeof rating !== 'undefined') {
+      const numericRating = Number(rating);
+      if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+        return res.status(400).json({ message: 'Rating must be a number between 1 and 5.' });
+      }
+      orderItem.review.rating = numericRating;
+    }
+
+    if (typeof comment !== 'undefined') {
+      orderItem.review.comment = comment;
+    }
+
+    orderItem.review.updatedAt = new Date();
+
+    if (!order.deliveredAt) {
+      order.deliveredAt = new Date();
+    }
+
+    const updatedOrder = await order.save();
+
+    orderEvents.emit('reviewChange', {
+      orderId: order._id.toString(),
+      orderItemId: orderItem._id.toString(),
+      review: orderItem.review,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    next(error);
+  }
+};

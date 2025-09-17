@@ -15,6 +15,16 @@ const OrderCounter =
   mongoose.models.OrderCounter ||
   mongoose.model("OrderCounter", orderCounterSchema);
 
+  const reviewSchema = new mongoose.Schema(
+  {
+    rating: { type: Number, min: 1, max: 5, required: true },
+    comment: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date },
+  },
+  { _id: false }
+);
+
 const orderItemSchema = new mongoose.Schema({
   // Use 'product' as the key to match the ref, which is good practice.
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -22,6 +32,7 @@ const orderItemSchema = new mongoose.Schema({
   qty: { type: Number, required: true },
   price: { type: Number, required: true },
   image: { type: String },
+  review: { type: reviewSchema, default: null },
 });
 
 // Optional discount applied to the order
@@ -76,7 +87,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"],
       default: "PENDING",
     },
-    
+     deliveredAt: { type: Date },
      paymentMethod: { type: String, default: "Stripe" },
     stripeSessionId: { type: String, unique: true, sparse: true },
   },

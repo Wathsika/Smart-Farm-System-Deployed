@@ -12,7 +12,7 @@ import {
   Bar,
 } from "recharts";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import {
   BRAND_CONTACT_LINE,
   BRAND_DETAILS,
@@ -120,7 +120,7 @@ export default function StoreReports() {
         header: key,
         dataKey: key,
       }));
-      doc.autoTable({ startY: tableStartY, columns, body: data });
+      autoTable(doc, { startY: tableStartY, columns, body: data });
     } else {
        doc.text("No data available", 14, tableStartY);
     }
