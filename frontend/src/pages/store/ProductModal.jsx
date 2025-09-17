@@ -41,6 +41,7 @@ const NAME_SANITIZE_REGEX = /[^A-Za-z0-9\s-]/g;
 
 const PRICE_MIN = 1.00;
 const PRICE_MAX = 100000;
+const QTY_MAX = 100000;
 const formatPrice = (value) =>
   new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,
@@ -321,12 +322,16 @@ export default function ProductModal({
     
 
     if (name === "qty") {
-      if (value === "") {
+       if (value === "" || value === null) {
         nextValue = "";
       } else {
         const numericValue = Number(value);
-        if (!Number.isNaN(numericValue) && numericValue < 0) {
-          nextValue = "0";
+      if (!Number.isNaN(numericValue)) {
+          if (numericValue < 0) {
+            nextValue = "0";
+          } else if (numericValue > QTY_MAX) {
+            nextValue = QTY_MAX.toString();
+          }
         }
       }
     }
@@ -371,8 +376,17 @@ export default function ProductModal({
       }
     }
     if (form.qty === "" || form.qty === null) e.qty = "Stock quantity is required";
-    else if (isNaN(form.qty) || !Number.isInteger(Number(form.qty)) || Number(form.qty) < 0)
-      e.qty = "Enter a valid whole number for stock (1 or higher).";
+    else {
+      const numericQty = Number(form.qty);
+      if (
+        Number.isNaN(numericQty) ||
+        !Number.isInteger(numericQty) ||
+        numericQty < 1 ||
+        numericQty > QTY_MAX
+      ) {
+        e.qty = `Enter a valid whole number for stock (1 to ${QTY_MAX.toLocaleString()}).`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -560,6 +574,9 @@ export default function ProductModal({
                         id="qty"
                         name="qty"
                         type="number"
+                        min={1}
+                        step={1}
+                        max={QTY_MAX}
                         value={form.qty}
                         onChange={handleChange}
                         placeholder="0"

@@ -3,14 +3,45 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Percent, DollarSign, Calendar, Tag, ShoppingCart } from "lucide-react";
 
 const DISCOUNT_TYPES = { PERCENTAGE: "PERCENTAGE", FLAT: "FLAT" };
+const MAX_PERCENT_VALUE = 100;
+const MAX_FLAT_VALUE = 10000;
 
+const DISCOUNT_VALUE_STEP = "0.01";
+
+const clampDiscountValue = (rawValue, type) => {
+  if (rawValue === "" || rawValue === null || rawValue === undefined) {
+    return "";
+  }
+
+  const numeric = Number(rawValue);
+  if (Number.isNaN(numeric)) {
+    return "";
+  }
+
+  const max = type === DISCOUNT_TYPES.PERCENTAGE ? 100 : Number.POSITIVE_INFINITY;
+  const clamped = Math.min(Math.max(numeric, 0), max);
+  const rounded = Math.round(clamped * 100) / 100;
+  const normalized = Object.is(rounded, -0) ? 0 : rounded;
+
+  return normalized.toString();
+};
+
+const normalizeCurrencyInput = (value) => {
+  if (value === "" || value === null || value === undefined) return 0;
+
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+
+  const sanitized = Math.max(0, numeric);
+  return Number(sanitized.toFixed(2));
+};
 export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit, isSaving }) {
   const [form, setForm] = useState({
     name: "",
     code: "",
     type: DISCOUNT_TYPES.PERCENTAGE,
-    value: 0,
-    minPurchase: 0,
+     value: clampDiscountValue(0, DISCOUNT_TYPES.PERCENTAGE),
+    minPurchase: normalizeCurrencyInput(0),
     startDate: "",
     endDate: "",
     isActive: true,
@@ -24,8 +55,11 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
         name: discountToEdit.name || "",
         code: (discountToEdit.code || "").toUpperCase(),
         type: discountToEdit.type || DISCOUNT_TYPES.PERCENTAGE,
-        value: Number(discountToEdit.value || 0),
-        minPurchase: Number(discountToEdit.minPurchase || 0),
+        value: clampDiscountValue(
+          discountToEdit.value ?? "",
+          discountToEdit.type || DISCOUNT_TYPES.PERCENTAGE
+        ),
+        minPurchase: normalizeCurrencyInput(discountToEdit.minPurchase || 0),
         startDate: discountToEdit.startDate ? discountToEdit.startDate.slice(0, 10) : "",
         endDate: discountToEdit.endDate ? discountToEdit.endDate.slice(0, 10) : "",
         isActive: discountToEdit.isActive ?? true,
@@ -34,9 +68,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       setForm({
         name: "",
         code: "",
-         type: DISCOUNT_TYPES.PERCENTAGE,
-        value: 0,
-        minPurchase: 0,
+        type: DISCOUNT_TYPES.PERCENTAGE,
+        value: clampDiscountValue(0, DISCOUNT_TYPES.PERCENTAGE),
+        minPurchase: normalizeCurrencyInput(0),
         startDate: "",
         endDate: "",
         isActive: true,
@@ -53,6 +87,10 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       let nextValue =
         type === "checkbox" ? checked : name === "code" ? value.toUpperCase() : value;
 
+        if (name === "minPurchase") {
+        nextValue = normalizeCurrencyInput(value);
+      }
+
       if (name === "startDate") {
         const updated = { ...prev, startDate: nextValue };
         const endMin = nextValue || today;
@@ -68,6 +106,10 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
           nextValue = endMin;
         }
         return { ...prev, endDate: nextValue };
+      }
+
+        if (name === "value") {
+        return { ...prev, value: clampDiscountValue(value, prev.type) };
       }
 
       return { ...prev, [name]: nextValue };
@@ -87,8 +129,8 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     if (!form.name.trim()) return true;
     if (!form.code.trim() || form.code.trim().length < 3) return true;
     if (Number(form.value) <= 0) return true;
-    if (isPercent && Number(form.value) > 100) return true;
-   if (startDateInvalid) return true;
+   if (Number(form.value) > (isPercent ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE)) return true;
+    if (startDateInvalid) return true;
     if (endDateInvalid) return true;
     return false;
     }, [endDateInvalid, form, isPercent, startDateInvalid]);
@@ -178,7 +220,19 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                       onClick={() => setForm((p) => ({ ...p, type: DISCOUNT_TYPES.PERCENTAGE }))}
+                        onClick={() =>
+                        setForm((p) => {
+                          const clampedValue = clampDiscountValue(
+                            p.value,
+                            DISCOUNT_TYPES.PERCENTAGE
+                          );
+                          return {
+                            ...p,
+                            type: DISCOUNT_TYPES.PERCENTAGE,
+                            value: clampedValue,
+                          };
+                        })
+                      }
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border ${
                         form.type === DISCOUNT_TYPES.PERCENTAGE
                           ? "border-green-600 bg-green-50 text-green-700"
@@ -190,7 +244,19 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                     </button>
                     <button
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, type: DISCOUNT_TYPES.FLAT }))}
+                      onClick={() =>
+                        setForm((p) => {
+                          const clampedValue = clampDiscountValue(
+                            p.value,
+                            DISCOUNT_TYPES.FLAT
+                          );
+                          return {
+                            ...p,
+                            type: DISCOUNT_TYPES.FLAT,
+                            value: clampedValue,
+                          };
+                        })
+                      }
                       className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border ${
                         form.type === DISCOUNT_TYPES.FLAT
                           ? "border-green-600 bg-green-50 text-green-700"
@@ -213,8 +279,8 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                       value={form.value}
                       onChange={handleChange}
                       min="0"
-                      max={isPercent ? "100" : undefined}
-                      step={isPercent ? "1" : "0.01"}
+                      max={isPercent ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE}
+                      step={DISCOUNT_VALUE_STEP}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-9 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{valueSuffix}</span>
