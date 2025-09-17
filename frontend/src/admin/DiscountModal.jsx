@@ -5,6 +5,7 @@ import { X, Loader2, Percent, DollarSign, Calendar, Tag, ShoppingCart } from "lu
 const DISCOUNT_TYPES = { PERCENTAGE: "PERCENTAGE", FLAT: "FLAT" };
 const MAX_PERCENT_VALUE = 100;
 const MAX_FLAT_VALUE = 10000;
+const MAX_MIN_PURCHASE = 100000;
 
 const DISCOUNT_VALUE_STEP = "0.01";
 
@@ -18,7 +19,7 @@ const clampDiscountValue = (rawValue, type) => {
     return "";
   }
 
-  const max = type === DISCOUNT_TYPES.PERCENTAGE ? 100 : Number.POSITIVE_INFINITY;
+  const max = type === DISCOUNT_TYPES.PERCENTAGE ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE;
   const clamped = Math.min(Math.max(numeric, 0), max);
   const rounded = Math.round(clamped * 100) / 100;
   const normalized = Object.is(rounded, -0) ? 0 : rounded;
@@ -26,22 +27,63 @@ const clampDiscountValue = (rawValue, type) => {
   return normalized.toString();
 };
 
-const normalizeCurrencyInput = (value) => {
-  if (value === "" || value === null || value === undefined) return 0;
+const normalizeCurrencyInput = (value, { finalize = false } = {}) => {
+  if (value === "" || value === null || value === undefined) {
+    return "";
+  }
+  const raw = String(value);
+  const cleaned = raw.replace(/[^\d.]/g, "");
 
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
+   if (cleaned === "") {
+    return "";
+  }
 
-  const sanitized = Math.max(0, numeric);
-  return Number(sanitized.toFixed(2));
+  const firstDotIndex = cleaned.indexOf(".");
+  let integerPart = cleaned;
+  let decimalPart = "";
+
+  if (firstDotIndex !== -1) {
+    integerPart = cleaned.slice(0, firstDotIndex);
+    decimalPart = cleaned.slice(firstDotIndex + 1).replace(/\./g, "");
+  }
+
+  integerPart = integerPart.replace(/^0+(?=\d)/, "");
+  if (integerPart === "") {
+    integerPart = "0";
+  }
+
+  const limitedDecimals = decimalPart.slice(0, 2);
+
+  if (!finalize) {
+    const hasDecimal = firstDotIndex !== -1;
+    const hasTrailingDot = raw.endsWith(".");
+
+    if (hasDecimal) {
+      let result = `${integerPart}.${limitedDecimals}`;
+      if (hasTrailingDot && !result.endsWith(".")) {
+        result += ".";
+      }
+      return result;
+    }
+
+    return hasTrailingDot ? `${integerPart}.` : integerPart;
+  }
+
+  const numeric = Number(`${integerPart}${limitedDecimals ? `.${limitedDecimals}` : ""}`);
+  if (!Number.isFinite(numeric)) {
+    return "";
+  }
+
+  const clamped = Math.min(Math.max(numeric, 0), MAX_MIN_PURCHASE);
+  return clamped.toFixed(2);
 };
 export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit, isSaving }) {
   const [form, setForm] = useState({
     name: "",
     code: "",
     type: DISCOUNT_TYPES.PERCENTAGE,
-     value: clampDiscountValue(0, DISCOUNT_TYPES.PERCENTAGE),
-    minPurchase: normalizeCurrencyInput(0),
+   value: clampDiscountValue(0, DISCOUNT_TYPES.PERCENTAGE),
+    minPurchase: normalizeCurrencyInput(0, { finalize: true }),
     startDate: "",
     endDate: "",
     isActive: true,
@@ -59,7 +101,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
           discountToEdit.value ?? "",
           discountToEdit.type || DISCOUNT_TYPES.PERCENTAGE
         ),
-        minPurchase: normalizeCurrencyInput(discountToEdit.minPurchase || 0),
+        minPurchase: normalizeCurrencyInput(discountToEdit.minPurchase || 0, { finalize: true }),
         startDate: discountToEdit.startDate ? discountToEdit.startDate.slice(0, 10) : "",
         endDate: discountToEdit.endDate ? discountToEdit.endDate.slice(0, 10) : "",
         isActive: discountToEdit.isActive ?? true,
@@ -70,7 +112,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
         code: "",
         type: DISCOUNT_TYPES.PERCENTAGE,
         value: clampDiscountValue(0, DISCOUNT_TYPES.PERCENTAGE),
-        minPurchase: normalizeCurrencyInput(0),
+        minPurchase: normalizeCurrencyInput(0, { finalize: true }),
         startDate: "",
         endDate: "",
         isActive: true,
@@ -116,6 +158,15 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     });
   };
 
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    if (name === "minPurchase") {
+      setForm((prev) => ({
+        ...prev,
+        minPurchase: normalizeCurrencyInput(value, { finalize: true }),
+      }));
+    }
+  };
  const isPercent = form.type === DISCOUNT_TYPES.PERCENTAGE;
   const valueSuffix = isPercent ? "%" : "Rs";
 
@@ -138,7 +189,20 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
   const submit = (e) => {
     e?.preventDefault?.();
     if (disabledSave) return;
-    onSave(form, discountToEdit?._id);
+     const normalizedMinPurchase = normalizeCurrencyInput(form.minPurchase, { finalize: true });
+
+    setForm((prev) => ({
+      ...prev,
+      minPurchase: normalizedMinPurchase,
+    }));
+
+    onSave(
+      {
+        ...form,
+        minPurchase: normalizedMinPurchase ? Number(normalizedMinPurchase) : 0,
+      },
+      discountToEdit?._id
+    );
   };
 
   if (!isOpen) return null;
@@ -301,7 +365,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                       name="minPurchase"
                       value={form.minPurchase}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       min="0"
+                      max={MAX_MIN_PURCHASE}
                       step="0.01"
                       placeholder="0.00"
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
