@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Percent, DollarSign, Calendar, Tag, ShoppingCart } from "lucide-react";
 
 const DISCOUNT_TYPES = { PERCENTAGE: "PERCENTAGE", FLAT: "FLAT" };
+const DISCOUNT_NAME_SANITIZE = /[^A-Za-z0-9\s-]/g;
+const DISCOUNT_VALUE_SANITIZE = /[^\d.]/g;
 const MAX_PERCENT_VALUE = 100;
 const MAX_FLAT_VALUE = 10000;
 const MAX_MIN_PURCHASE = 100000;
@@ -53,23 +55,29 @@ const normalizeCurrencyInput = (value, { finalize = false } = {}) => {
   }
 
   const limitedDecimals = decimalPart.slice(0, 2);
+ const integerNumeric = Number(integerPart);
+  const clampedInteger = Math.min(Math.max(integerNumeric, 0), MAX_MIN_PURCHASE);
+  const normalizedIntegerPart = clampedInteger.toString();
 
   if (!finalize) {
     const hasDecimal = firstDotIndex !== -1;
     const hasTrailingDot = raw.endsWith(".");
+     const baseInteger = normalizedIntegerPart;
 
     if (hasDecimal) {
-      let result = `${integerPart}.${limitedDecimals}`;
+      let result = `${baseInteger}.${limitedDecimals}`;
       if (hasTrailingDot && !result.endsWith(".")) {
         result += ".";
       }
       return result;
     }
 
-    return hasTrailingDot ? `${integerPart}.` : integerPart;
+   return hasTrailingDot ? `${baseInteger}.` : baseInteger;
   }
 
-  const numeric = Number(`${integerPart}${limitedDecimals ? `.${limitedDecimals}` : ""}`);
+const numeric = Number(
+    `${normalizedIntegerPart}${limitedDecimals ? `.${limitedDecimals}` : ""}`
+  );
   if (!Number.isFinite(numeric)) {
     return "";
   }
@@ -88,6 +96,8 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     endDate: "",
     isActive: true,
   });
+
+   const [nameSanitizeNotice, setNameSanitizeNotice] = useState("");
 
   // --- load/edit state ---
   useEffect(() => {
@@ -118,6 +128,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
         isActive: true,
       });
     }
+    setNameSanitizeNotice("");
   }, [discountToEdit, isOpen]);
 
   // --- helpers ---
@@ -125,6 +136,14 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+       if (name === "name") {
+      const sanitizedName = value.replace(DISCOUNT_NAME_SANITIZE, "");
+      setNameSanitizeNotice(
+        sanitizedName !== value ? "Only letters, numbers, spaces, and dashes are allowed." : ""
+      );
+      setForm((prev) => ({ ...prev, name: sanitizedName }));
+      return;
+    }
     setForm((prev) => {
       let nextValue =
         type === "checkbox" ? checked : name === "code" ? value.toUpperCase() : value;
@@ -151,7 +170,8 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       }
 
         if (name === "value") {
-        return { ...prev, value: clampDiscountValue(value, prev.type) };
+        const sanitizedValue = value.replace(DISCOUNT_VALUE_SANITIZE, "");
+        return { ...prev, value: clampDiscountValue(sanitizedValue, prev.type) };
       }
 
       return { ...prev, [name]: nextValue };
@@ -257,6 +277,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                     placeholder="e.g., Summer Sale"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
                   />
+                  {nameSanitizeNotice && (
+                    <p className="mt-1 text-xs text-amber-600">{nameSanitizeNotice}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">Code *</label>

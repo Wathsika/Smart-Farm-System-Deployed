@@ -41,6 +41,39 @@ const NAME_SANITIZE_REGEX = /[^A-Za-z0-9\s-]/g;
 
 const PRICE_MIN = 1.00;
 const PRICE_MAX = 100000;
+const QTY_MIN = 1;
+const TWO_DECIMAL_PATTERN = /^\d+(?:\.\d{1,2})?$/;
+const TWO_DECIMAL_INPUT_PATTERN = "\\d+(\\.\\d{1,2})?";
+
+
+
+const sanitizeDecimalInput = (input) => {
+  if (input === null || input === undefined) return "";
+  const stringValue = String(input);
+  const filtered = stringValue.replace(/[^\d.]/g, "");
+  if (!filtered) return "";
+
+  const [rawInteger = "", ...decimalSections] = filtered.split(".");
+  const hasDecimal = filtered.includes(".");
+  const decimalPart = decimalSections.join("").slice(0, 2);
+  let integerPart = rawInteger.replace(/^0+(?=\d)/, "");
+
+  if (!integerPart && (hasDecimal || decimalPart)) {
+    integerPart = "0";
+  }
+
+  let sanitized = integerPart;
+
+  if (hasDecimal && (decimalPart.length > 0 || filtered.endsWith("."))) {
+    sanitized = (sanitized || "0") + ".";
+  }
+
+  if (decimalPart) {
+    sanitized += decimalPart;
+  }
+
+  return sanitized;
+};
 const QTY_MAX = 100000;
 const formatPrice = (value) =>
   new Intl.NumberFormat(undefined, {
@@ -251,7 +284,10 @@ export default function ProductModal({
       setForm({
         name: productToEdit.name || "",
         category: productToEdit.category || CATEGORY_OPTIONS[0],
-        price: productToEdit.price ?? "",
+        price:
+          typeof productToEdit.price === "number"
+            ? productToEdit.price.toFixed(2)
+            : productToEdit.price ?? "",
         qty: productToEdit.stock?.qty ?? "",
         unit: productToEdit.unit || "",
         sku: productToEdit.sku || "",
@@ -302,24 +338,33 @@ export default function ProductModal({
       return;
     }
 
-  let nextValue = value;
-
     if (name === "price") {
-      if (value === "" || value === null) {
-        nextValue = "";
-      } else {
-        const numericValue = Number(value);
-        if (!Number.isNaN(numericValue)) {
-          if (numericValue < PRICE_MIN) {
-            nextValue = PRICE_MIN.toString();
-          } else if (numericValue > PRICE_MAX) {
-            nextValue = PRICE_MAX.toString();
-          }
-        }
+      const sanitized = sanitizeDecimalInput(value);
+
+      if (sanitized === "") {
+        setForm((p) => ({ ...p, price: "" }));
+        if (errors.price) setErrors((p) => ({ ...p, price: null }));
+        return;
       }
+
+      if (!TWO_DECIMAL_PATTERN.test(sanitized)) {
+        return;
+      }
+
+      const numericValue = Number(sanitized);
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      if (numericValue < PRICE_MIN || numericValue > PRICE_MAX) {
+        return;
+      }
+      setForm((p) => ({ ...p, price: sanitized }));
+      if (errors.price) setErrors((p) => ({ ...p, price: null }));
+      return;
     }
 
-    
+    let nextValue = value;
 
     if (name === "qty") {
        if (value === "" || value === null) {
@@ -365,7 +410,9 @@ export default function ProductModal({
     else if (trimmedName && !NAME_ALLOWED_PATTERN.test(trimmedName))
       e.name = "Use letters and numbers only";
     if (form.price === "" || form.price === null) e.price = "Price is required";
-    else {
+     else if (!TWO_DECIMAL_PATTERN.test(form.price)) {
+      e.price = "Enter a valid price with up to two decimal places";
+    } else {
       const numericPrice = Number(form.price);
       if (!Number.isFinite(numericPrice)) {
         e.price = "Enter a valid price";
@@ -557,10 +604,9 @@ export default function ProductModal({
                         <StyledInput
                           id="price"
                           name="price"
-                          type="number"
-                          step="0.01"
-                          min={PRICE_MIN}
-                          max={PRICE_MAX}
+                          type="text"
+                          inputMode="decimal"
+                          pattern={TWO_DECIMAL_PATTERN.source}
                           value={form.price}
                           onChange={handleChange}
                           placeholder="0.00"
