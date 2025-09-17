@@ -45,16 +45,42 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
   }, [discountToEdit, isOpen]);
 
   // --- helpers ---
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((p) => ({
-      ...p,
-      [name]: type === "checkbox" ? checked : name === "code" ? value.toUpperCase() : value,
-    }));
+    setForm((prev) => {
+      let nextValue =
+        type === "checkbox" ? checked : name === "code" ? value.toUpperCase() : value;
+
+      if (name === "startDate") {
+        const updated = { ...prev, startDate: nextValue };
+        const endMin = nextValue || today;
+        if (updated.endDate && new Date(updated.endDate) < new Date(endMin)) {
+          updated.endDate = endMin;
+        }
+        return updated;
+      }
+
+      if (name === "endDate") {
+        const endMin = prev.startDate || today;
+        if (nextValue && new Date(nextValue) < new Date(endMin)) {
+          nextValue = endMin;
+        }
+        return { ...prev, endDate: nextValue };
+      }
+
+      return { ...prev, [name]: nextValue };
+    });
   };
 
  const isPercent = form.type === DISCOUNT_TYPES.PERCENTAGE;
   const valueSuffix = isPercent ? "%" : "Rs";
+
+   const startDateMin = today;
+  const endDateMin = form.startDate || today;
+  const startDateInvalid = form.startDate && new Date(form.startDate) < new Date(startDateMin);
+  const endDateInvalid = form.endDate && new Date(form.endDate) < new Date(endDateMin);
 
   const disabledSave = useMemo(() => {
     // minimal validation to keep it compact
@@ -62,9 +88,10 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     if (!form.code.trim() || form.code.trim().length < 3) return true;
     if (Number(form.value) <= 0) return true;
     if (isPercent && Number(form.value) > 100) return true;
-    if (form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) return true;
+   if (startDateInvalid) return true;
+    if (endDateInvalid) return true;
     return false;
-  }, [form, isPercent]);
+    }, [endDateInvalid, form, isPercent, startDateInvalid]);
 
   const submit = (e) => {
     e?.preventDefault?.();
@@ -223,11 +250,23 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                       type="date"
                       name="startDate"
                       value={form.startDate}
+                      min={startDateMin}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
+                                           className={`w-full rounded-lg border px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 ${
+                        startDateInvalid
+                          ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                          : "border-gray-300 focus:ring-green-200 focus:border-green-500"
+                      }`}
+
                     />
                     <Calendar className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+
                   </div>
+                   {startDateInvalid && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Start date cannot be earlier than today ({startDateMin}).
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">End Date</label>
@@ -236,11 +275,21 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                       type="date"
                       name="endDate"
                       value={form.endDate}
+                      min={endDateMin}
                       onChange={handleChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 ${
+                        endDateInvalid
+                          ? "border-red-500 focus:ring-red-200 focus:border-red-500"
+                          : "border-gray-300 focus:ring-green-200 focus:border-green-500"
+                      }`}
                     />
                     <Calendar className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   </div>
+                  {endDateInvalid && (
+                    <p className="mt-1 text-xs text-red-500">
+                      End date cannot be earlier than {form.startDate ? "the start date" : "today"}.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
