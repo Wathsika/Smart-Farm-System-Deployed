@@ -1,3 +1,5 @@
+
+
 // models/Employee.js
 import mongoose from "mongoose";
 
@@ -22,14 +24,14 @@ const employeeSchema = new mongoose.Schema(
       default: 0,
     },
 
-    allowance: {
+    allowance: { // Ensure allowance is defined
       type: Number,
-      default: 0, // e.g., travel/meal allowance
+      default: 0, 
       min: 0,
     },
-    loan: {
+    loan: {      // Ensure loan is defined
       type: Number,
-      default: 0, // outstanding loan amount
+      default: 0, 
       min: 0,
     },
   },
