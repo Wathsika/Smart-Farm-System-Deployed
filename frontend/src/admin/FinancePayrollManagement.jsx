@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Play, Save, Calendar, Users, DollarSign, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Play, Save, Calendar, Users, DollarSign, Loader2, Settings } from "lucide-react";
 import { api } from "../lib/api";
 
 const money = (n) =>
@@ -79,6 +80,8 @@ export default function PayrollRunPage() {
   const [rows, setRows] = useState([]);
   const [draftId, setDraftId] = useState(null);
   const [draftKey] = useState(uuid);
+
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -361,13 +364,22 @@ export default function PayrollRunPage() {
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => navigate("/admin/finance/edit_rule")}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <Settings className="w-4 h-4" />
+                Payroll Settings
+              </button>
+
               <button
                 onClick={handleCalculateAll}
                 disabled={
                   calculating || rows.length === 0 || !isYearValid
                 }
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded-lg text-sm"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400"
               >
                 {calculating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -380,7 +392,7 @@ export default function PayrollRunPage() {
               <button
                 onClick={handleSaveAll}
                 disabled={saving || !draftId || !isYearValid}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
