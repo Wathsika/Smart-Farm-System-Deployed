@@ -1,117 +1,72 @@
 import React, { useEffect, useState } from "react";
-import {
-  Play,
-  Save,
-  Calendar,
-  Users,
-  DollarSign,
-  Clock,
-  Loader2,
-} from "lucide-react";
+import { Play, Save, Calendar, Users, DollarSign, Loader2 } from "lucide-react";
 import { api } from "../lib/api";
 
-// ---------- helpers ----------
 const money = (n) =>
   (Number(n) || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-function computeRow(basicSalary, rules) {
-  const salary = Number(basicSalary) || 0;
-  const days = Number(rules.daysPerMonth || 28);
-  const hrs = Number(rules.hoursPerDay || 8);
-  if (salary <= 0 || days <= 0 || hrs <= 0) {
-    return {
-      allowances: 0,
-      loan: 0,
-      otTotal: 0,
-      epf: 0,
-      etf: 0,
-      gross: 0,
-      netSalary: 0,
-      error: true,
-    };
-  }
-  const perDay = salary / days;
-  const hourly = perDay / hrs;
-  const otTotal =
-    hourly * 0 * (rules.otWeekdayMultiplier || 1.5) +
-    hourly * 0 * (rules.otHolidayMultiplier || 2.0);
-  const epf = salary * (rules.epfRate || 0.08);
-  const etf = salary * (rules.etfRate || 0.03);
-  const allowances = 0;
-  const loan = 0;
-  const gross = salary + allowances + otTotal;
-  const netSalary = Math.max(0, gross - (epf + etf + loan));
-  return {
-    allowances,
-    loan,
-    otTotal,
-    epf,
-    etf,
-    gross,
-    netSalary,
-    error: false,
-  };
-}
+const STATUS_STYLES = {
+  PENDING: {
+    label: "Pending",
+    className: "bg-gray-100 text-gray-800",
+  },
+  READY: {
+    label: "Ready",
+    className: "bg-green-100 text-green-800",
+  },
+  SAVED: {
+    label: "Saved",
+    className: "bg-blue-100 text-blue-800",
+  },
+};
 
-// ---------- component ----------
+// quick UUID for draftKey (browser-only ok)
+const uuid = () => crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+
 export default function PayrollRunPage() {
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
 
-  // rules: safe defaults so page always renders
-  const [rules, setRules] = useState({
-    daysPerMonth: 28,
-    hoursPerDay: 8,
-    otWeekdayMultiplier: 1.5,
-    otHolidayMultiplier: 2.0,
-    epfRate: 0.08,
-    etfRate: 0.03,
-  });
-
   const [rows, setRows] = useState([]);
+  const [draftId, setDraftId] = useState(null);
+  const [draftKey] = useState(uuid);
+
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // load rules + employees (non-blocking: uses defaults if API fails)
+  // 1) Load employees (pre-calc)
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [settingsRes, employeesRes] = await Promise.allSettled([
-          api.get("/payroll/settings"),
-          api.get("/employees"),
-        ]);
+        const res = await api.get("/employees/min");
+        const emps = Array.isArray(res.data) ? res.data : [];
+        mounted &&
+          setRows(
+            emps.map((e) => ({
+              // pre-calc visible fields
+              employee: { id: e._id, empId: e.empId, name: e.name },
+              basicSalary: Number(e.basicSalary) || 0,
+              workingHours: Number(e.workingHours) || 0,
+              allowances: Number(e.allowances) || 0,
+              loan: Number(e.loan) || 0,
 
-        if (settingsRes.status === "fulfilled" && settingsRes.value?.data) {
-          mounted && setRules(settingsRes.value.data);
-        }
-        if (
-          employeesRes.status === "fulfilled" &&
-          Array.isArray(employeesRes.value?.data)
-        ) {
-          const emps = employeesRes.value.data;
-          mounted &&
-            setRows(
-              emps.map((e) => ({
-                employee: { empId: e.empId, name: e.name },
-                basicSalary: Number(e.basicSalary) || 0,
-                allowances: null,
-                loan: null,
-                otTotal: null,
-                epf: null,
-                etf: null,
-                gross: null,
-                netSalary: null,
-                updatedAt: null,
-                error: null,
-              }))
-            );
-        }
+              // computed (empty until preview)
+              otTotal: null,
+              epf: null,
+              etf: null,
+              gross: null,
+              netSalary: null,
+              status: "PENDING",
+              updatedAt: null,
+            }))
+          );
+        setDraftId(null);
       } finally {
         mounted && setLoading(false);
       }
@@ -119,50 +74,67 @@ export default function PayrollRunPage() {
     return () => (mounted = false);
   }, []);
 
+  // 2) Calculate (backend preview → draft)
   async function handleCalculateAll() {
+    if (rows.length === 0) return;
     setCalculating(true);
-    const updated = rows.map((r) => {
-      const calc = computeRow(r.basicSalary, rules);
-      return { ...r, ...calc, updatedAt: new Date().toISOString() };
-    });
-    setRows(updated);
-    setCalculating(false);
+    try {
+      const employeeIds = rows.map((r) => r.employee.id);
+      const res = await api.post("/payrolls/preview", {
+        draftKey,
+        month,
+        year,
+        employeeIds,
+      });
+      const items = Array.isArray(res.data?.items) ? res.data.items : [];
+      setDraftId(res.data?.draftId || null);
+
+      // server returns computed items: map to UI rows
+      setRows(
+        items.map((it) => ({
+          ...it,
+          // normalize field names
+          gross: it.gross,
+          netSalary: it.net,
+          status: "READY",
+        }))
+      );
+    } finally {
+      setCalculating(false);
+    }
   }
 
+  // 3) Commit (save to PaymentSlip)
   async function handleSaveAll() {
-    if (rows.length === 0) return;
-    if (rows.some((r) => r.netSalary == null)) return; // require calculate first
+    if (!draftId) return;
     setSaving(true);
-    const payload = rows.map((r) => ({
-      empId: r.employee.empId,
-      month,
-      year,
-      basicSalary: r.basicSalary,
-      allowances: r.allowances || 0,
-      loan: r.loan || 0,
-      otWeekdayHours: 0,
-      otHolidayHours: 0,
-      epf: r.epf || 0,
-      etf: r.etf || 0,
-      gross: r.gross || 0,
-      netSalary: r.netSalary || 0,
-    }));
     try {
-      await api.post("/payrolls/bulk", { items: payload });
+      await api.post("/payrolls/commit", { draftId });
+      // Optionally: keep draftId (null to prevent double-save)
+      setDraftId(null);
+      setRows((prev) =>
+        prev.map((row) =>
+          row.netSalary != null
+            ? {
+                ...row,
+                status: "SAVED",
+              }
+            : row
+        )
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  // quick summary (no extra components)
-  const valid = rows.filter((r) => r.netSalary != null && !r.error);
+  const valid = rows.filter((r) => r.netSalary != null);
   const totalGross = valid.reduce((s, r) => s + (r.gross || 0), 0);
   const totalNet = valid.reduce((s, r) => s + (r.netSalary || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header & controls */}
+        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -186,20 +158,12 @@ export default function PayrollRunPage() {
               </select>
               <input
                 type="number"
-                className="border rounded-lg px-3 py-2 w-20 text-sm"
+                className="border rounded-lg px-3 py-2 w-24 text-sm"
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
                 min="2020"
                 max="2035"
               />
-              <a
-                href="/admin/finance/edit_rule"
-                className="ml-2 px-4 py-2 rounded-lg text-sm font-medium
-             bg-emerald-600 text-white hover:bg-emerald-700
-             transition-colors duration-200 shadow-sm"
-              >
-                Edit Rules
-              </a>
             </div>
 
             <div className="flex gap-2">
@@ -213,15 +177,12 @@ export default function PayrollRunPage() {
                 ) : (
                   <Play className="w-4 h-4" />
                 )}
-                {calculating ? "Calculating..." : "Calculate All"}
+                {calculating ? "Calculating…" : "Calculate All"}
               </button>
+
               <button
                 onClick={handleSaveAll}
-                disabled={
-                  saving ||
-                  rows.length === 0 ||
-                  rows.some((r) => r.netSalary == null)
-                }
+                disabled={saving || !draftId}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm"
               >
                 {saving ? (
@@ -229,13 +190,13 @@ export default function PayrollRunPage() {
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {saving ? "Saving..." : "Save All"}
+                {saving ? "Saving…" : "Save All"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Summary (minimal, no empty states) */}
+        {/* Summary */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -256,7 +217,7 @@ export default function PayrollRunPage() {
           </div>
         </div>
 
-        {/* Table only (no empty message block) */}
+        {/* Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
@@ -264,6 +225,7 @@ export default function PayrollRunPage() {
                 {[
                   "Employee",
                   "Basic Salary",
+                  "Working Hours",
                   "Allowances",
                   "Overtime",
                   "EPF",
@@ -283,56 +245,60 @@ export default function PayrollRunPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {rows.map((row, idx) => (
-                <tr
-                  key={`${row.employee.empId}-${idx}`}
-                  className="hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{row.employee.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {row.employee.empId}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium">
-                    {money(row.basicSalary)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.allowances == null ? "—" : money(row.allowances)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.otTotal == null ? "—" : money(row.otTotal)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-red-600">
-                    {row.epf == null ? "—" : `(${money(row.epf)})`}
-                  </td>
-                  <td className="px-4 py-3 text-right text-red-600">
-                    {row.etf == null ? "—" : `(${money(row.etf)})`}
-                  </td>
-                  <td className="px-4 py-3 text-right text-red-600">
-                    {row.loan == null ? "—" : `(${money(row.loan)})`}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.gross == null ? "—" : money(row.gross)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-green-600">
-                    {row.netSalary == null ? "—" : money(row.netSalary)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.updatedAt ? (
-                      <span className="inline-flex px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                        Ready
+              {rows.map((row, idx) => {
+                const { label, className } =
+                  STATUS_STYLES[row.status] || STATUS_STYLES.PENDING;
+                return (
+                  <tr
+                    key={`${row.employee.id || row.employee._id}-${idx}`}
+                    className="hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{row.employee.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {row.employee.empId}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-right font-medium">
+                      {money(row.basicSalary)}
+                    </td>
+                    <td className="px-4 py-3 text-right">{row.workingHours}</td>
+                    <td className="px-4 py-3 text-right">
+                      {money(row.allowances)}
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      {row.otTotal == null ? "—" : money(row.otTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-600">
+                      {row.epf == null ? "—" : `(${money(row.epf)})`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {row.etf == null ? "—" : money(row.etf)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-600">
+                      {row.loan == null ? "—" : `(${money(row.loan)})`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {row.gross == null ? "—" : money(row.gross)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-green-600">
+                      {row.netSalary == null ? "—" : money(row.netSalary)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={`inline-flex px-2 py-1 rounded-full text-xs ${className}`}
+                      >
+                        {label}
                       </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
           {loading && <div className="p-6 text-sm text-gray-500">Loading…</div>}
         </div>
       </div>

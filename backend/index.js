@@ -43,8 +43,8 @@ import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
+import payrollRoutes from "./routes/payroll.routes.js";
 import reportRoutes from "./routes/report.routes.js";
-
 
 // --- Initialize App ---
 const app = express();
@@ -121,13 +121,12 @@ app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
 
-app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
+app.use("/api/admin/users", staffOwnerRoutes); // cleaner
 app.use("/api/employees", employeeRoutes);
 
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
-
 
 // Health check
 
@@ -135,6 +134,9 @@ app.use("/api/performance", performanceRoutes);
 
 app.use("/api/transactions", transactionRoutes);
 app.use("/api", payrollSettingsRoutes);
+app.use("/employees", employeeRoutes);
+app.use("/payrolls", payrollRoutes);
+app.use("/api/payrolls", payrollRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
@@ -142,7 +144,6 @@ app.use("/api/fields", fieldRoutes);
 app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
-
 
 // --- Health Check ---
 app.get("/", (_req, res) =>
