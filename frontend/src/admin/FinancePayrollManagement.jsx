@@ -262,8 +262,9 @@ export default function PayrollRunPage() {
             <thead className="bg-gray-50">
               <tr>
                 {[
-                  "Employee",
+                  "Employee Id",
                   "Basic Salary",
+                  "Working Hours",
                   "Allowances",
                   "Overtime",
                   "EPF",
