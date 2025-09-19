@@ -8,6 +8,21 @@ const money = (n) =>
     maximumFractionDigits: 2,
   });
 
+const STATUS_STYLES = {
+  PENDING: {
+    label: "Pending",
+    className: "bg-gray-100 text-gray-800",
+  },
+  READY: {
+    label: "Ready",
+    className: "bg-green-100 text-green-800",
+  },
+  SAVED: {
+    label: "Saved",
+    className: "bg-blue-100 text-blue-800",
+  },
+};
+
 // quick UUID for draftKey (browser-only ok)
 const uuid = () => crypto.randomUUID?.() || Math.random().toString(36).slice(2);
 
@@ -81,6 +96,7 @@ export default function PayrollRunPage() {
           // normalize field names
           gross: it.gross,
           netSalary: it.net,
+          status: "READY",
         }))
       );
     } finally {
@@ -96,7 +112,16 @@ export default function PayrollRunPage() {
       await api.post("/payrolls/commit", { draftId });
       // Optionally: keep draftId (null to prevent double-save)
       setDraftId(null);
-      // You can toast “Saved successfully” here
+      setRows((prev) =>
+        prev.map((row) =>
+          row.netSalary != null
+            ? {
+                ...row,
+                status: "SAVED",
+              }
+            : row
+        )
+      );
     } finally {
       setSaving(false);
     }
@@ -220,57 +245,57 @@ export default function PayrollRunPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {rows.map((row, idx) => (
-                <tr
-                  key={`${row.employee.id || row.employee._id}-${idx}`}
-                  className="hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{row.employee.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {row.employee.empId}
-                    </div>
-                  </td>
+              {rows.map((row, idx) => {
+                const { label, className } =
+                  STATUS_STYLES[row.status] || STATUS_STYLES.PENDING;
+                return (
+                  <tr
+                    key={`${row.employee.id || row.employee._id}-${idx}`}
+                    className="hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{row.employee.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {row.employee.empId}
+                      </div>
+                    </td>
 
-                  <td className="px-4 py-3 text-right font-medium">
-                    {money(row.basicSalary)}
-                  </td>
-                  <td className="px-4 py-3 text-right">{row.workingHours}</td>
-                  <td className="px-4 py-3 text-right">
-                    {money(row.allowances)}
-                  </td>
+                    <td className="px-4 py-3 text-right font-medium">
+                      {money(row.basicSalary)}
+                    </td>
+                    <td className="px-4 py-3 text-right">{row.workingHours}</td>
+                    <td className="px-4 py-3 text-right">
+                      {money(row.allowances)}
+                    </td>
 
-                  <td className="px-4 py-3 text-right">
-                    {row.otTotal == null ? "—" : money(row.otTotal)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-red-600">
-                    {row.epf == null ? "—" : `(${money(row.epf)})`}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.etf == null ? "—" : money(row.etf)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-red-600">
-                    {row.loan == null ? "—" : `(${money(row.loan)})`}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.gross == null ? "—" : money(row.gross)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-green-600">
-                    {row.netSalary == null ? "—" : money(row.netSalary)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span
-                      className={`inline-flex px-2 py-1 rounded-full text-xs ${
-                        row.netSalary != null
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {row.netSalary != null ? "Ready (Preview)" : "Pending"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                    <td className="px-4 py-3 text-right">
+                      {row.otTotal == null ? "—" : money(row.otTotal)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-600">
+                      {row.epf == null ? "—" : `(${money(row.epf)})`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {row.etf == null ? "—" : money(row.etf)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-600">
+                      {row.loan == null ? "—" : `(${money(row.loan)})`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {row.gross == null ? "—" : money(row.gross)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-green-600">
+                      {row.netSalary == null ? "—" : money(row.netSalary)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={`inline-flex px-2 py-1 rounded-full text-xs ${className}`}
+                      >
+                        {label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
