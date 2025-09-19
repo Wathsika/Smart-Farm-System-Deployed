@@ -22,6 +22,84 @@ function compute({ basicSalary, allowances, loan }, rules) {
   return { otTotal, epf, etf, gross, net };
 }
 
+export const listPaymentSlips = async (req, res) => {
+  try {
+    const { month, year } = req.query || {};
+    const filter = {};
+
+    if (month !== undefined && month !== "") {
+      const parsedMonth = Number(month);
+      if (
+        !Number.isInteger(parsedMonth) ||
+        parsedMonth < 1 ||
+        parsedMonth > 12
+      ) {
+        return res.status(400).json({ message: "Invalid month parameter" });
+      }
+      filter.month = parsedMonth;
+    }
+
+    if (year !== undefined && year !== "") {
+      const parsedYear = Number(year);
+      if (
+        !Number.isInteger(parsedYear) ||
+        parsedYear < 1900 ||
+        parsedYear > 3000
+      ) {
+        return res.status(400).json({ message: "Invalid year parameter" });
+      }
+      filter.year = parsedYear;
+    }
+
+    const slips = await PaymentSlip.find(filter)
+      .populate({
+        path: "employee",
+        populate: { path: "user", select: "fullName empId" },
+        select:
+          "basicSalary workingHours allowances allowance loan user empId name",
+      })
+      .sort({ year: -1, month: -1, createdAt: -1 })
+      .lean();
+
+    const rows = slips.map((doc) => {
+      const employeeDoc = doc.employee;
+      const userDoc = employeeDoc?.user;
+      const employeeId = employeeDoc?._id ? String(employeeDoc._id) : null;
+
+      const employee = {
+        id: employeeId,
+        empId:
+          userDoc?.empId ||
+          employeeDoc?.empId ||
+          (employeeId ? employeeId.slice(-6) : "Unknown"),
+        name: userDoc?.fullName || employeeDoc?.name || "Unknown",
+      };
+
+      return {
+        id: String(doc._id),
+        employee,
+        month: doc.month,
+        year: doc.year,
+        basicSalary: Number(doc.basicSalary) || 0,
+        workingHours: Number(doc.workingHours) || 0,
+        allowances: Number(doc.allowances ?? doc.allowance ?? 0),
+        loan: Number(doc.loan ?? 0),
+        otTotal: Number(doc.otTotal ?? 0),
+        epf: Number(doc.epf ?? 0),
+        etf: Number(doc.etf ?? 0),
+        gross: Number(doc.gross ?? 0),
+        netSalary: Number(doc.net ?? doc.netSalary ?? 0),
+        status: String(doc.status || "PENDING").toUpperCase(),
+        updatedAt: doc.updatedAt || doc.createdAt || null,
+      };
+    });
+
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 /**
  * POST /payrolls/preview
  * body: { draftKey, month, year, employeeIds: [...] }
