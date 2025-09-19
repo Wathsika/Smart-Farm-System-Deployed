@@ -124,6 +124,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api", payrollSettingsRoutes);
 app.use("/employees", employeeRoutes);
 app.use("/payrolls", payrollRoutes);
+app.use("/api/payrolls", payrollRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
