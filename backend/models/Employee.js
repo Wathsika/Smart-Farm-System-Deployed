@@ -1,3 +1,5 @@
+
+
 // models/Employee.js
 import mongoose from "mongoose";
 
@@ -22,6 +24,7 @@ const employeeSchema = new mongoose.Schema(
       default: 0,
     },
 
+
     allowance: {
       // Ensure allowance is defined
       type: Number,
@@ -32,6 +35,7 @@ const employeeSchema = new mongoose.Schema(
       // Ensure loan is defined
       type: Number,
       default: 0,
+
       min: 0,
     },
   },
@@ -39,4 +43,6 @@ const employeeSchema = new mongoose.Schema(
 );
 
 const Employee = mongoose.model("Employee", employeeSchema);
+
 export default Employee;
+

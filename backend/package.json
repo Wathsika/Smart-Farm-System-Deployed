@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon index.js",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "stripe:listen": "stripe listen --forward-to http://localhost:5001/api/orders/webhook"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +15,6 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

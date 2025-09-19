@@ -3,7 +3,6 @@ import express from 'express';
 // Controllers
 import {
   createCheckoutSession,
-  stripeWebhookHandler,
   getAllOrders,
   getOrderById,
   updateOrderStatus,
@@ -20,9 +19,6 @@ const router = express.Router();
 // --- Public & Customer-Facing ---
 
 router.post('/create-checkout-session', express.json(), createCheckoutSession);
-
-// This path remains for compatibility with your existing setup
-router.post('/webhook', stripeWebhookHandler);
 
 // ✅ Make the session lookup PUBLIC so success page works without login
 router.get('/session/:sessionId', getOrderBySessionId);
