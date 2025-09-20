@@ -1,13 +1,22 @@
+// src/pages/livestock/MilkModal.jsx
 import React from "react";
 import { api } from "../../lib/api";
+
+const pad = (n) => String(n).padStart(2, "0");
 const todayKey = () => {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const d = new Date(); d.setHours(0,0,0,0);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 };
 
-/* ==================== Add Modal ==================== */
+// typing-time: allow up to 2 decimals (empty allowed)
+const allowTwoDp   = (s) => /^\d{0,10}(?:\.\d{0,2})?$/.test(String(s));
+// submit-time: number with up to 2 dp (must have digits)
+const twoDpStrict  = (s) => /^\d+(?:\.\d{1,2})?$/.test(String(s));
+// display exactly 1 decimal
+const oneDp        = (n) => (Number.isFinite(+n) ? (+n).toFixed(1) : "");
+
+
+/*  Add Modal  */
 export function AddRecordModal({ open, onClose, cows, onSaved }) {
   const [form, setForm] = React.useState({
     cowId: cows[0]?._id || "",
@@ -16,6 +25,11 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
     liters: "",
   });
   const [saving, setSaving] = React.useState(false);
+  const [errors, setErrors] = React.useState({});
+
+  const base =
+  "w-full rounded-xl border px-4 py-3 text-[15px] placeholder-gray-400 " +
+  "focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
 
   React.useEffect(() => {
     if (open) {
@@ -30,122 +44,187 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
 
   if (!open) return null;
 
+  const validate = () => {
+    const e = {};
+    // cow
+    if (!form.cowId) e.cowId = "Please choose a cow";
+
+    // date
+    if (!form.date) e.date = "Date is required";
+    else {
+      const d = new Date(form.date + "T00:00:00");
+      const t = new Date(); t.setHours(0,0,0,0);
+      if (isNaN(+d)) e.date = "Invalid date";
+      else if (d > t) e.date = "Date cannot be in the future";
+    }
+
+    // liters
+    const s = String(form.liters ?? "").trim();
+    if (s === "") e.liters = "Liters is required";
+    else if (s.startsWith("-")) e.liters = "Liters cannot be negative";
+    else if (!twoDpStrict(s)) e.liters = "Use up to 2 decimal places (e.g., 12.34)";
+
+    return e;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    const v = validate();
+    setErrors(v);
+    if (Object.keys(v).length) return;
+
     setSaving(true);
     try {
-      if (!form.cowId) throw new Error("Please choose a cow");
       const body = {
         cow: form.cowId,
-        date: form.date, // YYYY-MM-DD
+        date: form.date,
         shift: form.shift,
-        volumeLiters: Number(form.liters || 0),
+        volumeLiters: Math.round(Number(form.liters || 0) * 100) / 100,
       };
       await api.post("/milk", body);
       onSaved?.();
       onClose();
     } catch (err) {
-      alert(err.message || "Could not save");
+      alert(err?.response?.data?.message || err.message || "Could not save");
     } finally {
       setSaving(false);
     }
   };
 
+  const inputCls ="w-full rounded-xl border px-4 py-3 text-[15px] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
+  
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-md bg-white rounded-xl shadow-xl p-6 space-y-4">
-        <h3 className="text-lg font-bold">Add Milk Record</h3>
-
-        {/* Cow first */}
-        <label className="text-sm">
-          <span className="block mb-1 text-gray-600">Cow</span>
-          <select
-            value={form.cowId}
-            onChange={(e) => setForm({ ...form, cowId: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 bg-white"
-            required
-          >
-            <option value="">Select cow…</option>
-            {cows.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name || c.tagId || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Date (auto today) */}
-        <label className="text-sm">
-          <span className="block mb-1 text-gray-600">Date</span>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2"
-            required
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <span className="block mb-1 text-gray-600">Shift</span>
-            <select
-              value={form.shift}
-              onChange={(e) => setForm({ ...form, shift: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 bg-white"
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center px-4">
+      <form onSubmit={submit} className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 bg-white px-7 py-5 border-b">
+          <div className="flex items-start justify-between">
+            <h3 className="text-2xl font-bold">Add Milk Record</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              aria-label="Close"
             >
-              <option value="AM">AM</option>
-              <option value="PM">PM</option>
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="block mb-1 text-gray-600">Liters</span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.liters}
-              onChange={(e) => setForm({ ...form, liters: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-              placeholder="e.g., 23.5"
-              required
-            />
-          </label>
+              ×
+            </button>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">
-            Cancel
-          </button>
-          <button disabled={saving} className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
-            {saving ? "Saving…" : "Save Record"}
-          </button>
+        {/* Body */}
+        <div className="max-h-[70vh] overflow-y-auto px-7 py-6 space-y-5">
+          {/* Cow */}
+          <label className="block">
+            <span className="text-sm font-semibold text-gray-700 mb-1 block">Cow</span>
+              <select
+                value={form.cowId}
+                onChange={(e) => setForm({ ...form, cowId: e.target.value })}
+                className={`${base} bg-white ${errors.cowId ? "border-red-500" : "border-gray-300"}`}
+              >
+                <option value="">Select cow…</option>
+                {cows.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name || c.tagId || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
+                  </option>
+                ))}
+              </select>
+              {errors.cowId && <p className="text-red-600 text-xs mt-1">{errors.cowId}</p>}
+          </label>
+
+          {/* Date */}
+          <label className="block">
+            <span className="text-sm font-semibold text-gray-700 mb-1 block">Date</span>
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              max={todayKey()}
+              className={`${base} ${errors.date ? "border-red-500" : "border-gray-300"}`}
+            />
+            {errors.date && <p className="text-red-600 text-xs mt-1">{errors.date}</p>}
+          </label>
+
+          {/* Shift + Liters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <label className="block">
+              <span className="text-sm font-semibold text-gray-700 mb-1 block">Shift</span>
+              <select
+                value={form.shift}
+                onChange={(e) => setForm({ ...form, shift: e.target.value })}
+                className={`${inputCls} bg-white border-gray-300`}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </label>
+
+            <label className="text-sm block">
+              <span className="block mb-1 text-gray-600 font-semibold">Liters</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                value={form.liters}
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".");
+                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, liters: v });
+                }}
+                onBlur={() => {
+                  if (form.liters !== "") {
+                    const n = Math.max(0, Number(form.liters));
+                    setForm((f) => ({ ...f, liters: oneDp(n) }));
+                  }
+                }}
+                onWheel={(e) => e.currentTarget.blur()}
+                className={`${base} ${errors.liters ? "border-red-500" : "border-gray-300"}`}
+                placeholder="e.g., 23.5"
+              />
+              {errors.liters && <p className="text-red-600 text-xs mt-1">{errors.liters}</p>}            
+            </label>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="sticky bottom-0 bg-white px-7 py-4 border-t">
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">
+              Cancel
+            </button>
+            <button disabled={saving} className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+              {saving ? "Saving…" : "Save Record"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
   );
 }
 
-/* ==================== Edit Modal (move/update AM/PM) ==================== */
+
+/*  Edit Modal  */
 export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
   const [form, setForm] = React.useState({
     cowId: row?.cowId || "",
     date: row?.date || todayKey(),
-    morning: Number(row?.morning || 0),
-    evening: Number(row?.evening || 0),
+    morning: row?.morning || "",
+    evening: row?.evening || "",
   });
   const [saving, setSaving] = React.useState(false);
+  const [errors, setErrors] = React.useState({});
+  const originalRef = React.useRef({ cowId: "", date: "" });
+  const baseEdit =
+  "w-full rounded-xl border px-4 py-3 text-[15px] " +
+  "focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
 
   
-  const originalRef = React.useRef({ cowId: "", date: "" });
-
   React.useEffect(() => {
     if (open && row) {
       setForm({
         cowId: row.cowId,
         date: row.date,
-        morning: Number(row.morning || 0),
-        evening: Number(row.evening || 0),
+        morning: row.morning || "",
+        evening: row.evening || "",
       });
       originalRef.current = { cowId: row.cowId, date: row.date };
     }
@@ -153,30 +232,52 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
 
   if (!open || !row) return null;
 
-  // --- helper upserts ---
+   const validate = () => {
+    const e = {};
+
+    if (!form.cowId) e.cowId = "Please choose a cow";
+
+    if (!form.date) e.date = "Date is required";
+    else {
+      const d = new Date(form.date + "T00:00:00");
+      const t = new Date(); t.setHours(0,0,0,0);
+      if (isNaN(+d)) e.date = "Invalid date";
+      else if (d > t) e.date = "Date cannot be in the future";
+    }
+
+    const check = (val, key) => {
+      const s = String(val ?? "").trim();
+      if (s === "") return; // treat empty as 0
+      if (s.startsWith("-")) e[key] = "Cannot be negative";
+      else if (!twoDpStrict(s)) e[key] = "Use up to 2 decimal places";
+    };
+    check(form.morning, "morning");
+    check(form.evening, "evening");
+
+    return e;
+  };
+
+
+  // --- API helpers ---
   const postOne = (cowId, date, shift, liters) =>
     api.post("/milk", { cow: cowId, date, shift, volumeLiters: Number(liters) });
-
   const putOne = (id, date, shift, liters) =>
     api.put(`/milk/${id}`, { date, shift, volumeLiters: Number(liters) });
-
   const delOne = (id) => api.delete(`/milk/${id}`);
 
   async function saveBoth() {
-    const { cowId: oldCow, date: oldDate } = originalRef.current;   // ← use ORIGINAL
+    const { cowId: oldCow, date: oldDate } = originalRef.current;
     const newCow = form.cowId;
     const newDate = form.date;
 
-    // fetch existing AM/PM docs for the ORIGINAL identity
     let oldItems = [];
     try {
       const r0 = await api.get("/milk", {
         params: { cow: oldCow, from: oldDate, to: oldDate, limit: 10 },
       });
       oldItems = r0.data?.items || [];
-    } catch {
-      oldItems = [];
-    }
+    } catch {}
+
     const amOld = oldItems.find((i) => i.shift === "AM");
     const pmOld = oldItems.find((i) => i.shift === "PM");
 
@@ -186,34 +287,28 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
     const identityChanged = newCow !== oldCow || newDate !== oldDate;
 
     if (identityChanged) {
-      // move: delete old docs, then create new docs at new identity
       for (const it of oldItems) await delOne(it._id);
-
       if (amVal > 0) await postOne(newCow, newDate, "AM", amVal);
       if (pmVal > 0) await postOne(newCow, newDate, "PM", pmVal);
       return;
     }
 
-    // same cow+date → update or create
-    if (amOld) {
-      await putOne(amOld._id, newDate, "AM", amVal);
-    } else if (amVal > 0) {
-      await postOne(newCow, newDate, "AM", amVal);
-    }
+    if (amOld) await putOne(amOld._id, newDate, "AM", amVal);
+    else if (amVal > 0) await postOne(newCow, newDate, "AM", amVal);
 
-    if (pmOld) {
-      await putOne(pmOld._id, newDate, "PM", pmVal);
-    } else if (pmVal > 0) {
-      await postOne(newCow, newDate, "PM", pmVal);
-    }
+    if (pmOld) await putOne(pmOld._id, newDate, "PM", pmVal);
+    else if (pmVal > 0) await postOne(newCow, newDate, "PM", pmVal);
 
-    // if user set both to 0 → delete any existing
     if (amVal <= 0 && amOld) await delOne(amOld._id);
     if (pmVal <= 0 && pmOld) await delOne(pmOld._id);
   }
 
   const submit = async (e) => {
     e.preventDefault();
+    const v = validate();
+    setErrors(v);
+    if (Object.keys(v).length) return;
+
     setSaving(true);
     try {
       await saveBoth();
@@ -226,70 +321,123 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
     }
   };
 
+
+  const inputCls = "w-full border rounded-lg px-3 py-2";
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-md bg-white rounded-xl shadow-xl p-6 space-y-4">
-        <h3 className="text-lg font-bold">Edit Milk Record</h3>
-
-        <label className="text-sm">
-          <span className="block mb-1 text-gray-600">Cow</span>
-          <select
-            value={form.cowId}
-            onChange={(e) => setForm({ ...form, cowId: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 bg-white"
-            required
-          >
-            {cows.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name || c.tagId || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="text-sm">
-          <span className="block mb-1 text-gray-600">Date</span>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2"
-            required
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <span className="block mb-1 text-gray-600">Morning (AM)</span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.morning}
-              onChange={(e) => setForm({ ...form, morning: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="block mb-1 text-gray-600">Evening (PM)</span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.evening}
-              onChange={(e) => setForm({ ...form, evening: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            />
-          </label>
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center px-4">
+     <form onSubmit={submit} className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 bg-white px-7 py-5 border-b">
+          <div className="flex items-start justify-between">
+            <h3 className="text-2xl font-bold">Edit Milk Record</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">
-            Cancel
-          </button>
-          <button disabled={saving} className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
-            {saving ? "Saving…" : "Save Changes"}
-          </button>
+        {/* Body */}
+        <div className="max-h-[70vh] overflow-y-auto px-7 py-6 space-y-5">
+          {/* Cow */}
+          <label className="block">
+            <span className="text-sm font-semibold text-gray-700 mb-1 block">Cow</span>
+            <select
+              value={form.cowId}
+              onChange={(e) => setForm({ ...form, cowId: e.target.value })}
+              className={`${baseEdit} bg-white ${errors.cowId ? "border-red-500" : "border-gray-300"}`}
+            >
+              {cows.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name || c.tagId || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
+                </option>
+              ))}
+            </select>
+            {errors.cowId && <p className="text-red-600 text-xs mt-1">{errors.cowId}</p>}
+          </label>
+
+          {/* Date */}
+          <label className="block">
+            <span className="text-sm font-semibold text-gray-700 mb-1 block">Date</span>
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              max={todayKey()}
+              className={`${baseEdit} ${errors.date ? "border-red-500" : "border-gray-300"}`}
+            />
+            {errors.date && <p className="text-red-600 text-xs mt-1">{errors.date}</p>}
+          </label>
+
+          {/* Morning + Evening */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <label className="text-sm block">
+              <span className="block mb-1 text-gray-600 font-semibold">Morning (AM)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                value={form.morning}
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".");
+                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, morning: v });
+                }}
+                onBlur={() => {
+                  if (form.morning !== "") {
+                    const n = Math.max(0, Number(form.morning));
+                    setForm((f) => ({ ...f, morning: oneDp(n) }));
+                  }
+                }}
+                onWheel={(e) => e.currentTarget.blur()}
+                className={`${baseEdit} ${errors.morning ? "border-red-500" : "border-gray-300"}`}
+                placeholder="0.0"
+              />
+              {errors.morning && <p className="text-red-600 text-xs mt-1">{errors.morning}</p>}
+            </label>
+
+
+            <label className="text-sm block">
+              <span className="block mb-1 text-gray-600 font-semibold">Evening (PM)</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="0"
+                  value={form.evening}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(",", ".");
+                    if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, evening: v });
+                  }}
+                  onBlur={() => {
+                    if (form.evening !== "") {
+                      const n = Math.max(0, Number(form.evening));
+                      setForm((f) => ({ ...f, evening: oneDp(n) }));
+                    }
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  className={`${baseEdit} ${errors.evening ? "border-red-500" : "border-gray-300"}`}
+                  placeholder="0.0"
+                />
+                {errors.evening && <p className="text-red-600 text-xs mt-1">{errors.evening}</p>}              
+              </label>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="sticky bottom-0 bg-white px-7 py-4 border-t">
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">
+              Cancel
+            </button>
+            <button disabled={saving} className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+              {saving ? "Save…" : "Save Changes"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
