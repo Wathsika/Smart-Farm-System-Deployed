@@ -24,7 +24,7 @@ const InputField = ({ id, label, value, onChange, placeholder, required = false,
 
 
 export default function CheckoutPage() {
-   const { cartItems, cartTotal, discountAmount, totalAfterDiscount, discount, applyDiscountCode, removeDiscount } = useCart();
+   const { cartItems, cartTotal, discountAmount, totalAfterDiscount, discount, applyDiscountCode, removeDiscount, updateQuantity, removeFromCart } = useCart();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
     const [customerInfo, setCustomerInfo] = useState({
@@ -145,15 +145,42 @@ const [promoCode, setPromoCode] = useState('');
                                 <div className="p-6">
                                     <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
                                         {cartItems.map(item => (
-                                            <div key={item._id} className="flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
+                                            <div key={item._id} className="flex justify-between items-start gap-4">
+                                                <div className="flex items-start gap-3 flex-1">
                                                     <img src={item.images?.[0] || 'https://via.placeholder.com/40'} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                                                    <div>
-                                                        <p className="font-semibold text-sm">{item.name}</p>
-                                                        <p className="text-xs text-gray-500">{item.quantity} x Rs {item.price.toFixed(2)}</p>
+                                                     <div className="flex-1">
+                                                        <p className="font-semibold text-sm text-gray-800">{item.name}</p>
+                                                        <p className="text-xs text-gray-500">Rs {item.price.toFixed(2)} each</p>
+                                                        <div className="mt-2 flex items-center gap-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => item.quantity > 1 && updateQuantity(item._id, item.quantity - 1)}
+                                                                    disabled={item.quantity <= 1}
+                                                                    className={`w-8 h-8 flex items-center justify-center rounded-full border text-gray-600 transition ${item.quantity <= 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 hover:bg-gray-100'}`}
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="text-sm font-semibold text-gray-700 w-6 text-center">{item.quantity}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                                                    className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeFromCart(item._id)}
+                                                                className="text-xs font-medium text-red-500 hover:text-red-600"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <p className="font-bold text-sm">Rs {(item.price * item.quantity).toFixed(2)}</p>
+                                               <p className="font-bold text-sm text-gray-800">Rs {(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
                                         ))}
                                     </div>

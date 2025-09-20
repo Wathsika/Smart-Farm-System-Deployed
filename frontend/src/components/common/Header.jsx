@@ -55,7 +55,7 @@ export default function Header() {
 
   return (
     <motion.header ref={mobileMenuRef} className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur-sm">
-      <nav className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 md:py-5 lg:px-8">
         {/* Logo */}
         <Link to="/" className="inline-flex items-center gap-2 text-lg font-bold text-gray-900 flex-shrink-0">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-green-600 text-white"><i className="fa-solid fa-leaf" /></span>
@@ -65,14 +65,14 @@ export default function Header() {
         {/* --- DESKTOP VIEW --- */}
         <div className="hidden md:flex items-center justify-end flex-grow">
           {/* Navigation Links */}
-          <div className="flex items-center gap-8">
+           <div className="flex items-center gap-10">
             {navItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={({ isActive }) => `${linkBaseClasses} ${isActive ? activeLinkClasses : ""}`}>{item.label}</NavLink>
             ))}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-4 ml-8 pl-8 border-l border-gray-200">
+          <div className="flex items-center gap-6 ml-8 pl-8 border-l border-gray-200">
             {/* Cart Icon */}
             <Link to="/checkout" className="relative p-2 rounded-full text-gray-600 hover:bg-gray-100" aria-label="Cart">
               <i className="fa-solid fa-basket-shopping text-lg" />
