@@ -70,7 +70,15 @@ export default function LoginPage() {
         rememberMe: form.rememberMe,
       });
       login({ token: data.token, user: data.user });
-      navigate("/");
+      const userRole = data?.user?.role;
+
+      if (userRole === "Admin") {
+        navigate("/admin", { replace: true });
+      } else if (userRole === "Employee") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       setErrors({ submit: error.response?.data?.message });
 
