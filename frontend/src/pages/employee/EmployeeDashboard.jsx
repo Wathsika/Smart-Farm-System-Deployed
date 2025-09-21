@@ -1,25 +1,26 @@
 // src/pages/employee/EmployeeDashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User } from "lucide-react";
+import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User, Clock, Loader, LayoutDashboard } from "lucide-react"; // Added LayoutDashboard for main title
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MyTasks from "./MyTasks";
 import MyLeaveRequests from "./MyLeaveRequests";
-import PerformanceTab from "./Performance.jsx";
-import TaskCalendar from "./TaskCalendar.jsx";
+import PerformanceTab from "./Performance"; // Renamed from Performance.jsx to Performance
+import TaskCalendar from "./TaskCalendar";
 import { api } from "../../lib/api";
 
 export default function EmployeeDashboard() {
   const [status, setStatus] = useState("idle"); // idle | checked-in | checked-out
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Changed initial loading to true for initial data fetch
   const [activeTab, setActiveTab] = useState("today");
   const [todayRecords, setTodayRecords] = useState([]);
 
   const loadToday = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data } = await api.get("/attendance/today");
+      const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+      const { data } = await api.get("/attendance", { params: { startDate: today, endDate: today } });
 
       if (data.items && data.items.length > 0) {
         setTodayRecords(data.items);
@@ -41,8 +42,8 @@ export default function EmployeeDashboard() {
   }, [loadToday]);
 
   const handleCheckIn = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       await api.post("/attendance/clock-in");
       await loadToday();
     } catch (err) {
@@ -54,8 +55,8 @@ export default function EmployeeDashboard() {
   };
 
   const handleCheckOut = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       await api.post("/attendance/clock-out");
       await loadToday();
     } catch (err) {
@@ -67,82 +68,111 @@ export default function EmployeeDashboard() {
   };
 
   const tabs = [
-    { id: "calendar", label: "Calendar", icon: Calendar },
     { id: "today", label: "Today’s Tasks", icon: CheckSquare },
+    { id: "calendar", label: "Task Calendar", icon: Calendar }, // Changed order
     { id: "leave", label: "Leave Requests", icon: FileText },
     { id: "performance", label: "Performance", icon: TrendingUp },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white p-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-8"> {/* Main background like TaskManagement */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-green-800 mb-2">Employee Dashboard</h1>
-            <p className="text-green-600">Welcome back! Here’s what’s happening today.</p>
+        <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
+          <div className="flex items-center">
+            <div className="p-4 bg-green-500 rounded-lg shadow-md mr-4">
+              <LayoutDashboard className="w-10 h-10 text-white" /> {/* New icon for dashboard title */}
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800">Employee Dashboard</h1>
+              <p className="text-gray-600 mt-1">Welcome back! Here’s what’s happening today.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" className="border-green-200 hover:bg-green-50">
-              <Bell className="h-4 w-4 text-green-600" />
-            </Button>
-            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-green-100">
-              <User className="h-4 w-4 text-green-600" />
-              <span className="text-green-800 font-medium">Employee</span>
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              className="p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center"
+            >
+              <Bell className="h-5 w-5 text-gray-600" />
+            </motion.button>
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-200">
+              <User className="h-4 w-4 text-gray-600" />
+              <span className="text-gray-800 font-medium">Employee</span>
             </div>
           </div>
         </div>
 
         {/* Check-in/out buttons */}
-        <div className="mb-8 space-x-4">
-          <button
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-8 flex flex-wrap gap-4">
+          <Button
             onClick={handleCheckIn}
             disabled={loading || status === "checked-in"}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center px-6 py-3 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading && status !== "checked-in" ? "Checking in..." : "Check-In"}
-          </button>
-          <button
+            <motion.span whileHover={{ scale: (loading || status === "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status === "checked-in") ? 1 : 0.95 }} className="flex items-center">
+              {loading && status !== "checked-in" ? <Loader className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading && status !== "checked-in" ? "Checking in..." : "Check-In"}
+            </motion.span>
+          </Button>
+          <Button
             onClick={handleCheckOut}
             disabled={loading || status !== "checked-in"}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center px-6 py-3 font-medium text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading && status === "checked-in" ? "Checking out..." : "Check-Out"}
-          </button>
-        </div>
+            <motion.span whileHover={{ scale: (loading || status !== "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status !== "checked-in") ? 1 : 0.95 }} className="flex items-center">
+              {loading && status === "checked-in" ? <Loader className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading && status === "checked-in" ? "Checking out..." : "Check-Out"}
+            </motion.span>
+          </Button>
+        </motion.div>
 
         {/* Show ALL times for the day */}
-        <div className="mb-8 text-green-700 space-y-2 p-4 bg-green-50 rounded-lg border border-green-100">
-          <h3 className="font-bold text-green-800">Today's Sessions</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}
+          className="mb-8 text-gray-700 space-y-2 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
+        >
+          <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-green-500" /> Today's Sessions
+          </h3>
           {loading ? (
-             <p className="text-sm text-gray-500">Loading sessions...</p>
+             <p className="text-sm text-gray-500 flex items-center gap-2">
+               <Loader className="w-4 h-4 animate-spin text-gray-400" /> Loading sessions...
+            </p>
           ) : todayRecords.length > 0 ? (
             todayRecords.map((record) => (
-              <div key={record._id} className="flex items-center gap-4 text-sm">
-                <p>✅ In: <span className="font-semibold">{new Date(record.checkIn).toLocaleTimeString()}</span></p>
+              <motion.div key={record._id} className="flex items-center gap-6 text-sm py-2 px-3 bg-gray-50 rounded-md border border-gray-200">
+                <p className="text-gray-700 flex items-center gap-1">✅ In: <span className="font-semibold text-gray-900">{new Date(record.checkIn).toLocaleTimeString()}</span></p>
                 {record.checkOut ? (
-                  <p>⏰ Out: <span className="font-semibold">{new Date(record.checkOut).toLocaleTimeString()}</span></p>
+                  <p className="text-gray-700 flex items-center gap-1">⏰ Out: <span className="font-semibold text-gray-900">{new Date(record.checkOut).toLocaleTimeString()}</span></p>
                 ) : (
-                  <p className="text-yellow-600 font-semibold animate-pulse"> (Active Session) </p>
+                  <p className="text-orange-600 font-semibold animate-pulse flex items-center gap-1">
+                    <Clock className="w-4 h-4" /> Active Session
+                  </p>
                 )}
-              </div>
+              </motion.div>
             ))
           ) : (
-            <p className="text-sm text-gray-500">You have not clocked in today.</p>
+            <p className="text-sm text-gray-500 p-2 bg-gray-50 rounded-md border border-gray-200">You have not clocked in today.</p>
           )}
-        </div>
+        </motion.div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-white/70 p-1 rounded-lg border border-green-100 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5 }}
+          className="flex space-x-1 p-1 rounded-xl border border-gray-200 bg-white shadow-sm mb-8"
+        >
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "ghost"}
-                className={`flex-1 ${
-                  activeTab === tab.id ? "bg-green-600 text-white" : "text-green-700 hover:bg-green-50"
-                }`}
+                className={`flex-1 flex items-center justify-center py-2.5 rounded-lg text-sm font-medium transition-colors
+                  ${ activeTab === tab.id
+                    ? "bg-green-500 text-white shadow hover:bg-green-600"
+                    : "text-gray-700 hover:bg-gray-100"
+                  }`
+                }
                 onClick={() => setActiveTab(tab.id)}
               >
                 <Icon className="h-4 w-4 mr-2" />
@@ -150,7 +180,7 @@ export default function EmployeeDashboard() {
               </Button>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Content */}
         {activeTab === "today" && <MyTasks />}
