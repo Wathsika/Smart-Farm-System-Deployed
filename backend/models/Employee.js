@@ -24,14 +24,18 @@ const employeeSchema = new mongoose.Schema(
       default: 0,
     },
 
-    allowance: { // Ensure allowance is defined
+
+    allowance: {
+      // Ensure allowance is defined
       type: Number,
-      default: 0, 
+      default: 0,
       min: 0,
     },
-    loan: {      // Ensure loan is defined
+    loan: {
+      // Ensure loan is defined
       type: Number,
-      default: 0, 
+      default: 0,
+
       min: 0,
     },
   },
@@ -39,4 +43,6 @@ const employeeSchema = new mongoose.Schema(
 );
 
 const Employee = mongoose.model("Employee", employeeSchema);
+
 export default Employee;
+
