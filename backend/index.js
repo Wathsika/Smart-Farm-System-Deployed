@@ -45,6 +45,8 @@ import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 
+import chatRoutes from "./routes/chat.routes.js";
+
 
 // --- Initialize App ---
 const app = express();
@@ -143,6 +145,8 @@ app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
 
+// ✅ Chatbot API
+app.use("/api/chat", chatRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>
@@ -156,3 +160,5 @@ app.use(errorHandler);
 // --- Start Server ---
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => console.log(`✅ API running on port :${PORT}`));
+
+// chatbot
