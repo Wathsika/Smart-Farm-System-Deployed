@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import {
   ChevronDown,
@@ -155,6 +155,23 @@ export default function AuditLogPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
+  const loadLogs = useCallback(async (params = {}) => {
+    try {
+      setLoading(true);
+      const res = await api.get("/audit", {
+        params: Object.keys(params).length ? params : undefined,
+      });
+      const list = Array.isArray(res.data) ? res.data : [];
+      setLogs(list);
+      setPage(1);
+    } catch (err) {
+      console.error(err);
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize;
     return logs.slice(start, start + pageSize);
@@ -171,30 +188,21 @@ export default function AuditLogPage() {
     }
   }, [transactionId]);
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const params = {};
-      if (date) params.date = date; // backend will convert to start..end of day
-      if (transactionId) params.transactionId = transactionId.trim();
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
-      const res = await api.get("/audit", { params });
-      const list = Array.isArray(res.data) ? res.data : [];
-      setLogs(list);
-      setPage(1);
-    } catch (err) {
-      console.error(err);
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchLogs = useCallback(() => {
+    const params = {};
+    if (date) params.date = date; // backend will convert to start..end of day
+    if (transactionId) params.transactionId = transactionId.trim();
+    loadLogs(params);
+  }, [date, transactionId, loadLogs]);
 
   const clearFilters = () => {
     setDate("");
     setTransactionId("");
-    setLogs([]);
-    setPage(1);
+    loadLogs();
   };
 
   const exportCsv = () => {
