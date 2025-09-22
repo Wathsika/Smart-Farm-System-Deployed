@@ -2,9 +2,8 @@ import mongoose from "mongoose";
 
 const auditLogSchema = new mongoose.Schema({
   action: { type: String, enum: ["ADD", "UPDATE", "DELETE"], required: true },
-  collection: { type: String, required: true },
   recordId: { type: mongoose.Schema.Types.ObjectId, required: true }, // Mongo _id
-  transactionId: { type: String }, // ✅ custom TNXxxxx id
+  transactionId: { type: String },
   user: { type: String, required: true },
   originalData: { type: Object },
   newData: { type: Object },

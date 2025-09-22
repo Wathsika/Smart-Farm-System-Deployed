@@ -2,8 +2,8 @@ import AuditLog from "../models/AuditLog.js";
 
 export async function logAudit({
   action,
-  collection,
   recordId,
+  transactionId, // <-- add this here
   user,
   originalData,
   newData,
@@ -11,8 +11,8 @@ export async function logAudit({
   try {
     await AuditLog.create({
       action,
-      collection,
       recordId,
+      transactionId, // <-- correctly saved now
       user,
       originalData,
       newData,

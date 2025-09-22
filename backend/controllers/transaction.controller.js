@@ -1,5 +1,5 @@
 import Transaction from "../models/Transaction.js";
-import { logAudit } from "../utils/auditLogger.js"; // adjust path if different
+import { logAudit } from "../utils/auditLogger.js";
 
 /* ---------- helpers ---------- */
 function monthRange(ym) {
@@ -48,7 +48,7 @@ export const createTransaction = async (req, res) => {
       return res.status(400).json({ message: "description is required" });
 
     const payload = {
-      transaction_id: generateTransactionId(), // 🔥 generate here
+      transaction_id: generateTransactionId(),
       type: type || "EXPENSE",
       category: category.trim(),
       amount: Number(amount),
@@ -65,9 +65,9 @@ export const createTransaction = async (req, res) => {
     // --- Audit log ---
     await logAudit({
       action: "ADD",
-      collection: "FinanceTransaction",
       recordId: doc._id,
-      user: req.user?.username || "Unknown",
+      transactionId: doc.transaction_id, // now properly stored
+      user: req.user?.username || "system",
       newData: doc.toObject(),
     });
 
@@ -124,7 +124,7 @@ export const getTransaction = async (req, res) => {
   }
 };
 
-/* ---------- UPDATE ---------- */
+/* ---------- UPDATE ---------- */ /* ---------- UPDATE ---------- */
 export const updateTransaction = async (req, res) => {
   try {
     const { type, date, category, amount, description, transaction_id } =
@@ -156,7 +156,6 @@ export const updateTransaction = async (req, res) => {
 
     const filter = idFilter(req.params.id);
 
-    // fetch old record before update
     const oldRecord = await Transaction.findOne(filter);
     if (!oldRecord) return res.status(404).json({ message: "Not found" });
 
@@ -169,9 +168,9 @@ export const updateTransaction = async (req, res) => {
     // --- Audit log ---
     await logAudit({
       action: "UPDATE",
-      collection: "FinanceTransaction",
       recordId: item._id,
-      user: req.user?.username || "Unknown",
+      transactionId: item.transaction_id,
+      user: req.user?.username || "system",
       originalData: oldRecord.toObject(),
       newData: item.toObject(),
     });
@@ -192,9 +191,9 @@ export const deleteTransaction = async (req, res) => {
     // --- Audit log ---
     await logAudit({
       action: "DELETE",
-      collection: "FinanceTransaction",
       recordId: item._id,
-      user: req.user?.username || "Unknown",
+      transactionId: item.transaction_id,
+      user: req.user?.username || "system",
       originalData: item.toObject(),
     });
 

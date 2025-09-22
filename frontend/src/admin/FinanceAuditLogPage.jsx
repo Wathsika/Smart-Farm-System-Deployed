@@ -253,9 +253,7 @@ export default function AuditLogPage() {
                       <th className="text-left px-3 py-2 font-semibold">
                         Transaction ID
                       </th>
-                      <th className="text-left px-3 py-2 font-semibold">
-                        Collection
-                      </th>
+
                       <th className="text-left px-3 py-2 font-semibold">
                         Changes
                       </th>
@@ -281,10 +279,10 @@ export default function AuditLogPage() {
                           </span>
                         </td>
                         <td className="px-3 py-2">{row.user || "—"}</td>
-                        <td className="px-3 py-2 font-mono text-xs">
-                          {row.recordId || "—"}
+
+                        <td className="px-3 py-2">
+                          {row.transactionId || "—"}
                         </td>
-                        <td className="px-3 py-2">{row.collection || "—"}</td>
                         <td className="px-3 py-2">
                           <ChangeBlock
                             originalData={row.originalData}
