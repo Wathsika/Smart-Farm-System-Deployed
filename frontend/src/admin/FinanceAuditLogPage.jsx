@@ -9,7 +9,6 @@ import {
   FileDown,
 } from "lucide-react";
 
-/** Helpers */
 const formatDateTime = (iso) => {
   if (!iso) return "—";
   try {
@@ -26,9 +25,6 @@ const formatDateTime = (iso) => {
   }
 };
 
-const isLikelyObjectId = (v) => /^[a-f0-9]{24}$/i.test(v || "");
-
-/** CSV download */
 function downloadCSV(filename, rows) {
   const headers = [
     "timestamp",
@@ -62,7 +58,6 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-/** A tiny diff viewer */
 function ChangeBlock({ originalData, newData }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -97,7 +92,6 @@ function ChangeBlock({ originalData, newData }) {
             </pre>
           </div>
 
-          {/* side-by-side field diff */}
           <div className="md:col-span-2 border rounded-lg overflow-hidden">
             <div className="px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-700">
               Field-by-field changes
@@ -145,32 +139,68 @@ function ChangeBlock({ originalData, newData }) {
 }
 
 export default function AuditLogPage() {
-  const [date, setDate] = useState(""); // YYYY-MM-DD
-  const [transactionId, setTransactionId] = useState("");
+  const [rawLogs, setRawLogs] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [warnId, setWarnId] = useState("");
-
-  // pagination (client-side)
+  const [date, setDate] = useState("");
+  const [transactionId, setTransactionId] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  const loadLogs = useCallback(async (params = {}) => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/audit", {
-        params: Object.keys(params).length ? params : undefined,
-      });
-      const list = Array.isArray(res.data) ? res.data : [];
-      setLogs(list);
+      const res = await api.get("/audit");
+      const all = Array.isArray(res.data) ? res.data : [];
+      setRawLogs(all);
+      setLogs(all);
       setPage(1);
     } catch (err) {
       console.error(err);
+      setRawLogs([]);
       setLogs([]);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const fetchLogs = useCallback(() => {
+    let filtered = rawLogs;
+
+    if (date) {
+      const selected = new Date(`${date}T00:00:00.000+05:30`);
+      const dayStart = selected.getTime();
+      const dayEnd = selected.setHours(23, 59, 59, 999);
+
+      filtered = filtered.filter((log) => {
+        const time = new Date(log.timestamp).getTime();
+        return time >= dayStart && time <= dayEnd;
+      });
+    }
+
+    if (transactionId) {
+      const term = transactionId.trim().toLowerCase();
+      filtered = filtered.filter((log) =>
+        (log.recordId || "").toLowerCase().includes(term)
+      );
+    }
+
+    setLogs(filtered);
+    setPage(1);
+  }, [date, transactionId, rawLogs]);
+
+  const clearFilters = () => {
+    setDate("");
+    setTransactionId("");
+    setLogs(rawLogs);
+    setPage(1);
+  };
+
+  const exportCsv = () => {
+    if (!logs.length) return;
+    const name = `audit_${date || "all"}_${transactionId || "all"}.csv`;
+    downloadCSV(name, logs);
+  };
 
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -178,47 +208,8 @@ export default function AuditLogPage() {
   }, [logs, page]);
 
   useEffect(() => {
-    // gentle warning if ID doesn’t look like Mongo ObjectId
-    if (transactionId && !isLikelyObjectId(transactionId)) {
-      setWarnId(
-        "This doesn’t look like a MongoDB ObjectId (24 hex chars). You can still search though."
-      );
-    } else {
-      setWarnId("");
-    }
-  }, [transactionId]);
-
-  useEffect(() => {
     loadLogs();
   }, [loadLogs]);
-
-  const fetchLogs = useCallback(() => {
-    const params = {};
-    if (date) params.date = date; // backend will convert to start..end of day
-    if (transactionId) params.transactionId = transactionId.trim();
-    loadLogs(params);
-  }, [date, transactionId, loadLogs]);
-
-  const clearFilters = () => {
-    setDate("");
-    setTransactionId("");
-    loadLogs();
-  };
-
-  const exportCsv = () => {
-    if (!logs.length) return;
-    const rows = logs.map((l) => ({
-      timestamp: l.timestamp,
-      action: l.action,
-      user: l.user,
-      collection: l.collection,
-      recordId: l.recordId,
-      originalData: l.originalData,
-      newData: l.newData,
-    }));
-    const name = `audit_${date || "all"}_${transactionId || "all"}.csv`;
-    downloadCSV(name, rows);
-  };
 
   return (
     <div className="p-4 sm:p-6">
@@ -236,7 +227,6 @@ export default function AuditLogPage() {
               it and when.
             </p>
           </div>
-
           <div className="flex gap-2">
             <button
               onClick={exportCsv}
@@ -248,7 +238,7 @@ export default function AuditLogPage() {
               Export CSV
             </button>
             <button
-              onClick={fetchLogs}
+              onClick={loadLogs}
               className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
               title="Refresh"
             >
@@ -271,27 +261,19 @@ export default function AuditLogPage() {
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 text-sm"
               />
-              <p className="text-[11px] text-gray-500 mt-1">
-                Shows logs that happened on this day (local time).
-              </p>
             </div>
-
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Transaction ID
               </label>
               <input
                 type="text"
-                placeholder="e.g., 64f1c1d3a2b4c5d6e7f81234"
+                placeholder="e.g., 64f1c1..."
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 text-sm tracking-wider"
               />
-              {warnId && (
-                <p className="text-[11px] text-amber-600 mt-1">{warnId}</p>
-              )}
             </div>
-
             <div className="flex items-end gap-2">
               <button
                 onClick={fetchLogs}
@@ -314,22 +296,10 @@ export default function AuditLogPage() {
         {/* Results */}
         <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
           <div className="px-4 py-2 bg-gray-50 text-sm text-gray-700 flex items-center justify-between">
-            <div>
-              {loading ? "Loading…" : `${logs.length} record(s)`}
-              {date && (
-                <span className="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded">
-                  date: {date}
-                </span>
-              )}
-              {transactionId && (
-                <span className="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded">
-                  id: {transactionId}
-                </span>
-              )}
-            </div>
-            {!loading && !!logs.length && (
+            <div>{loading ? "Loading…" : `${logs.length} record(s)`}</div>
+            {!loading && logs.length > 0 && (
               <div className="text-xs text-gray-500">
-                Page {page} / {Math.max(1, Math.ceil(logs.length / pageSize))}
+                Page {page} / {Math.ceil(logs.length / pageSize)}
               </div>
             )}
           </div>
@@ -394,24 +364,10 @@ export default function AuditLogPage() {
                         </td>
                         <td className="px-3 py-2">{row.collection || "—"}</td>
                         <td className="px-3 py-2">
-                          {row.action === "ADD" && (
-                            <ChangeBlock
-                              originalData={null}
-                              newData={row.newData}
-                            />
-                          )}
-                          {row.action === "UPDATE" && (
-                            <ChangeBlock
-                              originalData={row.originalData}
-                              newData={row.newData}
-                            />
-                          )}
-                          {row.action === "DELETE" && (
-                            <ChangeBlock
-                              originalData={row.originalData}
-                              newData={null}
-                            />
-                          )}
+                          <ChangeBlock
+                            originalData={row.originalData}
+                            newData={row.newData}
+                          />
                         </td>
                       </tr>
                     ))}
