@@ -61,25 +61,31 @@ export default function AddTransactionPage() {
       return;
     }
 
+    let updatedDescription = form.description?.trim() || "";
+
+    if (isEditing) {
+      if (!updatedDescription.toLowerCase().includes("updated transaction")) {
+        updatedDescription += " (Updated Transaction)";
+      }
+    }
+
     const payload = {
       type: form.type || "EXPENSE",
       date: form.date,
       category: form.category.trim(),
       amount: amt,
-      description: form.description?.trim() || "",
+      description: updatedDescription,
     };
 
     try {
       if (isEditing && editingId) {
-        // UPDATE
         await api.patch(`/transactions/${editingId}`, payload);
         alert("Transaction updated successfully.");
       } else {
-        // CREATE
         await api.post("/transactions", payload);
         alert("Transaction added successfully.");
       }
-      // Navigate back after success
+
       navigate("/admin/finance/transaction");
     } catch (err) {
       console.error(err);
