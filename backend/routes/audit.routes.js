@@ -1,13 +1,10 @@
-// routes/audit.routes.js
-import { Router } from "express";
+// routes/auditRoutes.js
+import express from "express";
 import { getAuditLogs } from "../controllers/audit.controller.js";
-import { auth } from "../middlewares/auth.js";
 
-const router = Router();
+const router = express.Router();
 
-router.use(auth);
-
-// GET /api/audit?date=YYYY-MM-DD&transactionId=<ObjectId>
+// GET /api/audit
 router.get("/", getAuditLogs);
 
 export default router;

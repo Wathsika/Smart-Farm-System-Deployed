@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
-import {
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  Search,
-  X,
-  FileDown,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, FileDown, X } from "lucide-react";
 
 const formatDateTime = (iso) => {
   if (!iso) return "—";
@@ -61,7 +54,7 @@ function downloadCSV(filename, rows) {
 function ChangeBlock({ originalData, newData }) {
   const [expanded, setExpanded] = useState(false);
 
-  const keys = useMemo(() => {
+  const keys = React.useMemo(() => {
     const left = Object.keys(originalData || {});
     const right = Object.keys(newData || {});
     return Array.from(new Set([...left, ...right])).sort();
@@ -91,47 +84,6 @@ function ChangeBlock({ originalData, newData }) {
               {JSON.stringify(newData ?? null, null, 2)}
             </pre>
           </div>
-
-          <div className="md:col-span-2 border rounded-lg overflow-hidden">
-            <div className="px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-700">
-              Field-by-field changes
-            </div>
-            <div className="divide-y">
-              {keys.length === 0 && (
-                <div className="px-3 py-2 text-xs text-gray-500">No fields</div>
-              )}
-              {keys.map((k) => {
-                const a = originalData?.[k];
-                const b = newData?.[k];
-                const changed =
-                  JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
-                return (
-                  <div
-                    key={k}
-                    className={`px-3 py-2 text-xs flex items-start gap-2 ${
-                      changed ? "bg-amber-50" : ""
-                    }`}
-                  >
-                    <div className="w-40 shrink-0 font-medium text-gray-700">
-                      {k}
-                    </div>
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div className="border rounded p-1 bg-white min-h-[32px]">
-                        {typeof a === "object"
-                          ? JSON.stringify(a)
-                          : String(a ?? "—")}
-                      </div>
-                      <div className="border rounded p-1 bg-white min-h-[32px]">
-                        {typeof b === "object"
-                          ? JSON.stringify(b)
-                          : String(b ?? "—")}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -139,73 +91,56 @@ function ChangeBlock({ originalData, newData }) {
 }
 
 export default function AuditLogPage() {
-  const [rawLogs, setRawLogs] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [date, setDate] = useState("");
-  const [transactionId, setTransactionId] = useState("");
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({ date: "", transactionId: "" });
   const pageSize = 20;
 
   const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/audit");
-      const all = Array.isArray(res.data) ? res.data : [];
-      setRawLogs(all);
-      setLogs(all);
+      const res = await api.get("/audit"); // ✅ always fetch all logs
+      setLogs(Array.isArray(res.data) ? res.data : []);
       setPage(1);
     } catch (err) {
       console.error(err);
-      setRawLogs([]);
       setLogs([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchLogs = useCallback(() => {
-    let filtered = rawLogs;
-
-    if (date) {
-      const selected = new Date(`${date}T00:00:00.000+05:30`);
-      const dayStart = selected.getTime();
-      const dayEnd = selected.setHours(23, 59, 59, 999);
-
-      filtered = filtered.filter((log) => {
-        const time = new Date(log.timestamp).getTime();
-        return time >= dayStart && time <= dayEnd;
-      });
-    }
-
-    if (transactionId) {
-      const term = transactionId.trim().toLowerCase();
-      filtered = filtered.filter((log) =>
-        (log.recordId || "").toLowerCase().includes(term)
-      );
-    }
-
-    setLogs(filtered);
-    setPage(1);
-  }, [date, transactionId, rawLogs]);
-
-  const clearFilters = () => {
-    setDate("");
-    setTransactionId("");
-    setLogs(rawLogs);
-    setPage(1);
-  };
-
   const exportCsv = () => {
     if (!logs.length) return;
-    const name = `audit_${date || "all"}_${transactionId || "all"}.csv`;
-    downloadCSV(name, logs);
+    const name = `audit_filtered.csv`;
+    downloadCSV(name, filteredLogs);
   };
+
+  // ✅ filtering logic
+  const filteredLogs = useMemo(() => {
+    return logs.filter((row) => {
+      let ok = true;
+      if (filters.transactionId) {
+        ok =
+          ok &&
+          String(row.recordId || "")
+            .toLowerCase()
+            .includes(filters.transactionId.toLowerCase());
+      }
+      if (filters.date) {
+        const d = new Date(row.timestamp);
+        const localISO = d.toISOString().slice(0, 10); // yyyy-mm-dd
+        ok = ok && localISO === filters.date;
+      }
+      return ok;
+    });
+  }, [logs, filters]);
 
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return logs.slice(start, start + pageSize);
-  }, [logs, page]);
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, page]);
 
   useEffect(() => {
     loadLogs();
@@ -230,7 +165,7 @@ export default function AuditLogPage() {
           <div className="flex gap-2">
             <button
               onClick={exportCsv}
-              disabled={!logs.length}
+              disabled={!filteredLogs.length}
               className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
               title={logs.length ? "Export CSV" : "No data to export"}
             >
@@ -249,57 +184,45 @@ export default function AuditLogPage() {
         </div>
 
         {/* Filters */}
-        <div className="border rounded-xl p-4 bg-white shadow-sm mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Specific Day
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Transaction ID
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., 64f1c1..."
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm tracking-wider"
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <button
-                onClick={fetchLogs}
-                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700 w-full md:w-auto"
-              >
-                <Search size={16} />
-                Apply Filters
-              </button>
-              <button
-                onClick={clearFilters}
-                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm hover:bg-gray-50 w-full md:w-auto"
-              >
-                <X size={16} />
-                Clear
-              </button>
-            </div>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={filters.date}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, date: e.target.value }))
+            }
+            className="border rounded-lg px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            placeholder="Transaction ID…"
+            value={filters.transactionId}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, transactionId: e.target.value }))
+            }
+            className="border rounded-lg px-3 py-2 text-sm"
+          />
+          {(filters.date || filters.transactionId) && (
+            <button
+              onClick={() => setFilters({ date: "", transactionId: "" })}
+              className="inline-flex items-center gap-1 px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
+            >
+              <X size={14} /> Clear
+            </button>
+          )}
         </div>
 
         {/* Results */}
         <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
           <div className="px-4 py-2 bg-gray-50 text-sm text-gray-700 flex items-center justify-between">
-            <div>{loading ? "Loading…" : `${logs.length} record(s)`}</div>
-            {!loading && logs.length > 0 && (
+            <div>
+              {loading
+                ? "Loading…"
+                : `${filteredLogs.length} record(s) (from ${logs.length})`}
+            </div>
+            {!loading && filteredLogs.length > 0 && (
               <div className="text-xs text-gray-500">
-                Page {page} / {Math.ceil(logs.length / pageSize)}
+                Page {page} / {Math.ceil(filteredLogs.length / pageSize)}
               </div>
             )}
           </div>
@@ -308,10 +231,9 @@ export default function AuditLogPage() {
             <div className="p-6 text-center text-gray-500">
               Fetching audit logs…
             </div>
-          ) : !logs.length ? (
+          ) : !filteredLogs.length ? (
             <div className="p-6 text-center text-gray-500">
-              No audit logs found. Try changing filters and click{" "}
-              <b>Apply Filters</b>.
+              No audit logs found.
             </div>
           ) : (
             <>
@@ -379,7 +301,8 @@ export default function AuditLogPage() {
               <div className="px-4 py-3 flex items-center justify-between border-t bg-white">
                 <div className="text-xs text-gray-500">
                   Showing {(page - 1) * pageSize + 1}–
-                  {Math.min(page * pageSize, logs.length)} of {logs.length}
+                  {Math.min(page * pageSize, filteredLogs.length)} of{" "}
+                  {filteredLogs.length}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -392,10 +315,13 @@ export default function AuditLogPage() {
                   <button
                     onClick={() =>
                       setPage((p) =>
-                        Math.min(Math.ceil(logs.length / pageSize), p + 1)
+                        Math.min(
+                          Math.ceil(filteredLogs.length / pageSize),
+                          p + 1
+                        )
                       )
                     }
-                    disabled={page >= Math.ceil(logs.length / pageSize)}
+                    disabled={page >= Math.ceil(filteredLogs.length / pageSize)}
                     className="px-3 py-1.5 border rounded disabled:opacity-50"
                   >
                     Next
