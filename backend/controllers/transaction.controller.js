@@ -20,6 +20,21 @@ function idFilter(idOrTxnId) {
     : { transaction_id: idOrTxnId };
 }
 
+function generateTransactionId() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  const second = String(now.getSeconds()).padStart(2, "0");
+
+  const random = String(Math.floor(Math.random() * 90) + 10); // 2-digit random
+
+  return `TNX${year}${month}${day}${hour}${minute}${second}${random}`;
+}
+
 /* ---------- CREATE ---------- */
 export const createTransaction = async (req, res) => {
   try {
@@ -33,11 +48,13 @@ export const createTransaction = async (req, res) => {
       return res.status(400).json({ message: "description is required" });
 
     const payload = {
+      transaction_id: generateTransactionId(), // 🔥 generate here
       type: type || "EXPENSE",
       category: category.trim(),
       amount: Number(amount),
       description: String(description).trim(),
     };
+
     if (date) {
       const d = new Date(date);
       if (!isNaN(d)) payload.date = d;
