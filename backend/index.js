@@ -44,6 +44,8 @@ import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
 import payrollRoutes from "./routes/payroll.routes.js";
+import auditRoutes from "./routes/audit.routes.js";
+
 import reportRoutes from "./routes/report.routes.js";
 
 // --- Initialize App ---
@@ -60,7 +62,7 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-   "http://localhost:5000", 
+  "http://localhost:5000",
 ].filter(Boolean);
 
 const corsOptions = {
@@ -74,7 +76,7 @@ const corsOptions = {
 
 // Apply CORS globally except for webhook endpoints
 app.use((req, res, next) => {
-const webhookPaths = [
+  const webhookPaths = [
     "/api/stripe/webhook",
     "/api/orders/webhook",
     "/api/payment/webhook",
@@ -137,6 +139,7 @@ app.use("/api", payrollSettingsRoutes);
 app.use("/employees", employeeRoutes);
 app.use("/payrolls", payrollRoutes);
 app.use("/api/payrolls", payrollRoutes);
+app.use("/api/audit", auditRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);

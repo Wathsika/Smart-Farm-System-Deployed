@@ -44,9 +44,9 @@ import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
-import InputListPage from './admin/InputListPage.jsx';
-import AddInputPage from './admin/AddInputPage.jsx';
-import EditInputPage from './admin/EditInputPage.jsx';
+import InputListPage from "./admin/InputListPage.jsx";
+import AddInputPage from "./admin/AddInputPage.jsx";
+import EditInputPage from "./admin/EditInputPage.jsx";
 
 // --- FINANCE (admin) ---
 import FinanceOverview from "./admin/FinanceOverview";
@@ -54,6 +54,7 @@ import FinanceTransaction from "./admin/FinanceTransaction";
 import FinanceNewTransaction from "./admin/FinanceNewTransaction";
 import FinancePayrollManagement from "./admin/FinancePayrollManagement";
 import FinanceEditPayrollRule from "./admin/FinanceEditPayrollRule";
+import FinanceAuditLogPage from "./admin/FinanceAuditLogPage";
 
 // Livestock management pages
 import CowProfilePage from "./pages/livestock/cow.jsx";
@@ -83,7 +84,6 @@ const CustomersPage = () => (
   <div className="p-6 text-2xl font-bold">Customer Management</div>
 );
 
-
 // --- GUARDS ---
 const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
@@ -91,11 +91,8 @@ const Private = ({ children }) =>
 const AdminOnly = ({ children }) =>
   auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
 
-
-
 const EmployeeOnly = ({ children }) =>
   auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
-
 
 export default function App() {
   return (
@@ -115,19 +112,53 @@ export default function App() {
       <Route path="/signup" element={<SignUp />} />
 
       {/* AUTH USER */}
-      <Route path="/profile" element={<Private><UserProfile /></Private>} />
-      <Route path="/checkout" element={<Private><CheckoutPage /></Private>} />
-      <Route path="/my-orders" element={<Private><MyOrdersPage /></Private>} />
+      <Route
+        path="/profile"
+        element={
+          <Private>
+            <UserProfile />
+          </Private>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <Private>
+            <CheckoutPage />
+          </Private>
+        }
+      />
+      <Route
+        path="/my-orders"
+        element={
+          <Private>
+            <MyOrdersPage />
+          </Private>
+        }
+      />
 
       {/* EMPLOYEE */}
-      <Route path="/dashboard" element={<EmployeeOnly><EmployeeDashboard /></EmployeeOnly>} />
+      <Route
+        path="/dashboard"
+        element={
+          <EmployeeOnly>
+            <EmployeeDashboard />
+          </EmployeeOnly>
+        }
+      />
 
       {/* --- ADMIN --- */}
       <Route
         path="/admin"
         element={
           <AdminOnly>
-            <Suspense fallback={<div className="w-full h-screen flex items-center justify-center text-lg">Loading Admin…</div>}>
+            <Suspense
+              fallback={
+                <div className="w-full h-screen flex items-center justify-center text-lg">
+                  Loading Admin…
+                </div>
+              }
+            >
               <AdminLayout />
             </Suspense>
           </AdminOnly>
@@ -150,22 +181,22 @@ export default function App() {
         <Route path="crop" element={<CropPage />} />
         <Route path="crop/add" element={<AddCrop />} />
         <Route path="crop/:id/edit" element={<EditCrop />} />
-        
+
         {/* Plan management */}
         <Route path="crop/plans" element={<PlanList />} />
         <Route path="crop/plan/new" element={<AddPlan />} />
-        
+
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />
         <Route path="crop/inputs/add" element={<AddInputPage />} />
         <Route path="crop/inputs/edit/:id" element={<EditInputPage />} />
-        
+
         {/* Field management */}
         <Route path="fields" element={<FieldPage />} />
         <Route path="fields/add" element={<AddFieldPage />} />
         <Route path="fields/edit/:id" element={<EditFieldPage />} />
         {/* ✅ ROUTE ADDED FOR THE NEW DETAILS PAGE */}
-        <Route path="fields/:id" element={<FieldDetailsPage />} /> 
+        <Route path="fields/:id" element={<FieldDetailsPage />} />
 
         {/* HR management */}
         <Route path="users" element={<AdminUsers />} />
@@ -174,14 +205,20 @@ export default function App() {
         <Route path="leave" element={<LeaveManagement />} />
 
         {/* Store (nested) */}
-        <Route path="store/dashboard" element={<Suspense fallback={<div className="p-6">Loading Dashboard…</div>}><StoreDashboard /></Suspense>} />
+        <Route
+          path="store/dashboard"
+          element={
+            <Suspense fallback={<div className="p-6">Loading Dashboard…</div>}>
+              <StoreDashboard />
+            </Suspense>
+          }
+        />
         <Route path="store/products" element={<AdminProducts />} />
         <Route path="store/orders" element={<AdminOrders />} />
         <Route path="store/discounts" element={<AdminDiscountsPage />} />
         <Route path="store/customers" element={<CustomersPage />} />
 
         <Route path="store/reports" element={<StoreReports />} />
-
 
         {/* Finance (nested) */}
         <Route path="finance">
@@ -190,7 +227,11 @@ export default function App() {
           <Route path="transaction" element={<FinanceTransaction />} />
           <Route path="new_transaction" element={<FinanceNewTransaction />} />
           <Route path="edit_rule" element={<FinanceEditPayrollRule />} />
-          <Route path="payroll_management" element={<FinancePayrollManagement />} />
+          <Route
+            path="payroll_management"
+            element={<FinancePayrollManagement />}
+          />
+          <Route path="audit_log" element={<FinanceAuditLogPage />} />
         </Route>
       </Route>
 
