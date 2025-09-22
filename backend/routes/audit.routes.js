@@ -1,26 +1,13 @@
-import express from "express";
-import AuditLog from "../models/AuditLog.js";
+// routes/audit.routes.js
+import { Router } from "express";
+import { getAuditLogs } from "../controllers/audit.controller.js";
+import { auth } from "../middlewares/auth.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/", async (req, res) => {
-  try {
-    const { date, transactionId } = req.query;
-    let filter = {};
+router.use(auth);
 
-    if (transactionId) filter.recordId = transactionId;
-    if (date) {
-      const start = new Date(date);
-      const end = new Date(date);
-      end.setDate(end.getDate() + 1);
-      filter.timestamp = { $gte: start, $lt: end };
-    }
-
-    const logs = await AuditLog.find(filter).sort({ timestamp: -1 });
-    res.json(logs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// GET /api/audit?date=YYYY-MM-DD&transactionId=<ObjectId>
+router.get("/", getAuditLogs);
 
 export default router;
