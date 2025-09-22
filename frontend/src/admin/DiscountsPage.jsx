@@ -15,6 +15,8 @@ import {
   Users,
   Filter,
   RefreshCw,
+  Sparkles,
+  Keyboard,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import DiscountModal from "./DiscountModal";
@@ -31,7 +33,7 @@ const getStatus = (discount) => {
   if (!discount?.isActive || (end && now > end)) return "Expired";
   return "Active";
 };
-
+const getModeLabel = (mode) => (mode === "MANUAL" ? "Manual Code" : "Auto Apply");
 const Badge = ({ text, type }) => {
   const styles = {
     ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -80,6 +82,22 @@ const StatCard = ({ icon: Icon, title, value, subtitle, tone = "green" }) => {
   );
 };
 
+const ModePill = ({ mode }) => {
+  const normalized = mode === "MANUAL" ? "MANUAL" : "AUTO";
+  const label = getModeLabel(normalized);
+  const styles =
+    normalized === "AUTO"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : "bg-amber-50 text-amber-700 border-amber-200";
+  const Icon = normalized === "AUTO" ? Sparkles : Keyboard;
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full border ${styles}`}>
+      <Icon size={14} />
+      {label}
+    </span>
+  );
+};
 /* -------------------------
    Page
 ------------------------- */
@@ -295,6 +313,7 @@ export default function AdminDiscountsPage() {
                       <th className="p-4 text-left font-semibold text-gray-700">Code</th>
                       <th className="p-4 text-left font-semibold text-gray-700">Value</th>
                       <th className="p-4 text-left font-semibold text-gray-700">Min Purchase</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Mode</th>
                       <th className="p-4 text-left font-semibold text-gray-700">Duration</th>
                       <th className="p-4 text-left font-semibold text-gray-700">Status</th>
                       <th className="p-4 text-right font-semibold text-gray-700">Actions</th>
@@ -330,6 +349,9 @@ export default function AdminDiscountsPage() {
                           ) : (
                             <span className="text-gray-400 italic">No minimum</span>
                           )}
+                        </td>
+                        <td className="p-4">
+                          <ModePill mode={d.applicationMode} />
                         </td>
                         <td className="p-4 text-sm">
                           <div className="text-gray-900">{formatDate(d.startDate)}</div>
@@ -395,6 +417,10 @@ export default function AdminDiscountsPage() {
                         {formatDate(d.startDate)} – {formatDate(d.endDate)}
                       </div>
                     </div>
+                     <div className="mt-1 flex items-center gap-2">
+                        <span className="text-gray-500">Mode:</span>
+                        <ModePill mode={d.applicationMode} />
+                      </div>
                     <div className="flex items-center justify-end gap-2 mt-3">
                       <button
                         onClick={() => handleOpenModal(d)}

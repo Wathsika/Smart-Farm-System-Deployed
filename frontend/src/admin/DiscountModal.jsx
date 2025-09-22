@@ -1,8 +1,19 @@
 // src/admin/DiscountModal.jsx  (DROP-IN REPLACEMENT)
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Loader2, Percent, DollarSign, Calendar, Tag, ShoppingCart } from "lucide-react";
+import {
+  X,
+  Loader2,
+  Percent,
+  DollarSign,
+  Calendar,
+  Tag,
+  ShoppingCart,
+  Sparkles,
+  Keyboard,
+} from "lucide-react"
 
 const DISCOUNT_TYPES = { PERCENTAGE: "PERCENTAGE", FLAT: "FLAT" };
+const APPLICATION_MODES = { AUTO: "AUTO", MANUAL: "MANUAL" };
 const DISCOUNT_NAME_SANITIZE = /[^A-Za-z0-9\s-]/g;
 const DISCOUNT_VALUE_SANITIZE = /[^\d.]/g;
 const MAX_PERCENT_VALUE = 100;
@@ -95,6 +106,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
     startDate: "",
     endDate: "",
     isActive: true,
+    applicationMode: APPLICATION_MODES.AUTO,
   });
 
    const [nameSanitizeNotice, setNameSanitizeNotice] = useState("");
@@ -115,6 +127,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
         startDate: discountToEdit.startDate ? discountToEdit.startDate.slice(0, 10) : "",
         endDate: discountToEdit.endDate ? discountToEdit.endDate.slice(0, 10) : "",
         isActive: discountToEdit.isActive ?? true,
+        applicationMode: discountToEdit.applicationMode || APPLICATION_MODES.AUTO,
       });
     } else {
       setForm({
@@ -126,6 +139,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
         startDate: "",
         endDate: "",
         isActive: true,
+        applicationMode: APPLICATION_MODES.AUTO,
       });
     }
     setNameSanitizeNotice("");
@@ -189,6 +203,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
   };
  const isPercent = form.type === DISCOUNT_TYPES.PERCENTAGE;
   const valueSuffix = isPercent ? "%" : "Rs";
+  const isAutoMode = form.applicationMode === APPLICATION_MODES.AUTO;
 
    const startDateMin = today;
   const endDateMin = form.startDate || today;
@@ -203,7 +218,9 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
    if (Number(form.value) > (isPercent ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE)) return true;
     if (startDateInvalid) return true;
     if (endDateInvalid) return true;
+    if (!Object.values(APPLICATION_MODES).includes(form.applicationMode)) return true;
     return false;
+    
     }, [endDateInvalid, form, isPercent, startDateInvalid]);
 
   const submit = (e) => {
@@ -220,6 +237,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
       {
         ...form,
         minPurchase: normalizedMinPurchase ? Number(normalizedMinPurchase) : 0,
+        applicationMode: form.applicationMode || APPLICATION_MODES.AUTO,
       },
       discountToEdit?._id
     );
@@ -448,6 +466,53 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                 </div>
               </div>
             </section>
+
+             {/* Application Mode */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-800">Application Mode</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      applicationMode: APPLICATION_MODES.AUTO,
+                    }))
+                  }
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border transition-colors ${
+                    form.applicationMode === APPLICATION_MODES.AUTO
+                      ? "border-green-600 bg-green-50 text-green-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <Sparkles size={16} />
+                  Auto Apply
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      applicationMode: APPLICATION_MODES.MANUAL,
+                    }))
+                  }
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm border transition-colors ${
+                    form.applicationMode === APPLICATION_MODES.MANUAL
+                      ? "border-green-600 bg-green-50 text-green-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <Keyboard size={16} />
+                  Manual Code
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                {isAutoMode
+                  ? "Automatically suggested at checkout when cart conditions are met."
+                  : "Only applied when a customer enters the code manually."}
+              </p>
+            </section>
+
 
             {/* Status */}
             <section className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-3">
