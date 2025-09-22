@@ -358,11 +358,11 @@ const topSellerMaxQty = useMemo(
           <div className="flex flex-col sm:flex-row gap-3">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
-                to="/admin/analytics"
+                to="/admin/store/reports"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-all duration-200 shadow-sm"
               >
                 <i className="fas fa-chart-bar" />
-                Analytics
+                Reports
               </Link>
             </motion.div>
             
@@ -676,7 +676,7 @@ const topSellerMaxQty = useMemo(
                               to={`/admin/store/orders/${o._id}`}
                               className="text-emerald-700 hover:text-emerald-800 font-medium hover:underline"
                             >
-                              #{o.code || o._id?.slice(-6)}
+                              #{o.orderNumber || o.code || o._id?.slice(-6)}
                             </Link>
                           </TCell>
                           <TCell className="font-medium">{o.customer?.name || o.customer || "Guest"}</TCell>
@@ -822,7 +822,7 @@ const topSellerMaxQty = useMemo(
               <i className="fas fa-plus text-lg" />
             </Link>
             <Link
-              to="/admin/analytics"
+              to="/admin/store/reports"
               className="w-12 h-12 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-600 shadow-lg hover:shadow-xl transition-all duration-200"
             >
               <i className="fas fa-chart-bar" />

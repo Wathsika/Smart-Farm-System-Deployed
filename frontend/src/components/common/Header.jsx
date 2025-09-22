@@ -74,14 +74,24 @@ export default function Header() {
           {/* Action Buttons */}
           <div className="flex items-center gap-6 ml-8 pl-8 border-l border-gray-200">
             {/* Cart Icon */}
-            <Link to="/checkout" className="relative p-2 rounded-full text-gray-600 hover:bg-gray-100" aria-label="Cart">
+             <NavLink
+              to="/checkout"
+              aria-label="Cart"
+              className={({ isActive }) =>
+                `relative p-2 rounded-full transition-colors ${
+                  isActive
+                    ? `${activeLinkClasses} text-green-700`
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`
+              }
+            >
               <i className="fa-solid fa-basket-shopping text-lg" />
               {totalItemsInCart > 0 && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 grid h-5 place-items-center rounded-full bg-green-600 px-1 text-xs font-bold text-white">
                   {totalItemsInCart}
                 </motion.span>
               )}
-            </Link>
+            </NavLink>
 
             {/* --- 3. DYNAMIC AUTH SECTION (Desktop) --- */}
             {isAuthenticated ? (
@@ -124,10 +134,17 @@ export default function Header() {
 
         {/* --- MOBILE VIEW ACTIONS --- */}
         <div className="flex items-center gap-3 md:hidden">
-          <Link to="/checkout" className="relative grid h-10 w-10 place-items-center rounded-lg border">
+          <NavLink
+            to="/checkout"
+            className={({ isActive }) =>
+              `relative grid h-10 w-10 place-items-center rounded-lg border transition-colors ${
+                isActive ? 'bg-green-50 text-green-700 border-green-500' : 'border-gray-200 text-gray-700'
+              }`
+            }
+          >
             <i className="fa-solid fa-basket-shopping"></i>
             {totalItemsInCart > 0 && (<span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-green-600 text-xs text-white">{totalItemsInCart}</span>)}
-          </Link>
+          </NavLink>
           <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="grid h-10 w-10 place-items-center rounded-lg border" aria-label="Open menu">
             <i className={`fa-solid ${showMobileMenu ? "fa-xmark" : "fa-bars"}`} />
           </button>
