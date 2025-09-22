@@ -1,4 +1,4 @@
-// --- START OF FILE productSearch.js ---
+// --- START OF FILE utils/productSearch.js ---
 
 import Product from "../models/Product.js";
 
@@ -8,8 +8,8 @@ export function detectIntent(msg){
   const m = norm(msg);
   if (/(price|cost|how much|මිල|මිල කීයද|කියලද)\s*(of|for)?/i.test(m)) return "price";
   if (/(stock|available|in stock|ඇතිද|availability|qty|quantity)\s*(of|for)?/i.test(m)) return "stock";
-  if (/(description|details|about|information|ගැන|තොරතුරු)/i.test(m)) return "description"; // New intent
-  return "info"; // Default intent for general product info
+  if (/(description|details|about|information|ගැන|තොරතුරු)/i.test(m)) return "description";
+  return "info";
 }
 
 export async function findProductsByQuery(q, limit=5){
@@ -46,7 +46,7 @@ export function productAnswer(p, intent="info"){
       return `${p.name}: ${price}${unit}. ${stockText}`.trim();
     case "stock":
       return `${p.name}: ${stockText || "Stock information not available."}.`;
-    case "description": // New case for description intent
+    case "description":
       return `${p.name}: ${p.description || "No description available."} Category: ${p.category}. ${price}${unit}. ${stockText}.`.trim();
     case "info":
     default:
@@ -55,15 +55,26 @@ export function productAnswer(p, intent="info"){
 }
 
 // ✅ නව function එක: මෙය OpenAI විසින් කැඳවිය හැකි "tool" එක වනු ඇත
-export async function getProductInformationForTool({ query, intent }) {
-  const products = await findProductsByQuery(query, 1);
-  if (products.length > 0) {
-    const product = products[0];
-    // Use the determined intent, or a default 'info' if not specified
-    const finalIntent = intent || detectIntent(query);
-    return productAnswer(product, finalIntent);
+// `productQueries` Array එකක් ලෙස බලාපොරොත්තු වේ
+export async function getProductInformationForTool({ productQueries, intent }) {
+  if (!Array.isArray(productQueries) || productQueries.length === 0) {
+    return "No product queries provided to the tool.";
   }
-  return "Sorry, I couldn't find that product in our catalog.";
+
+  const results = [];
+  for (const query of productQueries) { // Array එකේ ඇති එක් එක් query සඳහා සොයන්න
+    const products = await findProductsByQuery(query, 1);
+    if (products.length > 0) {
+      const product = products[0];
+      const finalIntent = intent || detectIntent(query); // List එකකදී common intent එකක් හෝ individual intent
+      results.push(productAnswer(product, finalIntent));
+    } else {
+      results.push(`Sorry, I couldn't find "${query}" in our catalog.`);
+    }
+  }
+  
+  // සියලු ප්‍රතිඵල එක string එකක් ලෙස combine කර ආපසු එවන්න
+  return results.join("\n");
 }
 
-// --- END OF FILE productSearch.js ---
+// --- END OF FILE utils/productSearch.js ---
