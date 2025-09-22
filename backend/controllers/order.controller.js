@@ -4,6 +4,8 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Discount from '../models/Discount.js';
 import orderEvents from '../events/orderEvents.js';
+import { generateInvoicePdf } from '../utils/invoice.js';
+import { sendOrderEmail } from '../utils/mailer.js';
 
 // --- Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
@@ -346,6 +348,13 @@ const fulfillOrder = async (session) => {
 
     const createdOrder = await order.save();
 
+    try {
+      const invoiceBuffer = await generateInvoicePdf(createdOrder);
+      await sendOrderEmail(createdOrder, invoiceBuffer);
+    } catch (error) {
+      console.error('Order invoice/email dispatch failed:', error);
+    }
+    
     // Decrement stock
     for (const item of orderItems) {
       if (item.product) {
