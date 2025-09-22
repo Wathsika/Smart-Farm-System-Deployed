@@ -1,18 +1,15 @@
 // --- START OF FILE controllers/chat.controller.js ---
 
 import Product from "../models/Product.js";
-// ✅ openaiClient.js path එක 'utils' ෆෝල්ඩරයට අනුව වෙනස් කළා
-import { openai, CHAT_MODEL } from "../utils/openaiClient.js"; // <--- PATH CHANGED!
+import { openai, CHAT_MODEL } from "../utils/openaiClient.js";
 
-// ඔබේ product search utilities
 import {
   detectIntent,
   findProductsByQuery,
   productAnswer,
   getProductInformationForTool
-} from "../utils/productSearch.js"; // ✅ ඔබේ productSearch.js path එකට ගැලපෙන ලෙස යොදන්න!
-// ✅ discountSearch.js import කරන්න
-import { getDiscountInformationForTool } from "../utils/discountSearch.js"; // ✅ ඔබේ discountSearch.js path එකට ගැලපෙන ලෙස යොදන්න!
+} from "../utils/productSearch.js";
+import { getDiscountInformationForTool } from "../utils/discountSearch.js";
 
 
 export async function handleChat(req, res) {
@@ -20,32 +17,34 @@ export async function handleChat(req, res) {
     const userMessage = String(req.body?.message || "").trim();
     if (!userMessage) return res.status(400).json({ error: "message required" });
 
-    // 1. --- OpenAI වෙත යැවිය යුතු Tools අර්ථ දැක්වීම ---
     const tools = [
       {
         type: "function",
         function: {
           name: "getProductInformationForTool",
-          description: "Retrieve product details, price, stock, or description from the GreenLeaf store catalog. Use this tool for any product-related queries.",
+          description: "Retrieve details (price, stock, description, general info) for one or more products from the GreenLeaf store catalog. Use this tool for any product-related queries.",
           parameters: {
             type: "object",
             properties: {
-              query: {
-                type: "string",
-                description: "The product name or SKU the user is asking about (e.g., 'Organic Apples', 'MLK002', 'Milk', 'Bread'). This should be extracted from the user's message.",
+              productQueries: {
+                type: "array",
+                description: "A list of product names or SKUs the user is asking about (e.g., ['Organic Apples', 'MLK002', 'Milk', 'Bread']). Each item in the array should be a distinct product query.",
+                items: {
+                  type: "string",
+                },
+                minItems: 1,
               },
               intent: {
                 type: "string",
                 enum: ["price", "stock", "description", "info"],
-                description: "The specific information the user is seeking about the product (e.g., 'price', 'stock', 'description', 'info' for general details).",
+                description: "The specific information the user is seeking about these products (e.g., 'price', 'stock', 'description', 'info' for general details). If user is asking about multiple items and one general intent (e.g., 'price'), provide that. If user asks about 'details of apple and price of milk', use 'info' and let the underlying function sort out the exact product string for 'apple' vs 'milk'.",
                 default: "info",
               },
             },
-            required: ["query"],
+            required: ["productQueries"],
           },
         },
       },
-      // ✅ මෙන්න අලුත් Discount Information Tool එක
       {
         type: "function",
         function: {
@@ -70,13 +69,12 @@ export async function handleChat(req, res) {
       },
     ];
 
-    // 2. --- පළමු OpenAI API ඇමතුම ---
     const firstResponse = await openai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
         {
           role: "system",
-          content: "You are a helpful and friendly store assistant for GreenLeaf, an organic products store. You can answer questions about products, store policies, and general queries. Use the available tools to find specific product or discount information. If you cannot find information using tools, or if it's a general question, answer from your knowledge. Keep answers concise and helpful."
+          content: "You are a helpful and friendly store assistant for GreenLeaf, an organic products store. You can answer questions about products, store policies, and general queries. Use the available tools to find specific product or discount information. For product queries, you can search for multiple products at once by providing a list of product names/SKUs. If you cannot find information using tools, or if it's a general question, answer from your knowledge. Keep answers concise and helpful."
         },
         {
           role: "user",
@@ -86,60 +84,71 @@ export async function handleChat(req, res) {
       tools: tools,
       tool_choice: "auto",
       temperature: 0.7,
-      max_tokens: 350, // ටිකක් වැඩි කළා
+      max_tokens: 400,
     });
 
     const responseMessage = firstResponse.choices[0].message;
 
-    // 3. --- OpenAI ගේ ප්‍රතිචාරය හසුරුවන්න ---
     if (responseMessage.tool_calls) {
-      const toolCall = responseMessage.tool_calls[0];
-      const functionName = toolCall.function.name;
-      const functionArgs = JSON.parse(toolCall.function.arguments);
-      console.log(`OpenAI requested tool call: ${functionName} with arguments:`, functionArgs);
+      // ✅ මෙතන තමයි ප්‍රධාන වෙනස්කම: සියලුම tool calls Array එකක් ලෙස හසුරුවන්න
+      const toolCalls = responseMessage.tool_calls;
+      const toolMessages = []; // සියලුම tool output messages මේකට එකතු කරමු
 
-      let toolOutput;
+      for (const toolCall of toolCalls) { // ✅ toolCalls Array එක හරහා iterate කරන්න
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
+        console.log(`OpenAI requested tool call: ${functionName} with arguments:`, functionArgs);
 
-      if (functionName === "getProductInformationForTool") {
-        toolOutput = await getProductInformationForTool(functionArgs);
-      } else if (functionName === "getDiscountInformationForTool") {
-        // OpenAI විසින් `productQuery` හෝ `code` අර්ථ දක්වා නැත්නම්,
-        // අපි එය `null` හෝ `undefined` ලෙස getDiscountInformationForTool වෙත යවනවා.
-        toolOutput = await getDiscountInformationForTool({
-          productQuery: functionArgs.productQuery || null,
-          code: functionArgs.code || null
+        let toolOutput;
+
+        if (functionName === "getProductInformationForTool") {
+          // getProductInformationForTool එක දැන් multiple queries support කරන නිසා,
+          // OpenAI විසින් එක් tool call එකකදී query list එකක් එවිය හැකියි
+          toolOutput = await getProductInformationForTool({
+            productQueries: functionArgs.productQueries,
+            intent: functionArgs.intent || null
+          });
+        } else if (functionName === "getDiscountInformationForTool") {
+          toolOutput = await getDiscountInformationForTool({
+            productQuery: functionArgs.productQuery || null,
+            code: functionArgs.code || null
+          });
+        } else {
+          // If an unrecognized tool is requested, we need to report it back to OpenAI
+          toolOutput = `Error: Unrecognized tool "${functionName}"`;
+        }
+        
+        console.log("Tool output:", toolOutput);
+        
+        // ✅ එක් එක් tool call එකට අදාළ tool message එක toolMessages Array එකට එකතු කරන්න
+        toolMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: toolOutput,
         });
-      } else {
-        return res.json({ answer: "My apologies, I received a tool call I don't know how to handle.", mode: "openai_error" });
       }
 
-      console.log("Tool output:", toolOutput);
-
-      // 5. --- Tool එකේ ප්‍රතිඵලය සමග නැවත OpenAI වෙත යවන්න ---
+      // 5. --- Tool එකේ ප්‍රතිඵලය (සියල්ල) සමග නැවත OpenAI වෙත යවන්න ---
       const secondResponse = await openai.chat.completions.create({
         model: CHAT_MODEL,
         messages: [
           {
             role: "system",
-            content: "You are a helpful and friendly store assistant for GreenLeaf, an organic products store. You can answer questions about products, store policies, and general queries. Use the available tools to find specific product or discount information. If you cannot find information using tools, or if it's a general question, answer from your knowledge. Keep answers concise and helpful."
+            content: "You are a helpful and friendly store assistant for GreenLeaf, an organic products store. You can answer questions about products, store policies, and general queries. Use the available tools to find specific product or discount information. For product queries, you can search for multiple products at once by providing a list of product names/SKUs. If you cannot find information using tools, or if it's a general question, answer from your knowledge. Keep answers concise and helpful."
           },
           {
             role: "user",
             content: userMessage,
           },
-          responseMessage,
-          {
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: toolOutput,
-          },
+          responseMessage, // OpenAI ගේ original assistant message (with ALL tool_calls)
+          ...toolMessages, // ✅ මෙහිදී සියලුම tool outputs Array එක Splice කළ යුතුය
         ],
         temperature: 0.7,
-        max_tokens: 350,
+        max_tokens: 400,
       });
 
       const finalAnswer = secondResponse.choices[0].message.content;
-      return res.json({ answer: finalAnswer, mode: `openai_tool_${functionName}` });
+      return res.json({ answer: finalAnswer, mode: `openai_tool_handled` }); // mode එක සාමාන්‍යකරණය කළා
     } else {
       const finalAnswer = responseMessage.content;
       return res.json({ answer: finalAnswer, mode: "openai_direct" });
