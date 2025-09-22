@@ -108,6 +108,31 @@ export default function FinanceTransaction() {
     };
   }, [q, typeFilter, monthFilter]);
 
+  function handleYearInput(e, prev) {
+    // ---- 1) Block special keys (onKeyDown) ----
+    if (e.type === "keydown") {
+      const k = e.key;
+      if (["e", "E", "+", "-", "."].includes(k)) {
+        e.preventDefault();
+        return prev;
+      }
+      return prev; // no change on keydown itself
+    }
+
+    // ---- 2) Sanitize value (onChange or onPaste) ----
+    let raw = e.target.value;
+    let v = String(raw).replace(/\D/g, "").slice(0, 4); // digits only, max 4
+
+    // Must start with 20
+    if (v.length >= 1 && v[0] !== "2") return prev;
+    if (v.length >= 2 && v[1] !== "0") return prev;
+
+    // If 4 digits, must be >= 2021
+    if (v.length === 4 && Number(v) < 2021) return prev;
+
+    return v;
+  }
+
   const months = useMemo(() => {
     const set = new Set(transactions.map((r) => monthKey(r.date)));
     return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
