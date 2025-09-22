@@ -17,8 +17,79 @@ const DEFAULTS = {
   etfRate: 0.03, // 3%
 };
 
+// Per-field typing rules
+const FIELD_RULES = {
+  daysPerMonth: { integer: true, min: 1, max: 31 },
+  hoursPerDay: { integer: true, min: 1, max: 24 },
+  // “Suitable limited range”: adjust if you need different bounds
+  otWeekdayMultiplier: { integer: false, min: 1, max: 5, maxDecimals: 2 },
+  otHolidayMultiplier: { integer: false, min: 1, max: 5, maxDecimals: 2 },
+  epfRate: { integer: false, min: 0, max: 1, maxDecimals: 2 },
+  etfRate: { integer: false, min: 0, max: 1, maxDecimals: 2 },
+};
+
+// Block disallowed characters from keyboard input
+function blockSpecialKeys(e) {
+  const k = e.key;
+  if (k === "e" || k === "E" || k === "+" || k === "-") {
+    e.preventDefault();
+  }
+}
+
+// Sanitize & validate a prospective new value _as text_ before committing it
+function nextValue(prev, raw, rule) {
+  // Only allow digits and dot
+  let v = String(raw).replace(/[^\d.]/g, "");
+
+  // No leading dot
+  if (v.startsWith(".")) return prev;
+
+  // Only one dot
+  const parts = v.split(".");
+  if (parts.length > 2) return prev;
+
+  // Integer-only fields: remove any dot entirely
+  if (rule.integer) {
+    v = v.replace(/\./g, "");
+  } else {
+    // Decimal fields: cap decimals to maxDecimals
+    if (parts.length === 2) {
+      const [a, b] = parts;
+      if (rule.maxDecimals != null && b.length > rule.maxDecimals) {
+        v = `${a}.${b.slice(0, rule.maxDecimals)}`;
+      }
+    }
+  }
+
+  // Prevent absurd leading zero runs (but allow "0", "0.x")
+  if (!rule.integer && (v === "" || v === ".")) {
+    // already handled above; keep empty for user deleting
+  }
+
+  // Range guard: if numeric, make sure within [min, max]; otherwise allow empty
+  if (v !== "") {
+    const n = Number(v);
+    if (Number.isNaN(n)) return prev;
+
+    // Disallow values beyond bounds as user types (don’t auto-clamp; just block)
+    if (rule.min != null && n < rule.min) {
+      // Allow prefixes that could still become valid, e.g., typing "0." for rate fields
+      // For integers, block anything < min unless they’re still typing (empty allowed separately).
+      if (rule.integer) return prev;
+    }
+    if (rule.max != null && n > rule.max) {
+      return prev;
+    }
+  }
+
+  return v;
+}
+
 export default function PayrollSettingsPage() {
-  const [form, setForm] = useState(DEFAULTS);
+  // Keep inputs as strings for precise control; convert on save
+  const [form, setForm] = useState(
+    Object.fromEntries(Object.entries(DEFAULTS).map(([k, v]) => [k, String(v)]))
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +101,15 @@ export default function PayrollSettingsPage() {
       try {
         setError("");
         const { data } = await api.get("/payroll/settings");
-        if (mounted && data) setForm(data);
+        if (mounted && data) {
+          const asStrings = Object.fromEntries(
+            Object.entries(DEFAULTS).map(([k]) => [
+              k,
+              data[k] === 0 ? "0" : data[k] != null ? String(data[k]) : "",
+            ])
+          );
+          setForm(asStrings);
+        }
       } catch (e) {
         mounted &&
           setError("Failed to load settings. Check the API and DB connection.");
@@ -41,35 +120,39 @@ export default function PayrollSettingsPage() {
     return () => (mounted = false);
   }, []);
 
-  function toNum(v) {
-    if (v === "" || v === null || v === undefined) return "";
-    const n = Number(v);
-    return Number.isNaN(n) ? "" : n;
-  }
-
-  function update(key, value) {
+  function update(key, raw) {
     setSaved(false);
     setError("");
-    // keep empty string while typing; convert to number when valid
-    setForm((p) => ({ ...p, [key]: toNum(value) }));
+    const rule = FIELD_RULES[key];
+    setForm((p) => ({ ...p, [key]: nextValue(p[key] ?? "", raw, rule) }));
   }
 
-  // simple validations to mirror backend rules
+  // Basic validity (used only to enable/disable Save button)
   const errors = useMemo(() => {
     const e = {};
-    const nonNeg = [
-      "daysPerMonth",
-      "hoursPerDay",
-      "otWeekdayMultiplier",
-      "otHolidayMultiplier",
-    ];
-    nonNeg.forEach((k) => {
-      if (form[k] === "" || form[k] < 0) e[k] = "Must be a non‑negative number";
-    });
-    if (form.epfRate === "" || form.epfRate < 0 || form.epfRate > 1)
-      e.epfRate = "0–1 (e.g., 0.08 for 8%)";
-    if (form.etfRate === "" || form.etfRate < 0 || form.etfRate > 1)
-      e.etfRate = "0–1 (e.g., 0.03 for 3%)";
+    for (const [k, rule] of Object.entries(FIELD_RULES)) {
+      const v = form[k];
+      if (v === "" || v === ".") {
+        e[k] = "Required";
+        continue;
+      }
+      const n = Number(v);
+      if (Number.isNaN(n)) {
+        e[k] = "Invalid number";
+        continue;
+      }
+      if (rule.integer && !Number.isInteger(n)) {
+        e[k] = "Must be an integer";
+        continue;
+      }
+      if (rule.min != null && n < rule.min) e[k] = `Min ${rule.min}`;
+      if (rule.max != null && n > rule.max) e[k] = `Max ${rule.max}`;
+      if (!rule.integer && rule.maxDecimals != null) {
+        const [, dec = ""] = v.split(".");
+        if (dec.length > rule.maxDecimals)
+          e[k] = `Max ${rule.maxDecimals} decimals`;
+      }
+    }
     return e;
   }, [form]);
 
@@ -81,10 +164,16 @@ export default function PayrollSettingsPage() {
     setSaved(false);
     try {
       const payload = Object.fromEntries(
-        Object.entries(form).map(([k, v]) => [k, v === "" ? 0 : Number(v)])
+        Object.entries(form).map(([k, v]) => [k, Number(v || 0)])
       );
       const { data } = await api.put("/payroll/settings", payload);
-      setForm(data);
+      const normalized = Object.fromEntries(
+        Object.entries(DEFAULTS).map(([k]) => [
+          k,
+          data[k] === 0 ? "0" : data[k] != null ? String(data[k]) : "",
+        ])
+      );
+      setForm(normalized);
       setSaved(true);
     } catch (e) {
       setError("Failed to save settings. Validate inputs and try again.");
@@ -94,17 +183,60 @@ export default function PayrollSettingsPage() {
   }
 
   function resetDefaults() {
-    setForm(DEFAULTS);
+    setForm(
+      Object.fromEntries(
+        Object.entries(DEFAULTS).map(([k, v]) => [k, String(v)])
+      )
+    );
     setSaved(false);
     setError("");
   }
 
-  // small live helpers
   const monthlyStdHours = useMemo(() => {
     const d = Number(form.daysPerMonth) || 0;
     const h = Number(form.hoursPerDay) || 0;
     return (d * h).toFixed(2);
   }, [form.daysPerMonth, form.hoursPerDay]);
+
+  // Per-field inputMode (soft keyboard hints) & placeholders
+  const UI_META = {
+    daysPerMonth: {
+      label: "Days per Month",
+      hint: "1–31",
+      inputMode: "numeric",
+      placeholder: "28",
+    },
+    hoursPerDay: {
+      label: "Hours per Day",
+      hint: "1–24",
+      inputMode: "numeric",
+      placeholder: "8",
+    },
+    otWeekdayMultiplier: {
+      label: "Weekday OT ×",
+      hint: "1.00–5.00 (2 dp)",
+      inputMode: "decimal",
+      placeholder: "1.50",
+    },
+    otHolidayMultiplier: {
+      label: "Holiday OT ×",
+      hint: "1.00–5.00 (2 dp)",
+      inputMode: "decimal",
+      placeholder: "2.00",
+    },
+    epfRate: {
+      label: "EPF Rate",
+      hint: "0.00–1.00 (2 dp)",
+      inputMode: "decimal",
+      placeholder: "0.08",
+    },
+    etfRate: {
+      label: "ETF Rate",
+      hint: "0.00–1.00 (2 dp)",
+      inputMode: "decimal",
+      placeholder: "0.03",
+    },
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -147,48 +279,58 @@ export default function PayrollSettingsPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                [
-                  "daysPerMonth",
-                  "Days per Month",
-                  "Working days in a month",
-                  "1",
-                ],
-                [
-                  "hoursPerDay",
-                  "Hours per Day",
-                  "Standard working hours",
-                  "0.5",
-                ],
-                ["otWeekdayMultiplier", "Weekday OT ×", "e.g. 1.5", "0.1"],
-                ["otHolidayMultiplier", "Holiday OT ×", "e.g. 2.0", "0.1"],
-                ["epfRate", "EPF Rate", "0.08 → 8%", "0.01"],
-                ["etfRate", "ETF Rate", "0.03 → 3%", "0.01"],
-              ].map(([key, label, hint, step]) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {label}
-                  </label>
-                  <input
-                    type="number"
-                    step={step}
-                    min="0"
-                    className={`w-full border rounded-lg px-3 py-2 outline-none ${
-                      errors[key]
-                        ? "border-red-300 focus:ring-2 focus:ring-red-200"
-                        : "border-gray-300 focus:ring-2 focus:ring-emerald-200"
-                    }`}
-                    value={form[key]}
-                    onChange={(e) => update(key, e.target.value)}
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500 mt-1">{hint}</p>
-                    {errors[key] && (
-                      <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
-                    )}
+              {Object.keys(FIELD_RULES).map((key) => {
+                const meta = UI_META[key];
+                const rule = FIELD_RULES[key];
+                const hasError = !!errors[key];
+
+                return (
+                  <div key={key}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {meta.label}
+                    </label>
+                    <input
+                      // Use text + inputMode to fully control filtering (and mobile keypad)
+                      type="text"
+                      inputMode={meta.inputMode}
+                      placeholder={meta.placeholder}
+                      className={`w-full border rounded-lg px-3 py-2 outline-none ${
+                        hasError
+                          ? "border-red-300 focus:ring-2 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-2 focus:ring-emerald-200"
+                      }`}
+                      value={form[key] ?? ""}
+                      onKeyDown={blockSpecialKeys}
+                      onBeforeInput={(e) => {
+                        // Block leading '.' via beforeinput as well (some IMEs)
+                        if (e.data === "." && (form[key] ?? "") === "") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        // Clean pasted content
+                        const text = (
+                          e.clipboardData || window.clipboardData
+                        ).getData("text");
+                        const cleaned = text.replace(/[^\d.]/g, "");
+                        if (cleaned !== text || cleaned.startsWith(".")) {
+                          e.preventDefault();
+                          update(key, cleaned);
+                        }
+                      }}
+                      onChange={(e) => update(key, e.target.value)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500 mt-1">{meta.hint}</p>
+                      {hasError && (
+                        <p className="text-xs text-red-600 mt-1">
+                          {errors[key]}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Helpful computed summary */}

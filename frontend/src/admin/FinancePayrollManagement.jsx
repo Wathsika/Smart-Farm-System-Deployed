@@ -1,6 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Save, Calendar, Users, DollarSign, Loader2, Settings } from "lucide-react";
+import {
+  Play,
+  Save,
+  Calendar,
+  Users,
+  DollarSign,
+  Loader2,
+  Settings,
+} from "lucide-react";
 import { api } from "../lib/api";
 
 const money = (n) =>
@@ -87,8 +95,7 @@ export default function PayrollRunPage() {
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const isYearValid =
-    Number.isInteger(year) && year >= 2020 && year <= 2035;
+  const isYearValid = Number.isInteger(year) && year >= 2020 && year <= 2100;
 
   // 1) Load employees (pre-calc source data)
   useEffect(() => {
@@ -128,8 +135,8 @@ export default function PayrollRunPage() {
         }
         if (
           Number.isInteger(selectedYear) &&
-          selectedYear >= 1900 &&
-          selectedYear <= 3000
+          selectedYear >= 2025 &&
+          selectedYear <= 2100
         ) {
           params.year = selectedYear;
         }
@@ -150,13 +157,8 @@ export default function PayrollRunPage() {
               name: employee.name || "Unknown",
             },
             month:
-              slip.month != null
-                ? Number(slip.month)
-                : selectedMonth ?? null,
-            year:
-              slip.year != null
-                ? Number(slip.year)
-                : selectedYear ?? null,
+              slip.month != null ? Number(slip.month) : selectedMonth ?? null,
+            year: slip.year != null ? Number(slip.year) : selectedYear ?? null,
             basicSalary: Number(slip.basicSalary) || 0,
             workingHours: Number(slip.workingHours) || 0,
             allowances: Number(slip.allowances ?? 0),
@@ -243,9 +245,7 @@ export default function PayrollRunPage() {
 
     if (!isYearValid) {
       setDraftId(null);
-      setRows(
-        employees.map((emp) => mapEmployeeToRow(emp, month, null))
-      );
+      setRows(employees.map((emp) => mapEmployeeToRow(emp, month, null)));
       setLoading(false);
       return;
     }
@@ -256,9 +256,7 @@ export default function PayrollRunPage() {
   // 2) Calculate (backend preview → draft)
   async function handleCalculateAll() {
     if (!isYearValid) return;
-    const employeeIds = rows
-      .map((r) => r.employee.id)
-      .filter(Boolean);
+    const employeeIds = rows.map((r) => r.employee.id).filter(Boolean);
     if (employeeIds.length === 0) return;
     setCalculating(true);
     try {
@@ -278,9 +276,7 @@ export default function PayrollRunPage() {
             id: it.employee?.id || it.employee?._id || null,
             empId:
               it.employee?.empId ||
-              (it.employee?.id
-                ? String(it.employee.id).slice(-6)
-                : "Unknown"),
+              (it.employee?.id ? String(it.employee.id).slice(-6) : "Unknown"),
             name: it.employee?.name || "Unknown",
           },
           month,
@@ -293,10 +289,8 @@ export default function PayrollRunPage() {
             it.otTotal === null || it.otTotal === undefined
               ? null
               : Number(it.otTotal),
-          epf:
-            it.epf === null || it.epf === undefined ? null : Number(it.epf),
-          etf:
-            it.etf === null || it.etf === undefined ? null : Number(it.etf),
+          epf: it.epf === null || it.epf === undefined ? null : Number(it.epf),
+          etf: it.etf === null || it.etf === undefined ? null : Number(it.etf),
           gross:
             it.gross === null || it.gross === undefined
               ? null
@@ -356,11 +350,30 @@ export default function PayrollRunPage() {
                 className="border rounded-lg px-3 py-2 w-24 text-sm"
                 value={year}
                 onChange={(e) => {
-                  if (e.target.value === "") return;
-                  setYear(Number(e.target.value));
+                  let val = e.target.value;
+
+                  // Allow empty (so user can clear)
+                  if (val === "") {
+                    setYear("");
+                    return;
+                  }
+
+                  // Only digits & max 4 characters
+                  if (!/^\d*$/.test(val) || val.length > 4) return;
+
+                  // First digit must be 2
+                  if (val.length === 1 && val[0] !== "2") return;
+
+                  setYear(Number(val));
                 }}
-                min="2020"
-                max="2035"
+                min="2025"
+                max="2100"
+                onKeyDown={(e) => {
+                  // Block invalid characters in number input
+                  if (["e", "E", ".", "+", "-"].includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
               />
             </div>
 
@@ -376,9 +389,7 @@ export default function PayrollRunPage() {
 
               <button
                 onClick={handleCalculateAll}
-                disabled={
-                  calculating || rows.length === 0 || !isYearValid
-                }
+                disabled={calculating || rows.length === 0 || !isYearValid}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400"
               >
                 {calculating ? (
