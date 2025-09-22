@@ -6,6 +6,7 @@ import Discount from '../models/Discount.js';
 import orderEvents from '../events/orderEvents.js';
 import { generateInvoicePdf } from '../utils/invoice.js';
 import { sendOrderEmail } from '../utils/mailer.js';
+import { getStartOfDay } from '../utils/dateUtils.js';
 
 // --- Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
@@ -122,12 +123,18 @@ export const createCheckoutSession = async (req, res, next) => {
     let discountDetailsForMetadata = {};
     if (discountId) {
       const discount = await Discount.findById(discountId);
-      if (discount && discount.isActive && new Date() >= discount.startDate && new Date() <= discount.endDate && cartTotal >= discount.minPurchase) {
-        if (discount.type === 'PERCENTAGE') {
-          coupon = await stripe.coupons.create({ percent_off: discount.value, duration: 'once', name: discount.code });
-        } else {
-          const amountOffCents = Math.round(discount.value * 100);
-          coupon = await stripe.coupons.create({ amount_off: amountOffCents, currency: 'lkr', duration: 'once', name: discount.code });
+      if (discount && discount.isActive) {
+        const now = new Date();
+        const todayStart = getStartOfDay(now);
+        if (now >= discount.startDate && discount.endDate >= todayStart && cartTotal >= discount.minPurchase) {
+          if (discount.type === 'PERCENTAGE') {
+            coupon = await stripe.coupons.create({ percent_off: discount.value, duration: 'once', name: discount.code });
+          } else {
+            const amountOffCents = Math.round(discount.value * 100);
+            coupon = await stripe.coupons.create({ amount_off: amountOffCents, currency: 'lkr', duration: 'once', name: discount.code });
+          }
+         
+    
         }
         discountDetailsForMetadata = {
           discountId: discount._id.toString(),

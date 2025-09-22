@@ -1,4 +1,5 @@
 import Discount, { DISCOUNT_APPLICATION_MODES } from '../models/Discount.js';
+import { getStartOfDay } from '../utils/dateUtils.js';
 
 const DEFAULT_APPLICATION_MODE = DISCOUNT_APPLICATION_MODES[0];
 
@@ -119,11 +120,12 @@ export const deleteDiscount = async (req, res, next) => {
 export const getActiveDiscount = async (req, res, next) => {
     try {
         const now = new Date();
+        const todayStart = getStartOfDay(now);
         const activeDiscount = await Discount.findOne({
             isActive: true,
             applicationMode: 'AUTO',
             startDate: { $lte: now },
-            endDate: { $gte: now },
+             endDate: { $gte: todayStart },
             $or: [
                 { usageLimit: null },
                 { $expr: { $gt: ['$usageLimit', '$timesUsed'] } }
@@ -156,7 +158,8 @@ export const validateDiscount = async (req, res, next) => {
         }
 
         const now = new Date();
-        if (!discount.isActive || discount.startDate > now || discount.endDate < now) {
+         const todayStart = getStartOfDay(now);
+        if (!discount.isActive || discount.startDate > now || discount.endDate < todayStart) {
             return res.status(400).json({ message: "Discount code is expired or inactive." });
         }
 
