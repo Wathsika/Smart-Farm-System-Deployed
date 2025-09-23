@@ -6,12 +6,12 @@ import { api } from "../../lib/api";
 import {
   AddHealthModal, EditHealthModal, ViewHealthModal,
   AddVaccModal, EditVaccModal, ViewVaccModal,
-} from "./HealthModals";
+} from "./HealthModals.jsx";
 
-/* ================== Config ================== */
+/*  Config  */
 const DAYS_WINDOW = 180;
 
-/* ================== Utils ================== */
+/*  Utils  */
 const pad = (n) => String(n).padStart(2, "0");
 const liso = (d) => { const dt = new Date(d); dt.setHours(0,0,0,0); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; };
 const fmtDate = (x) => new Date(x).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"2-digit" });
@@ -22,7 +22,7 @@ const isDueReached = (d) => {
   return new Date(today) >= new Date(toLiso(d));
 };
 
-// Vaccination row -> prefilled object for Health Edit modal
+// Vaccination row 
 const vaccToHealthEditable = (r) => {
   const today = toLiso(new Date());
   const due = r.nextDueDate ? toLiso(r.nextDueDate) : today;
@@ -30,12 +30,12 @@ const vaccToHealthEditable = (r) => {
 
   return {
     ...r,
-    __completeVacc: true, // flag: we are completing a vaccination via health edit
+    __completeVacc: true, 
     _id: r._id,
     cow: r.cow?._id || r.cow,
     date: adminDate,
     type: "VACCINATION",
-    nextDueDate: "", // clear upcoming
+    nextDueDate: "", 
     temperatureC: r.temperatureC ?? "",
     weightKg: r.weightKg ?? "",
     symptoms: r.symptoms?.join(", ") || "",
@@ -47,7 +47,7 @@ const vaccToHealthEditable = (r) => {
   };
 };
 
-/* ================== Kebab (portal + safe buttons) ================== */
+/*  Kebab (portal + safe buttons)  */
 function KebabMenu({ items }) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState({ top: 0, left: 0, width: 240 });
@@ -90,7 +90,7 @@ function KebabMenu({ items }) {
       ref={menuRef}
       style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 10000 }}
       className="rounded-2xl bg-white shadow-xl border overflow-hidden"
-      onClick={(e) => e.stopPropagation()}   // clicks inside menu shouldn’t bubble to doc
+      onClick={(e) => e.stopPropagation()}   
     >
       {items.map((it, i) => (
         <button
@@ -125,7 +125,7 @@ function KebabMenu({ items }) {
 }
 
 
-/* ================== Page ================== */
+/*  Page  */
 export default function Health() {
   const navigate = useNavigate();
 
@@ -160,7 +160,7 @@ export default function Health() {
     })();
   }, []);
 
-  /* load health (not vaccination) */
+  /* load health*/
   async function loadHealth() {
     try {
       const params = { limit: "200", page: "1" };
@@ -184,7 +184,7 @@ export default function Health() {
   useEffect(() => { loadHealth(); }, [cowId, dateFilter]);
   useEffect(() => { const t = setTimeout(loadHealth, 250); return () => clearTimeout(t); }, [search]);
 
-  /* load vaccinations (type VACCINATION only) */
+  /* load vaccinations */
   async function loadVaccs() {
     try {
       const params = { limit: "400", page: "1" };
@@ -231,7 +231,7 @@ export default function Health() {
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Cow Health</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Health Records</h1>
         <p className="text-gray-500">Add records, manage vaccinations, and review visits</p>
 
         {soonestVacc && (
@@ -247,23 +247,31 @@ export default function Health() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative w-72">
-              <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+        {/* Controls Bar */}
+        <div className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          {/* Search + Filters */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Search Input */}
+            <div className="relative w-full md:w-72">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
-                type="text" value={search} onChange={(e)=>setSearch(e.target.value)}
-                placeholder="Search (type/diagnosis/notes/vet/cow)…"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                type="text"
+                placeholder="Search records..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 
+                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
 
+            {/* Cow Filter */}
             <div className="relative">
               <select
-                value={cowId} onChange={(e)=>setCowId(e.target.value)}
-                className="appearance-none pr-8 pl-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                title="Filter by cow"
+                value={cowId}
+                onChange={(e) => setCowId(e.target.value)}
+                className="appearance-none pr-8 pl-3 py-2 bg-white border border-gray-300 
+                          rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="all">All Cows</option>
                 {cows.map((c) => (
@@ -275,17 +283,24 @@ export default function Health() {
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
             </div>
 
+            {/* Date Filter */}
             <input
-              type="date" value={dateFilter || ""} onChange={(e)=>setDateFilter(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm" title="Filter by date"
+              type="date"
+              value={dateFilter || ""}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="border rounded-lg px-3 py-2 text-sm"
             />
             {dateFilter && (
-              <button onClick={()=>setDateFilter("")} className="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50">
+              <button
+                onClick={() => setDateFilter("")}
+                className="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50"
+              >
                 Clear
               </button>
             )}
           </div>
 
+          {/* Add Buttons */}
           <div className="flex gap-2">
             <button
               onClick={() => setAddVaccOpen(true)}
@@ -312,43 +327,45 @@ export default function Health() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-gray-600 border-b">
-              <tr>
-                <th className="py-3 px-3">Due Date</th>
-                <th className="py-3 px-3">Cow</th>
-                <th className="py-3 px-3">Vaccine / Medication</th>
-                <th className="py-3 px-3">Vet</th>
-                <th className="py-3 px-3">Notes</th>
-                <th className="py-3 px-3">Actions</th>
+        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+          <table className="min-w-full table-fixed text-base border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="py-3 px-6 text-left font-bold text-green-700">Due Date</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Cow</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Medication</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Vet</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Notes</th>
+                <th className="py-3 px-6 text-center font-bold text-green-700">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {vaccs.map((r) => (
-                <tr key={r._id} className="border-b last:border-0">
-                  <td className="py-3 px-3 whitespace-nowrap">{fmtDate(r.nextDueDate)}</td>
-                  <td className="py-3 px-3">{r.cow?.name || r.cow?.tagId || "—"} {r.cow?.tagId ? <span className="text-gray-500">({r.cow.tagId})</span> : null}</td>
-                  <td className="py-3 px-3">{r.medication || r.diagnosis || "—"}</td>
-                  <td className="py-3 px-3">{r.vet || "—"}</td>
-                  <td className="py-3 px-3">{r.notes || "—"}</td>
-                  <td className="py-3 px-3">
-                    {(() => {
-                      const items = [
-                        { label: "View Details", onClick: () => setViewVaccRow(r) },
-                        { label: "Edit", onClick: () => setEditVaccRow(r) },
-                        ...(isDueReached(r.nextDueDate)
-                          ? [{ label: "Add to Health Record", onClick: () => setEditHealthRow(vaccToHealthEditable(r)) }]
-                          : []),
-                        { label: "Delete", danger: true, onClick: () => onDeleteRecord(r) },
-                      ];
-                      return <KebabMenu items={items} />;
-                    })()}
+                <tr key={r._id} className="hover:bg-green-50 transition">
+                  <td className="py-3 px-6">{fmtDate(r.nextDueDate)}</td>
+                  <td className="py-3 px-6">
+                    <span className="font-semibold text-gray-800">{r.cow?.name || r.cow?.tagId || "—"}</span>
+                    {r.cow?.tagId && <span className="text-gray-500 text-sm"> ({r.cow.tagId})</span>}
+                  </td>
+                  <td className="py-3 px-6">{r.medication || r.diagnosis || "—"}</td>
+                  <td className="py-3 px-6">{r.vet || "—"}</td>
+                  <td className="py-3 px-6">{r.notes || "—"}</td>
+                  <td className="py-3 px-6 text-center">
+                    <KebabMenu items={[
+                      { label: "View Details", onClick: () => setViewVaccRow(r) },
+                      { label: "Edit", onClick: () => setEditVaccRow(r) },
+                      ...(isDueReached(r.nextDueDate)
+                        ? [{ label: "Add to Health Record", onClick: () => setEditHealthRow(vaccToHealthEditable(r)) }]
+                        : []),
+                      { label: "Delete", danger: true, onClick: () => onDeleteRecord(r) },
+                    ]}/>
                   </td>
                 </tr>
               ))}
               {!vaccs.length && (
-                <tr><td colSpan={6} className="py-8 text-center text-gray-500">No upcoming vaccinations.</td></tr>
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">No upcoming vaccinations</td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -361,46 +378,49 @@ export default function Health() {
           <h2 className="text-xl font-bold text-gray-800">Health Records</h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-gray-600 border-b">
-              <tr>
-                <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">Cow</th>
-                <th className="py-3 px-3">Type</th>
-                <th className="py-3 px-3">Vitals</th>
-                <th className="py-3 px-3">Diagnosis / Notes</th>
-                <th className="py-3 px-3">Vet</th>
-                <th className="py-3 px-3">Actions</th>
+        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+          <table className="min-w-full table-fixed text-base border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="py-3 px-6 text-left font-bold text-green-700">Date</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Cow</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Type</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Vitals</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Notes</th>
+                <th className="py-3 px-6 text-left font-bold text-green-700">Vet</th>
+                <th className="py-3 px-6 text-center font-bold text-green-700">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {health.map((r) => (
-                <tr key={r._id} className="border-b last:border-0">
-                  <td className="py-3 px-3 whitespace-nowrap">{fmtDate(r.date)}</td>
-                  <td className="py-3 px-3">{r.cow?.name || r.cow?.tagId || "—"} {r.cow?.tagId ? <span className="text-gray-500">({r.cow.tagId})</span> : null}</td>
-                  <td className="py-3 px-3">{r.type}</td>
-                  <td className="py-3 px-3 text-gray-700">
+                <tr key={r._id} className="hover:bg-green-50 transition">
+                  <td className="py-3 px-6">{fmtDate(r.date)}</td>
+                  <td className="py-3 px-6">
+                    <span className="font-semibold text-gray-800">{r.cow?.name || r.cow?.tagId || "—"}</span>
+                    {r.cow?.tagId && <span className="text-gray-500 text-sm"> ({r.cow.tagId})</span>}
+                  </td>
+                  <td className="py-3 px-6">{r.type}</td>
+                  <td className="py-3 px-6 text-gray-700">
                     {r.temperatureC ? `Temp: ${Number(r.temperatureC).toFixed(1)}°C` : ""}
                     {r.weightKg ? `${r.temperatureC ? " • " : ""}Wt: ${Number(r.weightKg).toFixed(1)} kg` : ""}
                   </td>
-                  <td className="py-3 px-3 text-gray-700">
+                  <td className="py-3 px-6 text-gray-700">
                     {r.diagnosis || r.notes || (r.symptoms?.length ? r.symptoms.join(", ") : "—")}
                   </td>
-                  <td className="py-3 px-3">{r.vet || "—"}</td>
-                  <td className="py-3 px-3">
-                    <KebabMenu
-                      items={[
-                        { label: "View Details", onClick: () => setViewHealthRow(r) },
-                        { label: "Edit", onClick: () => setEditHealthRow(r) },
-                        { label: "Delete", danger:true, onClick: () => onDeleteRecord(r) },
-                      ]}
-                    />
+                  <td className="py-3 px-6">{r.vet || "—"}</td>
+                  <td className="py-3 px-6 text-center">
+                    <KebabMenu items={[
+                      { label: "View Details", onClick: () => setViewHealthRow(r) },
+                      { label: "Edit", onClick: () => setEditHealthRow(r) },
+                      { label: "Delete", danger:true, onClick: () => onDeleteRecord(r) },
+                    ]}/>
                   </td>
                 </tr>
               ))}
               {!health.length && (
-                <tr><td colSpan={7} className="py-8 text-center text-gray-500">No records found.</td></tr>
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-500 font-medium">No records found</td>
+                </tr>
               )}
             </tbody>
           </table>
