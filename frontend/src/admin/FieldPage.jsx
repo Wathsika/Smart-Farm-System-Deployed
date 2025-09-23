@@ -256,7 +256,7 @@ const FieldPage = () => {
     }
 
     return (
-      <div className="overflow-x-hidden max-w-full">
+      <div className="overflow-x-auto max-w-full">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -572,14 +572,16 @@ const FieldPage = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Fields Overview
-              </h2>
-              <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                {filteredAndSortedFields.length} of {fields.length} fields
+         <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div className="rounded-t-2xl overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Fields Overview
+                </h2>
+                <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  {filteredAndSortedFields.length} of {fields.length} fields
+                </div>
               </div>
             </div>
           </div>

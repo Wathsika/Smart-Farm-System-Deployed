@@ -1,13 +1,13 @@
 // ✅ FINAL AND CORRECTED file with PDF feature working: frontend/src/admin/pages/InputListPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useMemo} from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // --- THIS IS THE CORRECT IMPORT METHOD FOR JSPDF WITH AUTOTABLE ---
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; 
+import { pdf } from '@react-pdf/renderer';
+import { InputInventoryReport } from './templates/InputInventoryReport';
 
 const InputListPage = () => {
     // --- State and Data Fetching (No Change) ---
@@ -42,42 +42,69 @@ const InputListPage = () => {
         }
     };
     
-    // --- PDF Generation Logic (CORRECTED) ---
-    const generatePDF = () => {
+     const summary = useMemo(() => {
+        if (!inputs.length) {
+            return {
+                totalProducts: 0,
+                totalStockQty: 0,
+                lowStock: 0,
+                outOfStock: 0,
+                categoryBreakdown: [],
+            };
+        }
+
+        const totalProducts = inputs.length;
+        const totalStockQty = inputs.reduce((sum, item) => sum + Number(item?.stockQty || 0), 0);
+        const lowStock = inputs.filter((item) => {
+            const reorderLevel = Number(item?.reorderLevel || 0);
+            const qty = Number(item?.stockQty || 0);
+            return reorderLevel > 0 && qty <= reorderLevel;
+        }).length;
+        const outOfStock = inputs.filter((item) => Number(item?.stockQty || 0) <= 0).length;
+
+        const categoryMap = inputs.reduce((acc, item) => {
+            const key = item?.category || 'other';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {});
+
+        const categoryBreakdown = Object.entries(categoryMap).map(([name, count]) => ({
+            name,
+            count,
+        }));
+
+        return { totalProducts, totalStockQty, lowStock, outOfStock, categoryBreakdown };
+    }, [inputs]);
+
+    // --- PDF Generation Logic (React-PDF) ---
+    const generatePDF = async () => {
         if (inputs.length === 0) {
             alert("No data available to export.");
             return;
         }
-        
-        const doc = new jsPDF('p', 'mm', 'a4');
-        doc.setFontSize(20);
-        doc.text('Farm Inputs Inventory Report', 14, 22);
-        doc.setFontSize(10);
-        doc.text(`Report Generated on: ${new Date().toLocaleString()}`, 14, 30);
-        
-        const tableColumn = ["Product Name", "Category", "Stock Quantity"];
-        const tableRows = [];
-
-        inputs.forEach(input => {
-            const inputData = [
-                input.name,
-                input.category ? (input.category.charAt(0).toUpperCase() + input.category.slice(1)) : 'N/A',
-                input.stockQty || 0
-            ];
-            tableRows.push(inputData);
-        });
+        try {
+            const doc = (
+                <InputInventoryReport
+                    inputs={inputs}
+                    summary={summary}
+                    generatedAt={new Date()}
+                />
+            );
 
         // The 'doc.autoTable' is replaced with 'autoTable(doc, ...)'
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            startY: 40,
-            theme: 'grid',
-            headStyles: { fillColor: [22, 160, 133] },
-            alternateRowStyles: { fillColor: [240, 240, 240] }
-        });
-        
-        doc.save('farm_inputs_report.pdf');
+       const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Farm_Inputs_Inventory_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to generate PDF', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
     };
 
     // --- Render Logic ---

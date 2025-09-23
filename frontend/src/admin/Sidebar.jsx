@@ -211,7 +211,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
     Plans
   </SidebarLink>
   <SidebarLink
-    to="/admin/crop/plan/new"
+    to="/admin/crop/inputs"
     icon="fas fa-plus-circle"
     onNavigate={onNavigate}
   > 
