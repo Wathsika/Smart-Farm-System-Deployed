@@ -161,25 +161,28 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
             <label className="text-sm block">
               <span className="block mb-1 text-gray-600 font-semibold">Liters</span>
               <input
-                type="number"
-                inputMode="decimal"
-                step="0.1"
-                min="0"
-                value={form.liters}
-                onChange={(e) => {
-                  const v = e.target.value.replace(",", ".");
-                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, liters: v });
-                }}
-                onBlur={() => {
-                  if (form.liters !== "") {
-                    const n = Math.max(0, Number(form.liters));
-                    setForm((f) => ({ ...f, liters: oneDp(n) }));
-                  }
-                }}
-                onWheel={(e) => e.currentTarget.blur()}
-                className={`${base} ${errors.liters ? "border-red-500" : "border-gray-300"}`}
-                placeholder="e.g., 23.5"
-              />
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="0"
+              value={form.liters}
+              onChange={(e) => {
+                const v = e.target.value.replace(",", ".");
+                if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, liters: v });
+              }}
+              onBlur={() => {
+                if (form.liters !== "") {
+                  const n = Math.max(0, Number(form.liters));
+                  setForm((f) => ({ ...f, liters: oneDp(n) }));
+                }
+              }}
+              onWheel={(e) => e.currentTarget.blur()}
+              onKeyDown={(e) => {
+                if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+              }}
+              className={`${base} ${errors.liters ? "border-red-500" : "border-gray-300"}`}
+              placeholder="e.g., 23.5"
+            />
               {errors.liters && <p className="text-red-600 text-xs mt-1">{errors.liters}</p>}            
             </label>
           </div>
@@ -394,6 +397,9 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
                   }
                 }}
                 onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+                }}
                 className={`${baseEdit} ${errors.morning ? "border-red-500" : "border-gray-300"}`}
                 placeholder="0.0"
               />
@@ -420,6 +426,9 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
                     }
                   }}
                   onWheel={(e) => e.currentTarget.blur()}
+                  onKeyDown={(e) => {
+                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+                  }}
                   className={`${baseEdit} ${errors.evening ? "border-red-500" : "border-gray-300"}`}
                   placeholder="0.0"
                 />
