@@ -64,11 +64,13 @@ test('stripeWebhookHandler fulfills and saves order', async (t) => {
   const origSave = Order.prototype.save;
   const origFindUpdate = Product.findByIdAndUpdate;
   const origDiscFind = Discount.findById;
+   const origGenerate = Order.generateOrderNumber;
   t.after(() => {
     stripe.webhooks.constructEvent = origConstruct;
     Order.prototype.save = origSave;
     Product.findByIdAndUpdate = origFindUpdate;
     Discount.findById = origDiscFind;
+    Order.generateOrderNumber = origGenerate;
   });
 
   stripe.webhooks.constructEvent = () => ({
@@ -92,6 +94,7 @@ test('stripeWebhookHandler fulfills and saves order', async (t) => {
   Order.prototype.save = async function () { savedOrders.push(this.toObject()); return this; };
   Product.findByIdAndUpdate = async () => {};
   Discount.findById = async () => null;
+Order.generateOrderNumber = async () => 'ORD-2024-01-001';
 
   const req = { headers: { 'stripe-signature': 'sig' }, body: '{}' };
   const res = createRes();
@@ -100,6 +103,7 @@ test('stripeWebhookHandler fulfills and saves order', async (t) => {
   assert.equal(savedOrders.length, 1);
   assert.equal(savedOrders[0].customer.email, 'a@test.com');
   assert.equal(savedOrders[0].orderItems.length, 1);
+  assert.equal(savedOrders[0].orderNumber, 'ORD-2024-01-001');
 });
 
 // ---- Test cancelOrder ----

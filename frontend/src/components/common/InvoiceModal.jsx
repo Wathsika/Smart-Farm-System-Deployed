@@ -5,6 +5,13 @@ import { useReactToPrint } from "react-to-print";
 import { X, Download } from "lucide-react";
 import { InvoiceTemplate } from "./InvoiceTemplate";
 
+const getInvoiceIdentifier = (order) => {
+  if (!order) return "receipt";
+  if (order.orderNumber) return order.orderNumber;
+  const fallback =
+    order.stripeSessionId?.slice(-10)?.toUpperCase() || order._id?.toString();
+  return fallback || "receipt";
+};
 export default function InvoiceModal({ order, isOpen, onClose, autoPrint }) {
   const invoiceRef = useRef(null);
   const hasAutoPrinted = useRef(false);
@@ -12,7 +19,7 @@ export default function InvoiceModal({ order, isOpen, onClose, autoPrint }) {
   const handlePrint = useReactToPrint({
     // ✅ v3 API: use contentRef, not `content: () => ref.current`
     contentRef: invoiceRef,
-    documentTitle: `GreenLeaf_Farm_Invoice_${order?.stripeSessionId?.slice(-10) || order?._id || "receipt"}`,
+    documentTitle: `GreenLeaf_Farm_Invoice_${getInvoiceIdentifier(order)}`,
     pageStyle: `
       @page { size: A4; margin: 16mm; }
       @media print {

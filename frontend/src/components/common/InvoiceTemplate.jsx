@@ -1,5 +1,10 @@
 // frontend/src/components/common/InvoiceTemplate.jsx
 import React, { forwardRef } from "react";
+import {
+  BRAND_CONTACT_LINE,
+  BRAND_DETAILS,
+  BRAND_DOCUMENT_TITLES,
+} from "../../constants/branding";
 
 export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, ref) {
   if (!order) return null;
@@ -11,7 +16,10 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
   const subTotal = Number(order?.totalPrice || 0) + discountAmount;
 
   const createdAt = order?.createdAt ? new Date(order.createdAt) : new Date();
-  const invoiceId = (order?._id || "").slice(-8).toUpperCase();
+  const invoiceId =
+    order?.orderNumber ||
+    order?.stripeSessionId?.slice(-10)?.toUpperCase() ||
+    String(order?._id || "").slice(-8).toUpperCase();
 
   // Safe getters (avoid crashes if fields missing)
   const customer = order?.customer || {};
@@ -23,12 +31,14 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
       {/* Header */}
       <header className="flex justify-between items-start pb-4 border-b-2 border-green-600">
         <div>
-          <h1 className="text-3xl font-bold text-green-700">GreenLeaf Farm</h1>
-          <p className="text-sm">123 Farm Valley Road, Green County, Sri Lanka</p>
-          <p className="text-sm">contact@greenleaffarm.com | +94 11 234 5678</p>
+         <h1 className="text-3xl font-bold text-green-700">{BRAND_DETAILS.name}</h1>
+          <p className="text-sm">{BRAND_DETAILS.address}</p>
+          <p className="text-sm">{BRAND_CONTACT_LINE}</p>
         </div>
         <div className="text-right">
-          <h2 className="text-2xl font-semibold uppercase text-gray-500">Invoice</h2>
+          <h2 className="text-2xl font-semibold uppercase text-gray-500">
+            {BRAND_DOCUMENT_TITLES.invoice}
+          </h2>
           <p className="text-sm">Invoice #: {invoiceId || "—"}</p>
           <p className="text-sm">Date: {createdAt.toLocaleDateString()}</p>
         </div>

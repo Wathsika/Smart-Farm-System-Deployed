@@ -8,7 +8,10 @@ import {
   updateOrderStatus,
   getMyOrders,
   cancelOrder,
-  getOrderBySessionId
+   getOrderBySessionId,
+  addOrderItemReview,
+  updateOrderItemReview
+
 } from '../controllers/order.controller.js';
 
 // Auth
@@ -28,6 +31,11 @@ router.get('/myorders', protect, getMyOrders);
 
 // Cancel own order (requires auth)
 router.put('/:id/cancel', protect, cancelOrder);
+
+// Review order items (requires auth)
+router.post('/:orderId/reviews', protect, express.json(), addOrderItemReview);
+router.put('/:orderId/reviews', protect, express.json(), updateOrderItemReview);
+
 
 // --- Admin-only ---
 router.get('/', protect, requireRole('Admin'), getAllOrders);
