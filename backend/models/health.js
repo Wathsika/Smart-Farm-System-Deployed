@@ -1,13 +1,13 @@
-// backend/models/health.js
-import mongoose from "mongoose";
 
+import mongoose from "mongoose";
 const healthSchema = new mongoose.Schema(
   {
     cow: { type: mongoose.Schema.Types.ObjectId, ref: "Cow", required: true, index: true },
-    date: { type: Date, required: true, index: true },   // visit / event date (normalized at midnight)
+    date: { type: Date, required: true, index: true },   
     type: {
       type: String,
-      enum: ["CHECKUP", "VACCINATION", "DEWORMING", "TREATMENT", "ILLNESS", "INJURY", "AI", "BIRTH", "OTHER"],
+      enum: ["CHECKUP", "VACCINATION", "DEWORMING", "TREATMENT", "ILLNESS", "INJURY"
+      , "AI", "BIRTH", "OTHER"],
       default: "CHECKUP",
       index: true,
     },
@@ -18,16 +18,18 @@ const healthSchema = new mongoose.Schema(
     medication: { type: String, trim: true },
     dosage: { type: String, trim: true },
     vet: { type: String, trim: true },
-    nextDueDate: { type: Date }, // e.g. next vaccine/deworm due
+    nextDueDate: { type: Date }, 
     notes: { type: String, trim: true, maxlength: 1000 },
     recordedBy: { type: String, trim: true },
   },
   { timestamps: true }
 );
-
-// helpful compound index for ranges
 healthSchema.index({ cow: 1, date: -1, type: 1 });
 
 const Health = mongoose.models.Health || mongoose.model("Health", healthSchema);
-
 export default Health;
+
+
+
+
+

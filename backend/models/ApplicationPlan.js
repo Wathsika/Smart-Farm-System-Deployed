@@ -1,4 +1,4 @@
-// /backend/models/ApplicationPlan.js
+
 import mongoose from 'mongoose';
 
 const applicationPlanSchema = new mongoose.Schema({

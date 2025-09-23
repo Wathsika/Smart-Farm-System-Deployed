@@ -1,4 +1,4 @@
-// backend/models/milk.js
+
 import mongoose from "mongoose";
 
 const milkSchema = new mongoose.Schema(
@@ -26,15 +26,15 @@ const milkSchema = new mongoose.Schema(
       required: [true, "Milk volume (L) is required"],
       min: [0, "Volume must be >= 0"],
     },
-    fatPct: { type: Number, min: 0, max: 100 },   // optional
-    snfPct: { type: Number, min: 0, max: 100 },   // optional
+    fatPct: { type: Number, min: 0, max: 100 },   
+    snfPct: { type: Number, min: 0, max: 100 },   
     notes: { type: String, trim: true, maxlength: 500 },
     recordedBy: { type: String, trim: true },
   },
   { timestamps: true }
 );
 
-// avoid duplicates for same cow + day + shift
+
 milkSchema.index({ cow: 1, date: 1, shift: 1 }, { unique: true });
 
 const Milk = mongoose.models.Milk || mongoose.model("Milk", milkSchema);

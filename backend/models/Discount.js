@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const discountSchema = new mongoose.Schema(
   {
     name: {
@@ -12,9 +11,9 @@ const discountSchema = new mongoose.Schema(
     code: {
       type: String,
       required: [true, "Discount code is required."],
-      unique: true, // Each code must be unique
+      unique: true, 
       trim: true,
-      uppercase: true, // Automatically converts codes like 'summer10' to 'SUMMER10'
+      uppercase: true,
       description: "The actual code customers will enter (e.g., 'SUMMER20')."
     },
     

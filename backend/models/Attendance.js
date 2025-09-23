@@ -1,16 +1,14 @@
-// models/Attendance.js
+
 import mongoose from "mongoose";
 
 const attendanceSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  date: { type: Date, required: true }, // ✅ ADD THIS LINE
+  date: { type: Date, required: true }, 
   checkIn: { type: Date, required: true },
   checkOut: { type: Date },
   status: { type: String, enum: ["Present", "Absent", "Late", "On Leave"], default: "Present" },
-  remarks: { type: String, trim: true }, // Optional: Add remarks field used in StaffAttendance.jsx
+  remarks: { type: String, trim: true }, 
 }, { timestamps: true });
 
-// ✅ බහුවිධ check-in වලට ඉඩ දීම සඳහා මෙම index එක ඉවත් කරන ලදී
-// attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
-
 export default mongoose.model("Attendance", attendanceSchema);
+

@@ -8,7 +8,7 @@ import { addCrop, getAllCrops, getCropById,updateCrop, deleteCrop } from '../con
 const router = express.Router();
 
 
-router.post('/add', addCrop); 
+
 router.post('/add', addCrop);
 router.get('/', getAllCrops);
 router.get('/:id', getCropById);

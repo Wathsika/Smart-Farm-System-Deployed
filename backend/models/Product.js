@@ -11,9 +11,6 @@ const productSchema = new mongoose.Schema(
     sku: { 
       type: String, 
       trim: true,
-      // This setter is crucial: it converts any empty string ('') sent from the frontend
-      // into 'null'. This allows the sparse unique index to work correctly,
-      // preventing "duplicate key" errors for products without an SKU.
       set: v => (v === '' ? null : v)
     },
 
@@ -31,7 +28,7 @@ const productSchema = new mongoose.Schema(
 
     unit: { 
       type: String, 
-      trim: true // e.g., "kg", "dozen", "bundle", "L"
+      trim: true 
     },
 
     description: { 
@@ -40,16 +37,13 @@ const productSchema = new mongoose.Schema(
     },
 
     images: [{ 
-      type: String // An array to hold Cloudinary image URLs
+      type: String 
     }], 
     
     tags: [{ 
       type: String 
     }],
 
-    // --- Embedded Stock Management ---
-    // All inventory details are stored directly within the product document.
-    // This simplifies queries and management.
     stock: {
       qty: { 
         type: Number, 
@@ -73,15 +67,6 @@ const productSchema = new mongoose.Schema(
     timestamps: true // Automatically adds `createdAt` and `updatedAt` fields
   }
 );
-
-// --- Indexing ---
-// This creates a unique index on the 'sku' field.
-// `sparse: true` is essential. It tells MongoDB to enforce uniqueness only
-// for documents that have a value for 'sku' and to allow multiple
-// documents to have a null/missing 'sku'.
 productSchema.index({ sku: 1 }, { unique: true, sparse: true });
-
-
 const Product = mongoose.model("Product", productSchema);
-
 export default Product;
