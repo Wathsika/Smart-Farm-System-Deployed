@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
   Calendar, 
-  Clock, 
+  Clock, // Keep Clock for general icons if intended
   Filter, 
   RefreshCw, 
   Search, 
@@ -16,11 +16,51 @@ import {
   AlertCircle,
   UserCheck,
   Coffee,
-  Zap, // Added Zap for Status icon
-  LucideClock, // Using LucideClock explicitly to avoid clash if needed
-} from 'lucide-react'; // Ensure all icons are imported
+  Zap,
+  LucideClock, // Keep LucideClock for status badge and table times
+  CalendarDays // Using CalendarDays to signify a fixed date
+} from 'lucide-react';
 
-import { api } from "../lib/api"; // Using your actual API import
+import { api } from "../lib/api";
+import { format } from 'date-fns'; // Import format from date-fns
+
+// Helper to format date-time for datetime-local input, handles null/undefined
+const formatDateForInput = (dateString) => {
+  if (!dateString) return '';
+  return format(new Date(dateString), "yyyy-MM-dd'T'HH:mm");
+};
+
+// This function returns "YYYY-MM-DD" part of an ISO date string
+const getDateOnlyString = (dateString) => {
+    if (!dateString) return '';
+    return format(new Date(dateString), 'yyyy-MM-dd');
+};
+
+// This function returns "YYYY-MM-DDT00:00" or "YYYY-MM-DDT23:59" for use in datetime-local min/max
+const getMinMaxDateTimeForFixedDay = (fixedDateString, type = 'min') => {
+    if (!fixedDateString) return '';
+    const datePart = getDateOnlyString(fixedDateString); // "YYYY-MM-DD"
+    return `${datePart}T${type === 'min' ? '00:00' : '23:59'}`;
+};
+
+// New helper: Determines the effective maximum selectable datetime for an input.
+// It's the earlier of (end of the fixed day OR current real-world time).
+const getMaxTimeForInput = (fixedDateString) => {
+  if (!fixedDateString) return '';
+
+  const endOfFixedDayDate = new Date(getMinMaxDateTimeForFixedDay(fixedDateString, 'max'));
+  const now = new Date();
+  
+  // Choose the earlier time. If endOfFixedDayDate is in the future compared to now,
+  // then 'now' is the effective max. Otherwise, endOfFixedDayDate is the max.
+  const effectiveMaxTime = Math.min(endOfFixedDayDate.getTime(), now.getTime());
+  
+  return formatDateForInput(effectiveMaxTime);
+};
+
+// Get current date/time string for filter date inputs, always in local timezone
+const currentDateTimeLocal = format(new Date(), "yyyy-MM-dd'T'HH:mm"); // for max of datetime-local inputs
+const currentDateString = format(new Date(), 'yyyy-MM-dd'); // YYYY-MM-DD for date inputs
 
 // --- Reusable Modal Component (from the enhanced UI) ---
 const Modal = ({ show, onClose, title, children, size = "md" }) => {
@@ -35,37 +75,39 @@ const Modal = ({ show, onClose, title, children, size = "md" }) => {
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        onClick={onClose}
-      >
+      {show && ( // Only render if show is true
         <motion.div
-          initial={{ y: -50, opacity: 0, scale: 0.95 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -50, opacity: 0, scale: 0.95 }}
-          className={`bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full ${sizeClasses[size]} border border-white/20`}
-          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={onClose}
         >
-          <div className="p-6 border-b border-gray-200/50 flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-              <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-              {title}
-            </h3>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100/80 rounded-xl transition-all duration-200 group"
-            >
-              <X className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+          <motion.div
+            initial={{ y: -50, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -50, opacity: 0, scale: 0.95 }}
+            className={`bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full ${sizeClasses[size]} border border-white/20`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-200/50 flex justify-between items-center">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                {title}
+              </h3>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100/80 rounded-xl transition-all duration-200 group"
+              >
+                <X className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
             </button>
-          </div>
-          <div className="p-6">
-            {children}
-          </div>
+            </div>
+            <div className="p-6">
+              {children}
+            </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 };
@@ -82,7 +124,7 @@ const StatusBadge = ({ status }) => {
     Late: { 
       bg: 'bg-gradient-to-r from-yellow-100 to-amber-100', 
       text: 'text-yellow-800',
-      icon: LucideClock, // Use LucideClock to differentiate
+      icon: LucideClock, // Use LucideClock here
       border: 'border-yellow-200'
     },
     'On Leave': { 
@@ -116,7 +158,7 @@ const StatusBadge = ({ status }) => {
 // --- Action Button Component (from the enhanced UI) ---
 const ActionButton = ({ onClick, icon: Icon, color = "blue", children, size = "sm" }) => {
   const colorClasses = {
-    blue: "text-green-600 hover:text-green-800 hover:bg-green-50", // Changed to green shades
+    blue: "text-green-600 hover:text-green-800 hover:bg-green-50",
     red: "text-red-600 hover:text-red-800 hover:bg-red-50",
     green: "text-green-600 hover:text-green-800 hover:bg-green-50"
   };
@@ -146,20 +188,147 @@ export default function StaffAttendance() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState(""); // From enhanced UI
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [filters, setFilters] = useState({
     userId: "all",
     startDate: "",
     endDate: "",
   });
+  const [filterFormErrors, setFilterFormErrors] = useState({}); // New state for filter errors
 
   const [editingRecord, setEditingRecord] = useState(null);
+  const [editFormErrors, setEditFormErrors] = useState({}); // New state for edit modal errors
+  const [editFormGeneralError, setEditFormGeneralError] = useState(""); // General error for edit modal submission
+
+  // --- Validation for Edit Record Modal ---
+  const validateEditRecordForm = useCallback(() => {
+    const errors = {};
+    let isValid = true;
+    const now = new Date();
+
+    // Ensure editingRecord is not null before validation
+    if (!editingRecord) return false;
+
+    // Check-In Time Validation
+    if (!editingRecord.checkIn) {
+      errors.checkIn = "Check-In Time is required.";
+      isValid = false;
+    } else {
+      const checkInDate = new Date(editingRecord.checkIn);
+      if (isNaN(checkInDate.getTime())) {
+        errors.checkIn = "Invalid Check-In Time format.";
+        isValid = false;
+      } else if (checkInDate > now) {
+        errors.checkIn = "Check-In Time cannot be in the future.";
+        isValid = false;
+      }
+      // Ensure Check-In is on the fixed record date
+      if (getDateOnlyString(checkInDate) !== getDateOnlyString(editingRecord.date)) {
+        errors.checkIn = "Check-In Time must be on the attendance record date.";
+        isValid = false;
+      }
+    }
+
+    // Check-Out Time Validation (if present)
+    if (editingRecord.checkOut) {
+      const checkOutDate = new Date(editingRecord.checkOut);
+      if (isNaN(checkOutDate.getTime())) {
+        errors.checkOut = "Invalid Check-Out Time format.";
+        isValid = false;
+      } else if (checkOutDate > now) {
+        errors.checkOut = "Check-Out Time cannot be in the future.";
+        isValid = false;
+      } else if (editingRecord.checkIn && new Date(editingRecord.checkIn) >= checkOutDate) {
+        errors.checkOut = "Check-Out Time must be after Check-In Time.";
+        isValid = false;
+      }
+      // Ensure Check-Out is on the fixed record date
+      if (getDateOnlyString(checkOutDate) !== getDateOnlyString(editingRecord.date)) {
+        errors.checkOut = "Check-Out Time must be on the attendance record date.";
+        isValid = false;
+      }
+    }
+
+    // Status Validation
+    if (!['Present', 'Late', 'Absent', 'On Leave'].includes(editingRecord.status)) {
+      errors.status = "Invalid status selected.";
+      isValid = false;
+    }
+
+    // Remarks Validation (optional, but max length)
+    if (editingRecord.remarks && editingRecord.remarks.length > 500) {
+      errors.remarks = "Remarks cannot exceed 500 characters.";
+      isValid = false;
+    }
+
+    setEditFormErrors(errors);
+    return isValid;
+  }, [editingRecord]);
+
+  // --- Validation for Filter Dates ---
+  const validateFilterDates = useCallback(() => {
+    const errors = {};
+    let isValid = true;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of today
+
+    // Start Date Validation (if present)
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0); // Normalize to start of day
+      if (isNaN(startDate.getTime())) {
+        errors.startDate = "Invalid Start Date format.";
+        isValid = false;
+      } else if (startDate > today) { // Allow past and today, but not future
+        errors.startDate = "Start Date cannot be in the future.";
+        isValid = false;
+      }
+    }
+
+    // End Date Validation (if present)
+    if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(0, 0, 0, 0); // Normalize to start of day
+      if (isNaN(endDate.getTime())) {
+        errors.endDate = "Invalid End Date format.";
+        isValid = false;
+      } else if (endDate > today) { // Allow past and today, but not future
+        errors.endDate = "End Date cannot be in the future.";
+        isValid = false;
+      }
+    }
+
+    // Start Date must be before or same as End Date (if both present)
+    if (filters.startDate && filters.endDate) {
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      if (startDate > endDate) {
+        errors.endDate = "End Date cannot be before Start Date.";
+        isValid = false;
+      }
+    }
+
+    setFilterFormErrors(errors);
+    return isValid;
+  }, [filters]);
+
 
   // --- Fetch Data ---
   const loadAttendance = useCallback(async () => {
     setLoading(true);
     setError("");
+    setFilterFormErrors({}); // Clear filter errors before loading
+
+    if (!validateFilterDates()) { // Validate filter dates before making API call
+      setLoading(false);
+      setError("Please correct the date filter errors.");
+      return;
+    }
+
     try {
       const params = {};
       if (filters.userId !== 'all') params.userId = filters.userId;
@@ -173,7 +342,7 @@ export default function StaffAttendance() {
     } finally {
       setLoading(false);
     }
-  }, [filters]); // Dependencies include filters to re-fetch when they change
+  }, [filters, validateFilterDates]); // Dependencies include filters and the validation function
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -181,64 +350,93 @@ export default function StaffAttendance() {
         const { data } = await api.get("/admin/users");
         setUsers(data.items || []);
       } catch (err) {
-        console.error("Failed to load users for filter:", err); // Added error logging
+        console.error("Failed to load users for filter:", err);
       }
     };
 
     loadUsers();
-    loadAttendance(); // Initial load of attendance
-  }, [loadAttendance]); // Depend on loadAttendance for initial data and filter changes
+    loadAttendance();
+  }, [loadAttendance]);
 
   // --- Handlers ---
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+    // Clear the specific error for this filter field as the user types/changes
+    if (filterFormErrors[name]) {
+      setFilterFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    setError(""); // Clear general error if user starts interacting with filters
   };
 
   const handleResetFilters = () => {
     setFilters({ userId: "all", startDate: "", endDate: "" });
-    setSearchTerm(""); // Reset search term too
+    setSearchTerm("");
+    setFilterFormErrors({}); // Clear filter errors on reset
+    setError(""); // Clear any general error
+    loadAttendance(); // Re-load data after resetting filters
   };
   
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this record? This action cannot be undone.")) {
       try {
         await api.delete(`/attendance/${id}`);
-        loadAttendance(); // Refresh list after deletion
+        loadAttendance();
       } catch (err) {
         alert(err?.response?.data?.message || "Failed to delete record.");
       }
     }
   };
 
+  const handleEditRecordInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditingRecord(prev => ({ ...prev, [name]: value }));
+    // Clear specific error for the field as user types
+    if (editFormErrors[name]) {
+      setEditFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    setEditFormGeneralError(""); // Clear general form error
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
+    setEditFormGeneralError(""); // Clear general error before new validation/submission
+    setEditFormErrors({}); // Clear field-specific errors
+
+    if (!editingRecord) { // Basic check if editingRecord is still null
+      setEditFormGeneralError("No record selected for update.");
+      return;
+    }
+
+    if (!validateEditRecordForm()) {
+      setEditFormGeneralError("Please correct the errors in the form.");
+      return;
+    }
+
     try {
-      const { _id, user, ...updateData } = editingRecord; // Exclude 'user' if not directly patchable
+      const { _id, user, date, ...updateData } = editingRecord; // Exclude 'date' and 'user' as they are not being updated from the form
       await api.patch(`/attendance/${_id}`, updateData);
       setEditingRecord(null);
-      loadAttendance(); // Refresh list after update
+      loadAttendance();
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to update record.");
+      setEditFormGeneralError(err?.response?.data?.message || "Failed to update record.");
     }
   };
   
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    // Adjust for timezone offset before converting to ISO string
-    // This helps with rendering correctly in datetime-local inputs
-    const timezoneOffset = date.getTimezoneOffset() * 60000;
-    const localDate = new Date(date.getTime() - timezoneOffset);
-    return localDate.toISOString().slice(0, 16);
-  };
-
   // Filter records by search term
   const filteredRecords = records.filter(record => 
     record.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     record.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     record.remarks?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    new Date(record.date).toLocaleDateString().includes(searchTerm) // Allow searching by formatted date
+    format(new Date(record.date), 'MM/dd/yyyy').includes(searchTerm) // Changed to date-fns format
   );
 
   // Statistics calculation
@@ -246,21 +444,13 @@ export default function StaffAttendance() {
     total: records.length,
     present: records.filter(r => r.status === 'Present').length,
     late: records.filter(r => r.status === 'Late').length,
-    absent: records.filter(r => r.status === 'Absent').length, // Ensure your mock or actual data supports "Absent" explicitly
+    absent: records.filter(r => r.status === 'Absent').length,
     onLeave: records.filter(r => r.status === 'On Leave').length,
   };
 
   return (
     <>
-      <div className="min-h-screen bg-white"> {/* Main background is white */}
-        {/* Animated Background Elements - Removed as requested */}
-        {/*
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-green-400/20 to-emerald-400/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-emerald-400/20 to-green-400/20 rounded-full blur-3xl"></div>
-        </div>
-        */}
-
+      <div className="min-h-screen bg-white">
         <div className="relative z-10 p-6">
           {/* Enhanced Header */}
           <motion.div 
@@ -288,16 +478,16 @@ export default function StaffAttendance() {
               {[
                 { label: "Total Records", value: stats.total, icon: Users, color: "from-green-500 to-emerald-600" },
                 { label: "Present", value: stats.present, icon: CheckCircle, color: "from-emerald-500 to-green-600" },
-                { label: "Late", value: stats.late, icon: LucideClock, color: "from-yellow-400 to-amber-500" }, // Updated color to yellow
-                { label: "Absent", value: stats.absent, icon: AlertCircle, color: "from-red-500 to-rose-600" }, // Updated color to red
-                { label: "On Leave", value: stats.onLeave, icon: Coffee, color: "from-blue-500 to-sky-600" } // Updated color to blue
+                { label: "Late", value: stats.late, icon: LucideClock, color: "from-yellow-400 to-amber-500" },
+                { label: "Absent", value: stats.absent, icon: AlertCircle, color: "from-red-500 to-rose-600" },
+                { label: "On Leave", value: stats.onLeave, icon: Coffee, color: "from-blue-500 to-sky-600" }
               ].map((stat, index) => (
                 <motion.div
                   key={stat.label}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" // Simplified styling, removed backdrop/green border
+                  className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`p-3 bg-gradient-to-r ${stat.color} rounded-xl shadow-lg`}>
@@ -318,7 +508,7 @@ export default function StaffAttendance() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="mb-6 p-6 bg-white rounded-2xl shadow-lg border border-gray-100" // Simplified styling, removed backdrop/white border
+            className="mb-6 p-6 bg-white rounded-2xl shadow-lg border border-gray-100"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
@@ -330,63 +520,72 @@ export default function StaffAttendance() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
               {/* Search Bar */}
               <div className="lg:col-span-2">
-                <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
+                <label htmlFor="searchTerm" className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
                   <Search className="w-4 h-4" />
                   Search Records
                 </label>
                 <input
+                  id="searchTerm"
                   type="text"
                   placeholder="Search by name, status, remarks or date..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" // Simplified bg/backdrop
+                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               
               {/* Employee Filter */}
               <div>
-                <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
+                <label htmlFor="userId" className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
                   <Users className="w-4 h-4" />
                   Employee
                 </label>
                 <select 
+                  id="userId"
                   name="userId" 
                   value={filters.userId} 
                   onChange={handleFilterChange} 
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent" // Simplified bg/backdrop
+                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="all">All Employees</option>
                   {users.map(u => <option key={u._id} value={u._id}>{u.fullName}</option>)}
                 </select>
               </div>
               
-              {/* Date Filters */}
+              {/* Start Date Filter */}
               <div>
-                <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
+                <label htmlFor="startDate" className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4" />
                   Start Date
                 </label>
                 <input 
+                  id="startDate"
                   name="startDate" 
                   type="date" 
                   value={filters.startDate} 
                   onChange={handleFilterChange} 
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent" // Simplified bg/backdrop
+                  className={`w-full p-3 border ${filterFormErrors.startDate ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                  max={currentDateString} // Prevent future dates
                 />
+                {filterFormErrors.startDate && <p className="text-red-500 text-xs mt-1">{filterFormErrors.startDate}</p>}
               </div>
               
+              {/* End Date Filter */}
               <div>
-                <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
+                <label htmlFor="endDate" className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4" />
                   End Date
                 </label>
                 <input 
+                  id="endDate"
                   name="endDate" 
                   type="date" 
                   value={filters.endDate} 
                   onChange={handleFilterChange} 
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" // Simplified bg/backdrop
+                  className={`w-full p-3 border ${filterFormErrors.endDate ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                  max={currentDateString} // Prevent future dates
                 />
+                {filterFormErrors.endDate && <p className="text-red-500 text-xs mt-1">{filterFormErrors.endDate}</p>}
               </div>
             </div>
             
@@ -418,14 +617,14 @@ export default function StaffAttendance() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden" // Simplified styling, removed backdrop/white border
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
           >
             {loading ? (
               <div className="p-12 text-center">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4" // Loader color changed
+                  className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"
                 />
                 <p className="text-gray-600">Loading attendance records...</p>
               </div>
@@ -444,7 +643,7 @@ export default function StaffAttendance() {
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200"> {/* Simplified gradient in table header */}
+                    <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Employee</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Check In</th>
@@ -462,7 +661,7 @@ export default function StaffAttendance() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gray-50 transition-all duration-200" // Simplified hover effect
+                          className="hover:bg-gray-50 transition-all duration-200"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -475,24 +674,19 @@ export default function StaffAttendance() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
-                            {new Date(rec.date).toLocaleDateString('en-US', { 
-                              weekday: 'short', 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
+                            {format(new Date(rec.date), 'EEE, MMM d, yyyy')}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             <div className="flex items-center gap-2">
-                              <LucideClock className="w-4 h-4 text-green-500" /> {/* Explicitly using LucideClock */}
-                              {rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : <span className="text-gray-400 italic">N/A</span>}
+                              <LucideClock className="w-4 h-4 text-green-500" />
+                              {rec.checkIn ? format(new Date(rec.checkIn), 'hh:mm a') : <span className="text-gray-400 italic">N/A</span>}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             {rec.checkOut ? (
                               <div className="flex items-center gap-2">
-                                <LucideClock className="w-4 h-4 text-red-500" /> {/* Explicitly using LucideClock */}
-                                {new Date(rec.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <LucideClock className="w-4 h-4 text-red-500" />
+                                {format(new Date(rec.checkOut), 'hh:mm a')}
                               </div>
                             ) : (
                               <span className="text-gray-400 italic">Still active</span>
@@ -523,81 +717,109 @@ export default function StaffAttendance() {
       </div>
       
       {/* Enhanced Edit Modal */}
-      <Modal show={!!editingRecord} onClose={() => setEditingRecord(null)} title="Edit Attendance Record" size="lg">
+      <Modal show={!!editingRecord} onClose={() => {setEditingRecord(null); setEditFormErrors({}); setEditFormGeneralError("");}} title="Edit Attendance Record" size="lg">
         {editingRecord && (
           <form onSubmit={handleUpdate} className="space-y-6">
+            {/* General form error message */}
+            {editFormGeneralError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
+                {editFormGeneralError}
+              </div>
+            )}
+
             {/* Employee Info Header */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100"> {/* Simplified styling */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white font-bold">
                 {editingRecord.user?.fullName?.charAt(0) || 'N'}
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900">{editingRecord.user?.fullName}</h4>
-                <p className="text-sm text-gray-600">
-                  {new Date(editingRecord.date).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                {/* Display the fixed attendance date */}
+                <p className="text-md text-gray-700 font-medium flex items-center gap-2 mt-1">
+                  <CalendarDays className="w-5 h-5 text-gray-500" />
+                  Attendance Date: {format(new Date(editingRecord.date), 'EEEE, MMMM d, yyyy')}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Check-In Time */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <LucideClock className="w-4 h-4 text-green-500" /> {/* Explicitly using LucideClock */}
-                  Check-In Time
+                <label htmlFor="checkIn" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <LucideClock className="w-4 h-4 text-green-500" />
+                  Check-In Time *
                 </label>
                 <input 
+                  id="checkIn"
+                  name="checkIn"
                   type="datetime-local" 
                   value={formatDateForInput(editingRecord.checkIn)} 
-                  onChange={e => setEditingRecord({...editingRecord, checkIn: e.target.value})} 
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" 
+                  onChange={handleEditRecordInputChange}
+                  className={`w-full p-3 border ${editFormErrors.checkIn ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                  // Restrict date selection to the fixed attendance date and not in future
+                  min={getMinMaxDateTimeForFixedDay(editingRecord.date, 'min')} 
+                  max={getMaxTimeForInput(editingRecord.date)} 
+                  required
                 />
+                {editFormErrors.checkIn && <p className="text-red-500 text-xs mt-1">{editFormErrors.checkIn}</p>}
               </div>
               
+              {/* Check-Out Time */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <LucideClock className="w-4 h-4 text-red-500" /> {/* Explicitly using LucideClock */}
+                <label htmlFor="checkOut" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <LucideClock className="w-4 h-4 text-red-500" />
                   Check-Out Time
                 </label>
                 <input 
+                  id="checkOut"
+                  name="checkOut"
                   type="datetime-local" 
                   value={formatDateForInput(editingRecord.checkOut)} 
-                  onChange={e => setEditingRecord({...editingRecord, checkOut: e.target.value})} 
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200" 
+                  onChange={handleEditRecordInputChange} 
+                  className={`w-full p-3 border ${editFormErrors.checkOut ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                  // Check-out must be after check-in, or start of fixed day. Max not in future.
+                  min={editingRecord.checkIn ? formatDateForInput(editingRecord.checkIn) : getMinMaxDateTimeForFixedDay(editingRecord.date, 'min')} 
+                  max={getMaxTimeForInput(editingRecord.date)} 
                 />
+                {editFormErrors.checkOut && <p className="text-red-500 text-xs mt-1">{editFormErrors.checkOut}</p>}
               </div>
             </div>
             
+            {/* Status */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <Zap className="w-4 h-4 text-purple-500" />
-                Status
+                Status *
               </label>
               <select 
+                id="status"
+                name="status"
                 value={editingRecord.status} 
-                onChange={e => setEditingRecord({...editingRecord, status: e.target.value})} 
-                className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                onChange={handleEditRecordInputChange} 
+                className={`w-full p-3 border ${editFormErrors.status ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
               >
-                <option>Present</option>
-                <option>Late</option>
-                <option>Absent</option>
-                <option>On Leave</option>
+                <option value="Present">Present</option>
+                <option value="Late">Late</option>
+                <option value="Absent">Absent</option>
+                <option value="On Leave">On Leave</option>
               </select>
+              {editFormErrors.status && <p className="text-red-500 text-xs mt-1">{editFormErrors.status}</p>}
             </div>
             
+            {/* Remarks */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
+              <label htmlFor="remarks" className="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
               <textarea 
+                id="remarks"
+                name="remarks"
                 value={editingRecord.remarks || ''} 
-                onChange={e => setEditingRecord({...editingRecord, remarks: e.target.value})} 
+                onChange={handleEditRecordInputChange} 
                 rows="4" 
-                className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                className={`w-full p-3 border ${editFormErrors.remarks ? 'border-red-500' : 'border-gray-200'} rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
                 placeholder="Add any additional remarks or notes..."
+                maxLength={500}
               ></textarea>
+              {editFormErrors.remarks && <p className="text-red-500 text-xs mt-1">{editFormErrors.remarks}</p>}
             </div>
             
             <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
@@ -605,7 +827,7 @@ export default function StaffAttendance() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="button" 
-                onClick={() => setEditingRecord(null)} 
+                onClick={() => {setEditingRecord(null); setEditFormErrors({}); setEditFormGeneralError("");}}
                 className="px-6 py-3 bg-white text-gray-700 rounded-xl border border-gray-200 font-medium hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
               >
                 <X className="w-4 h-4" />

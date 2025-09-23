@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { api } from "../../lib/api";
 import { motion } from "framer-motion";
-import { FileText, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Plus, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader } from 'lucide-react'; // Import loader icon
 
 // Helper for status badge styling based on the TaskManagement example
 const LeaveStatusBadge = ({ status }) => {
@@ -49,9 +48,10 @@ const LeaveStatusBadge = ({ status }) => {
 export default function MyLeaveRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for form submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formState, setFormState] = useState({ leaveType: "Casual", startDate: "", endDate: "", reason: "" });
+  const [formErrors, setFormErrors] = useState({}); // New state for validation errors
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -69,13 +69,53 @@ export default function MyLeaveRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
+  // --- Client-side validation logic ---
+  const validateForm = () => {
+    const errors = {};
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
+    if (!formState.leaveType) {
+      errors.leaveType = "Leave Type is required.";
+    }
+
+    if (!formState.startDate) {
+      errors.startDate = "Start Date is required.";
+    } else if (formState.startDate < today) {
+      errors.startDate = "Start Date cannot be in the past.";
+    }
+
+    if (!formState.endDate) {
+      errors.endDate = "End Date is required.";
+    } else if (formState.endDate < today) {
+      errors.endDate = "End Date cannot be in the past.";
+    } else if (formState.startDate && formState.endDate && new Date(formState.endDate) < new Date(formState.startDate)) {
+      errors.endDate = "End Date cannot be before Start Date.";
+    }
+
+    if (!formState.reason) {
+      errors.reason = "Reason is required.";
+    } else if (formState.reason.length < 10) {
+      errors.reason = "Reason must be at least 10 characters long.";
+    } else if (formState.reason.length > 200) {
+      errors.reason = "Reason cannot exceed 200 characters.";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0; // Returns true if no errors
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return; // Stop submission if client-side validation fails
+    }
+
     setIsSubmitting(true);
     try {
       await api.post("/leave-requests", formState);
       setShowForm(false);
       setFormState({ leaveType: "Casual", startDate: "", endDate: "", reason: "" });
+      setFormErrors({}); // Clear errors on successful submission
       fetchRequests();
     } catch (err) {
       alert(err?.response?.data?.message || "Failed to submit leave request.");
@@ -84,33 +124,39 @@ export default function MyLeaveRequests() {
     }
   };
 
+  // Get today's date for the min attribute of date inputs
+  const todayDateString = new Date().toISOString().split('T')[0];
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
       {/* Leave Overview + Add Request */}
-      <Card className="bg-white p-6 rounded-xl shadow-lg border border-gray-100"> {/* Refined card styling */}
+      <Card className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
         <CardHeader className="p-0 pb-4 mb-4 border-b border-gray-100">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3"> {/* Title styling */}
+            <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
               <FileText className="h-6 w-6 text-green-500" />
               My Leave Requests
             </CardTitle>
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button className="flex items-center px-5 py-2.5 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors"> {/* Button styling */}
+                <Button className="flex items-center px-5 py-2.5 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors">
                   <Plus className="h-4 w-4 mr-2" /> New Request
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 border border-gray-100"> {/* Modal styling */}
+              <DialogContent className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 border border-gray-100">
                 <DialogHeader className="p-0 pb-4 mb-4 border-b border-gray-100">
                   <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div> Submit Leave Request
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Leave Type */}
                   <div>
-                    <Label className="block text-sm font-semibold text-gray-700 mb-2">Leave Type</Label>
-                    <Select value={formState.leaveType} onValueChange={(v) => setFormState({ ...formState, leaveType: v })}>
-                      <SelectTrigger className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800">
+                    <Label htmlFor="leaveType" className="block text-sm font-semibold text-gray-700 mb-2">Leave Type</Label>
+                    <Select value={formState.leaveType} onValueChange={(v) => setFormState({ ...formState, leaveType: v })} id="leaveType">
+                      <SelectTrigger
+                        className={`w-full p-2.5 border ${formErrors.leaveType ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
+                      >
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg">
@@ -119,27 +165,57 @@ export default function MyLeaveRequests() {
                         <SelectItem value="Annual">Annual</SelectItem>
                       </SelectContent>
                     </Select>
+                    {formErrors.leaveType && <p className="text-red-500 text-xs mt-1">{formErrors.leaveType}</p>}
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
+                    {/* Start Date */}
                     <div>
-                      <Label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</Label>
-                      <Input type="date" value={formState.startDate} onChange={(e) => setFormState({ ...formState, startDate: e.target.value })} required
-                        className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800"
+                      <Label htmlFor="startDate" className="block text-sm font-semibold text-gray-700 mb-2">Start Date</Label>
+                      <Input
+                        type="date"
+                        id="startDate"
+                        value={formState.startDate}
+                        onChange={(e) => setFormState({ ...formState, startDate: e.target.value })}
+                        required
+                        min={todayDateString} // Prevent past dates
+                        className={`${formErrors.startDate ? 'border-red-500' : 'border-gray-300'} w-full p-2.5 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
                       />
+                      {formErrors.startDate && <p className="text-red-500 text-xs mt-1">{formErrors.startDate}</p>}
                     </div>
+
+                    {/* End Date */}
                     <div>
-                      <Label className="block text-sm font-semibold text-gray-700 mb-2">End Date</Label>
-                      <Input type="date" value={formState.endDate} onChange={(e) => setFormState({ ...formState, endDate: e.target.value })} required
-                        className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800"
+                      <Label htmlFor="endDate" className="block text-sm font-semibold text-gray-700 mb-2">End Date</Label>
+                      <Input
+                        type="date"
+                        id="endDate"
+                        value={formState.endDate}
+                        onChange={(e) => setFormState({ ...formState, endDate: e.target.value })}
+                        required
+                        min={formState.startDate || todayDateString} // End date must be >= Start Date and not in the past
+                        className={`${formErrors.endDate ? 'border-red-500' : 'border-gray-300'} w-full p-2.5 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
                       />
+                      {formErrors.endDate && <p className="text-red-500 text-xs mt-1">{formErrors.endDate}</p>}
                     </div>
                   </div>
+
+                  {/* Reason */}
                   <div>
-                    <Label className="block text-sm font-semibold text-gray-700 mb-2">Reason</Label>
-                    <Textarea placeholder="Reason for leave" value={formState.reason} onChange={(e) => setFormState({ ...formState, reason: e.target.value })} required
-                      className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors resize-none bg-white text-gray-800"
+                    <Label htmlFor="reason" className="block text-sm font-semibold text-gray-700 mb-2">Reason</Label>
+                    <Textarea
+                      id="reason"
+                      placeholder="Reason for leave"
+                      value={formState.reason}
+                      onChange={(e) => setFormState({ ...formState, reason: e.target.value })}
+                      required
+                      minLength={10}
+                      maxLength={200}
+                      className={`${formErrors.reason ? 'border-red-500' : 'border-gray-300'} w-full p-2.5 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors resize-none bg-white text-gray-800`}
                     />
+                    {formErrors.reason && <p className="text-red-500 text-xs mt-1">{formErrors.reason}</p>}
                   </div>
+
                   <Button type="submit" disabled={isSubmitting}
                     className="w-full flex items-center justify-center px-4 py-2.5 font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -171,13 +247,13 @@ export default function MyLeaveRequests() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200" // Individual item styling
+                  className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
                 >
                   <div className="flex justify-between items-center mb-2">
                     <p className="font-semibold text-gray-800 text-sm">
                       {new Date(req.startDate).toLocaleDateString()} &mdash; {new Date(req.endDate).toLocaleDateString()}
                     </p>
-                    <LeaveStatusBadge status={req.status} /> {/* Re-using badge styling */}
+                    <LeaveStatusBadge status={req.status} />
                   </div>
                   <p className="text-xs text-gray-600 mt-1">{req.reason}</p>
                   {req.notes && <p className="text-xs text-gray-500 mt-1 italic">Notes: {req.notes}</p>}

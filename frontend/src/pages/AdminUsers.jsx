@@ -1,5 +1,3 @@
-
-
 // src/pages/AdminUsers.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { Edit, Trash2, UserPlus, Eye, EyeOff, XCircle, Search, Filter, Users, DollarSign, Clock, Mail, Briefcase, Plus } from "lucide-react";
@@ -17,7 +15,8 @@ export default function AdminUsers() {
 
   // form state
   const [showForm, setShowForm] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
+  // මෙම පේළිය නිවැරදි කරන ලදි: useState(null) ලෙස විය යුතුය.
+  const [editingEmployee, setEditingEmployee] = useState(null); 
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
@@ -28,17 +27,17 @@ export default function AdminUsers() {
     status: "active",
     basicSalary: "",
     workingHours: "",
-    // New fields
-    allowance: "", // Add allowance
-    loan: "",      // Add loan
+    allowance: "",
+    loan: "",
   });
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(""); // General error for form submission
+  const [formValidationErrors, setFormValidationErrors] = useState({}); // Specific validation errors for each field
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // delete confirm modal
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // Animations
+  // Animations (unchanged)
   const containerVariants = { 
     hidden: { opacity: 0 }, 
     visible: { 
@@ -91,7 +90,7 @@ export default function AdminUsers() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/admin/users"); // backend returns only employees
+      const { data } = await api.get("/admin/users");
       setEmployees(data.items || []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load employees.");
@@ -104,7 +103,7 @@ export default function AdminUsers() {
     loadEmployees();
   }, [loadEmployees]);
 
-  // filter employees
+  // filter employees (unchanged)
   const filteredEmployees = employees.filter((emp) => {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
@@ -115,15 +114,171 @@ export default function AdminUsers() {
     return matchesSearch && matchesStatus;
   });
 
+  // --- Client-side validation logic ---
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    // Full Name Validation
+    if (!form.fullName.trim()) {
+      errors.fullName = "Full Name is required.";
+      isValid = false;
+    } else if (form.fullName.trim().length < 2) {
+      errors.fullName = "Full Name must be at least 2 characters.";
+      isValid = false;
+    } else if (form.fullName.trim().length > 100) {
+      errors.fullName = "Full Name cannot exceed 100 characters.";
+      isValid = false;
+    } else if (!/^[a-zA-Z\s-]+$/.test(form.fullName)) { // Allows letters, spaces, hyphens, NO PERIODS, NO NUMBERS
+      errors.fullName = "Full Name can only contain letters, spaces, and hyphens.";
+      isValid = false;
+    }
+
+    // Email Validation
+    if (!form.email.trim()) {
+      errors.email = "Email Address is required.";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(form.email)) { // Basic regex for email format
+      errors.email = "Please enter a valid email address.";
+      isValid = false;
+    } else if (form.email.length > 255) {
+      errors.email = "Email address cannot exceed 255 characters.";
+      isValid = false;
+    }
+
+    // Password Validation (Required for new employee, optional for editing if left blank)
+    if (!editingEmployee || (editingEmployee && form.password)) { // Only validate if new or if password field is filled during edit
+      if (!form.password) {
+        errors.password = "Password is required.";
+        isValid = false;
+      } else if (form.password.length < 8) {
+        errors.password = "Password must be at least 8 characters long.";
+        isValid = false;
+      } else if (form.password.length > 50) {
+        errors.password = "Password cannot exceed 50 characters.";
+        isValid = false;
+      }
+      // Optional: Add complexity rules if desired (e.g., regex for uppercase, lowercase, number, special char)
+      // else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(form.password)) {
+      //   errors.password = "Password must include uppercase, lowercase, number, and special character.";
+      //   isValid = false;
+      // }
+    }
+
+    // Job Title Validation (Optional, validate if present)
+    if (form.jobTitle.trim()) {
+      if (form.jobTitle.trim().length < 2) {
+        errors.jobTitle = "Job Title must be at least 2 characters.";
+        isValid = false;
+      } else if (form.jobTitle.trim().length > 100) {
+        errors.jobTitle = "Job Title cannot exceed 100 characters.";
+        isValid = false;
+      } else if (!/^[a-zA-Z\s-]+$/.test(form.jobTitle)) { // Allows letters, spaces, hyphens, NO PERIODS, NO NUMBERS
+        errors.jobTitle = "Job Title can only contain letters, spaces, and hyphens.";
+        isValid = false;
+      }
+    }
+
+    // Basic Salary Validation (Optional, validate if present)
+    if (form.basicSalary !== "" && form.basicSalary !== null) { // Check if not empty string or null
+      const salary = parseFloat(form.basicSalary);
+      if (isNaN(salary)) {
+        errors.basicSalary = "Basic Salary must be a number.";
+        isValid = false;
+      } else if (salary < 0) {
+        errors.basicSalary = "Basic Salary cannot be negative.";
+        isValid = false;
+      } else if (salary > 1000000) { // Example max salary
+        errors.basicSalary = "Basic Salary cannot exceed Rs. 1,000,000."; 
+        isValid = false;
+      } else if (/\.\d{3,}/.test(form.basicSalary)) { // Check for more than 2 decimal places
+        errors.basicSalary = "Basic Salary can have at most 2 decimal places.";
+        isValid = false;
+      }
+    }
+
+    // Working Hours Validation (Optional, validate if present)
+    if (form.workingHours !== "" && form.workingHours !== null) {
+      const hours = parseFloat(form.workingHours);
+      if (isNaN(hours)) {
+        errors.workingHours = "Working Hours must be a number.";
+        isValid = false;
+      } else if (hours < 1) {
+        errors.workingHours = "Working Hours must be at least 1.";
+        isValid = false;
+      } else if (hours > 60) { // Example max working hours per week
+        errors.workingHours = "Working Hours cannot exceed 60.";
+        isValid = false;
+      } else if (/\.\d{3,}/.test(form.workingHours)) { // Allow up to 2 decimal places (e.g., 8.5 hours)
+        errors.workingHours = "Working Hours can have at most 2 decimal places.";
+        isValid = false;
+      }
+    }
+
+    // Allowance Validation (Optional, validate if present)
+    if (form.allowance !== "" && form.allowance !== null) {
+      const allowance = parseFloat(form.allowance);
+      if (isNaN(allowance)) {
+        errors.allowance = "Allowance must be a number.";
+        isValid = false;
+      } else if (allowance < 0) {
+        errors.allowance = "Allowance cannot be negative.";
+        isValid = false;
+      } else if (allowance > 10000) { // Example max allowance
+        errors.allowance = "Allowance cannot exceed Rs. 10,000."; 
+        isValid = false;
+      } else if (/\.\d{3,}/.test(form.allowance)) { // Allow up to 2 decimal places
+        errors.allowance = "Allowance can have at most 2 decimal places.";
+        isValid = false;
+      }
+    }
+
+    // Loan Validation (Optional, validate if present)
+    if (form.loan !== "" && form.loan !== null) {
+      const loan = parseFloat(form.loan);
+      if (isNaN(loan)) {
+        errors.loan = "Loan must be a number.";
+        isValid = false;
+      } else if (loan < 0) {
+        errors.loan = "Loan cannot be negative.";
+        isValid = false;
+      } else if (loan > 100000) { // Example max loan
+        errors.loan = "Loan cannot exceed Rs. 100,000."; 
+        isValid = false;
+      } else if (/\.\d{3,}/.test(form.loan)) { // Allow up to 2 decimal places
+        errors.loan = "Loan can have at most 2 decimal places.";
+        isValid = false;
+      }
+    }
+
+    // Status Validation (should always be valid due to select options, but a fallback check is good)
+    if (!['active', 'inactive'].includes(form.status)) {
+        errors.status = "Invalid status selected.";
+        isValid = false;
+    }
+
+    setFormValidationErrors(errors);
+    return isValid;
+  };
+
   // submit (create/update)
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    setFormError(""); // Clear general form error
+    setFormValidationErrors({}); // Clear previous validation errors
+
+    if (!validateForm()) {
+      // If client-side validation fails, scroll to the top of the form or show a general error
+      setFormError("Please correct the errors in the form.");
+      setIsSubmitting(false); // Ensure button is re-enabled
+      return;
+    }
+
     setIsSubmitting(true);
-    setFormError("");
     try {
       if (editingEmployee) {
         const payload = { ...form };
-        if (!payload.password) delete payload.password;
+        if (!payload.password) delete payload.password; // Don't send empty password if not changed
         await api.patch(`/admin/users/${editingEmployee._id}`, payload);
       } else {
         await api.post("/admin/users", form);
@@ -140,7 +295,7 @@ export default function AdminUsers() {
     }
   };
 
-  // delete employee
+  // delete employee (unchanged)
   const deleteEmployee = async (id) => {
     try {
       await api.delete(`/admin/users/${id}`);
@@ -157,18 +312,18 @@ export default function AdminUsers() {
     setForm({
       fullName: emp.fullName || "",
       email: emp.email || "",
-      password: "",
+      password: "", // Password is never pre-filled for security
       role: "Employee",
       jobTitle: emp.jobTitle || "",
       status: emp.status || "active",
-      basicSalary: emp.basicSalary || "",
-      workingHours: emp.workingHours || "",
-      // Populate new fields for editing
-      allowance: emp.allowance || "", 
-      loan: emp.loan || "",
+      basicSalary: emp.basicSalary !== undefined && emp.basicSalary !== null ? emp.basicSalary.toString() : "", // Convert to string for input
+      workingHours: emp.workingHours !== undefined && emp.workingHours !== null ? emp.workingHours.toString() : "", // Convert to string
+      allowance: emp.allowance !== undefined && emp.allowance !== null ? emp.allowance.toString() : "",
+      loan: emp.loan !== undefined && emp.loan !== null ? emp.loan.toString() : "",
     });
     setShowPassword(false);
     setFormError("");
+    setFormValidationErrors({}); // Clear errors when opening for edit
     setShowForm(true);
   };
 
@@ -183,24 +338,52 @@ export default function AdminUsers() {
       status: "active",
       basicSalary: "",
       workingHours: "",
-      // Reset new fields
-      allowance: "", 
+      allowance: "",
       loan: "",
     });
     setShowForm(false);
     setEditingEmployee(null);
     setFormError("");
+    setFormValidationErrors({}); // Clear validation errors
     setShowPassword(false);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    let newValue = value;
+
+    // Prevent numbers and most symbols in Full Name and Job Title
+    if (name === 'fullName' || name === 'jobTitle') {
+        // Allow letters, spaces, and hyphens. Remove anything else (including periods).
+        newValue = value.replace(/[^a-zA-Z\s-]/g, ''); 
+    } 
+    // Special handling for number inputs to ensure only valid numbers are typed
+    else if (['basicSalary', 'workingHours', 'allowance', 'loan'].includes(name)) {
+        // Allow digits, a single decimal point, and optionally a leading minus sign (though we validate against negatives later)
+        // This regex now strictly allows up to 2 decimal places while typing.
+        if (value === '' || /^-?\d*\.?\d{0,2}$/.test(value)) { 
+            newValue = value;
+        } else {
+            // If an invalid character is typed, revert to the previous valid value
+            newValue = form[name]; 
+        }
+    }
+
+    setForm((prev) => ({ ...prev, [name]: newValue }));
+
+    // Clear the specific error for this field as the user types
+    if (formValidationErrors[name]) {
+      setFormValidationErrors((prevErrors) => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  // Stats calculation
+  // Stats calculation (unchanged)
   const activeEmployees = employees.filter(emp => emp.status === 'active').length;
-  const totalSalary = employees.reduce((sum, emp) => sum + (parseFloat(emp.basicSalary) || 0), 0);
+  const totalSalary = employees.reduce((sum, emp) => sum + (parseFloat(emp.basicSalary) || 0) + (parseFloat(emp.allowance) || 0) - (parseFloat(emp.loan) || 0), 0); // Include allowance and deduct loan
 
   if (loading) {
     return (
@@ -307,7 +490,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Payroll</p>
-                <p className="text-3xl font-bold text-green-600">${totalSalary.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-green-600">Rs.{totalSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -383,6 +566,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
+              {/* General Form Error Display */}
               {formError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
                   {formError}
@@ -391,49 +575,57 @@ export default function AdminUsers() {
 
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Full Name */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="fullName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Users className="w-4 h-4 mr-2 text-gray-500" />
-                      Full Name
+                      Full Name *
                     </label>
                     <input 
+                      id="fullName"
                       name="fullName" 
                       value={form.fullName} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter full name"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.fullName ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Enter full name (only letters, spaces, hyphens)" 
                       required
                     />
+                    {formValidationErrors.fullName && <p className="text-red-500 text-xs mt-1">{formValidationErrors.fullName}</p>}
                   </div>
                   
+                  {/* Email Address */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Mail className="w-4 h-4 mr-2 text-gray-500" />
-                      Email Address
+                      Email Address *
                     </label>
                     <input 
+                      id="email"
                       name="email" 
                       type="email" 
                       value={form.email} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
                       placeholder="Enter email address"
                       required
                     />
+                    {formValidationErrors.email && <p className="text-red-500 text-xs mt-1">{formValidationErrors.email}</p>}
                   </div>
                   
+                  {/* Password */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="password" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Eye className="w-4 h-4 mr-2 text-gray-500" />
-                      Password {editingEmployee && <span className="text-gray-500 text-xs">(leave blank to keep current)</span>}
+                      Password {!editingEmployee && <span className="text-red-500 ml-1">*</span>} {editingEmployee && <span className="text-gray-500 text-xs">(leave blank to keep current)</span>}
                     </label>
                     <div className="relative">
                       <input 
+                        id="password"
                         name="password" 
                         type={showPassword ? "text" : "password"} 
                         value={form.password} 
                         onChange={handleInputChange} 
-                        className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12"
+                        className={`w-full p-4 bg-white border ${formValidationErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12`}
                         placeholder="Enter password"
                         required={!editingEmployee}
                       />
@@ -445,98 +637,123 @@ export default function AdminUsers() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
+                    {formValidationErrors.password && <p className="text-red-500 text-xs mt-1">{formValidationErrors.password}</p>}
                   </div>
                   
+                  {/* Job Title */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="jobTitle" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Briefcase className="w-4 h-4 mr-2 text-gray-500" />
                       Job Title
                     </label>
                     <input 
+                      id="jobTitle"
                       name="jobTitle" 
                       value={form.jobTitle} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter job title"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.jobTitle ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Enter job title (only letters, spaces, hyphens)" 
                     />
+                    {formValidationErrors.jobTitle && <p className="text-red-500 text-xs mt-1">{formValidationErrors.jobTitle}</p>}
                   </div>
                   
+                  {/* Basic Salary */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="basicSalary" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
                       Basic Salary
                     </label>
                     <input 
+                      id="basicSalary"
                       name="basicSalary" 
-                      type="number" 
+                      type="text" // Changed type to "text" for more control with regex in handleInputChange
+                      inputMode="decimal" // Hint for mobile keyboards
+                      pattern="^\d*\.?\d{0,2}$" // Basic pattern for allowing decimals (further enforced by JS)
                       value={form.basicSalary} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter salary amount"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.basicSalary ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Enter salary amount (e.g., 50000.00)"
                     />
+                    {formValidationErrors.basicSalary && <p className="text-red-500 text-xs mt-1">{formValidationErrors.basicSalary}</p>}
                   </div>
                   
+                  {/* Working Hours */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="workingHours" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Clock className="w-4 h-4 mr-2 text-gray-500" />
                       Working Hours
                     </label>
                     <input 
+                      id="workingHours"
                       name="workingHours" 
-                      type="number" 
+                      type="text" // Changed type to "text" for more control with regex in handleInputChange
+                      inputMode="decimal"
+                      pattern="^\d*\.?\d{0,2}$"
                       value={form.workingHours} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Hours per week"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.workingHours ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Hours per week (e.g., 40.00)" 
                     />
+                    {formValidationErrors.workingHours && <p className="text-red-500 text-xs mt-1">{formValidationErrors.workingHours}</p>}
                   </div>
                   
-                  {/* New Allowance Field */}
+                  {/* Allowance Field */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="allowance" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
                       Allowance
                     </label>
                     <input 
+                      id="allowance"
                       name="allowance" 
-                      type="number" 
+                      type="text" // Changed type to "text" for more control with regex in handleInputChange
+                      inputMode="decimal"
+                      pattern="^\d*\.?\d{0,2}$"
                       value={form.allowance} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter allowance amount"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.allowance ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Enter allowance amount (e.g., 500.00)"
                     />
+                    {formValidationErrors.allowance && <p className="text-red-500 text-xs mt-1">{formValidationErrors.allowance}</p>}
                   </div>
 
-                  {/* New Loan Field */}
+                  {/* Loan Field */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="loan" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
                       Loan
                     </label>
                     <input 
+                      id="loan"
                       name="loan" 
-                      type="number" 
+                      type="text" // Changed type to "text" for more control with regex in handleInputChange
+                      inputMode="decimal"
+                      pattern="^\d*\.?\d{0,2}$"
                       value={form.loan} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter outstanding loan amount"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.loan ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Enter outstanding loan amount (e.g., 1500.00)"
                     />
+                    {formValidationErrors.loan && <p className="text-red-500 text-xs mt-1">{formValidationErrors.loan}</p>}
                   </div>
 
+                  {/* Status */}
                   <div className="space-y-2">
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="status" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Filter className="w-4 h-4 mr-2 text-gray-500" />
                       Status
                     </label>
                     <select 
+                      id="status"
                       name="status" 
                       value={form.status} 
                       onChange={handleInputChange} 
-                      className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-200"
+                      className={`w-full p-4 bg-white border ${formValidationErrors.status ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-200`}
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
+                    {formValidationErrors.status && <p className="text-red-500 text-xs mt-1">{formValidationErrors.status}</p>}
                   </div>
                 </div>
 
@@ -565,7 +782,7 @@ export default function AdminUsers() {
           )}
         </AnimatePresence>
 
-        {/* Enhanced Table */}
+        {/* Enhanced Table (unchanged) */}
         <motion.div 
           className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 overflow-hidden" 
           variants={itemVariants}
@@ -632,13 +849,13 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {emp.basicSalary ? `$${parseFloat(emp.basicSalary).toLocaleString()}` : "—"}
+                          {emp.basicSalary ? `Rs.${parseFloat(emp.basicSalary).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                         </div>
                         {emp.allowance > 0 && (
-                          <div className="text-xs text-gray-500">Allowance: ${parseFloat(emp.allowance).toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">Allowance: Rs.{parseFloat(emp.allowance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         )}
                         {emp.loan > 0 && (
-                          <div className="text-xs text-red-500">Loan: ${parseFloat(emp.loan).toLocaleString()}</div>
+                          <div className="text-xs text-red-500">Loan: Rs.{parseFloat(emp.loan).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -678,7 +895,7 @@ export default function AdminUsers() {
           </div>
         </motion.div>
 
-        {/* Enhanced Delete Confirmation Modal */}
+        {/* Enhanced Delete Confirmation Modal (unchanged) */}
         <AnimatePresence>
           {deleteConfirm && (
             <motion.div 

@@ -48,6 +48,7 @@ import reportRoutes from "./routes/report.routes.js";
 
 
 import chatRoutes from "./routes/chat.routes.js";
+import contactRoutes from './routes/contact.routes.js';
 
 
 
@@ -153,6 +154,8 @@ app.use("/api/applications", applicationRoutes);
 
 // ✅ Chatbot API
 app.use("/api/chat", chatRoutes);
+
+app.use('/api/contact', contactRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>

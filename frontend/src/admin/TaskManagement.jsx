@@ -1,27 +1,27 @@
 // src/admin/TaskManagement.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isBefore, startOfDay } from 'date-fns'; // Added isBefore, startOfDay
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { api } from '../lib/api'; 
+import { api } from '../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  FileText, 
-  Trash2, 
-  User, 
-  Clock, 
-  CheckCircle, 
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  FileText,
+  Trash2,
+  User,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Target,
   Sparkles,
   TrendingUp,
-  XCircle, 
-  Loader, 
+  XCircle,
+  Loader,
   ListTodo,
   ClipboardList, // Used for main task list
 } from 'lucide-react';
@@ -29,10 +29,12 @@ import {
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
+const todayDateString = format(startOfDay(new Date()), 'yyyy-MM-dd'); // Get today's date at start of day
+
 // --- Reusable Modal Component (simplified styling) ---
 const Modal = ({ show, onClose, title, children, size = "md" }) => {
   if (!show) return null;
-  
+
   const sizeClasses = {
     sm: "max-w-md",
     md: "max-w-lg",
@@ -42,24 +44,24 @@ const Modal = ({ show, onClose, title, children, size = "md" }) => {
 
   return (
     <AnimatePresence>
-      {show && ( 
+      {show && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" // Less dark overlay
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
           onClick={onClose}
         >
           <motion.div
             initial={{ y: -50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -50, opacity: 0, scale: 0.95 }}
-            className={`bg-white rounded-xl shadow-lg w-full ${sizeClasses[size]} border border-gray-100`} // White bg, less shadow
+            className={`bg-white rounded-xl shadow-lg w-full ${sizeClasses[size]} border border-gray-100`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div> {/* Simple green dot */}
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 {title}
               </h3>
               <button
@@ -79,7 +81,7 @@ const Modal = ({ show, onClose, title, children, size = "md" }) => {
   );
 };
 
-// --- Task Modal (Simplified styling) ---
+// --- Task Modal with Validation ---
 const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, preselectedDate }) => {
   const isEditing = !!existingTask;
   const initialFormState = {
@@ -90,6 +92,8 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     status: 'To Do'
   };
   const [task, setTask] = useState(initialFormState);
+  const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState("");
 
   useEffect(() => {
     if (show) {
@@ -104,16 +108,87 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
       } else {
         setTask(initialFormState);
       }
+      setFormErrors({}); // Clear errors when modal opens
+      setFormAlert(""); // Clear form alert
     }
   }, [show, existingTask, isEditing, preselectedDate]); // Add preselectedDate to dependencies
 
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    if (!task.user) {
+      errors.user = "Assign To field is required.";
+      isValid = false;
+    }
+
+    if (!task.title.trim()) {
+      errors.title = "Task Title is required.";
+      isValid = false;
+    } else if (task.title.trim().length < 5) {
+      errors.title = "Task Title must be at least 5 characters.";
+      isValid = false;
+    } else if (task.title.trim().length > 200) {
+      errors.title = "Task Title cannot exceed 200 characters.";
+      isValid = false;
+    } else if (!/^[a-zA-Z\s-]+$/.test(task.title)) { // Allows letters, spaces, and hyphens ONLY. No numbers, no periods, no other symbols
+      errors.title = "Task Title can only contain letters, spaces, and hyphens.";
+      isValid = false;
+    }
+
+    if (!task.dueDate) {
+      errors.dueDate = "Due Date is required.";
+      isValid = false;
+    } else if (isBefore(new Date(task.dueDate), startOfDay(new Date()))) {
+      errors.dueDate = "Due Date cannot be in the past.";
+      isValid = false;
+    }
+
+    if (task.description.length > 1000) {
+      errors.description = "Description cannot exceed 1000 characters.";
+      isValid = false;
+    }
+    
+    // Status validation (should always be valid due to select options, but a fallback check is good)
+    if (!['To Do', 'In Progress', 'Completed'].includes(task.status)) {
+        errors.status = "Invalid status selected.";
+        isValid = false;
+    }
+
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleTaskInputChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    // Apply strict validation for Task Title (letters, spaces, hyphens only)
+    if (name === 'title') {
+      newValue = value.replace(/[^a-zA-Z\s-]/g, ''); // Remove all characters except letters, spaces, and hyphens
+    }
+
+    setTask(prevTask => ({ ...prevTask, [name]: newValue }));
+    if (formErrors[name]) { // Clear error when user starts typing
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    setFormAlert(""); // Clear general form alert
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!task.user || !task.title || !task.dueDate) {
-      alert("Please fill all required fields (Assign To, Task Title, Due Date).");
+    setFormAlert(""); // Clear previous alerts
+    if (!validateForm()) {
+      setFormAlert("Please correct the errors in the form.");
       return;
     }
     onSave(task, isEditing ? existingTask._id : null);
+    setFormAlert(""); // Clear alert on successful save attempt
   };
 
   const handleDeleteClick = () => {
@@ -141,88 +216,117 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
   return (
     <Modal show={show} onClose={onClose} title={isEditing ? 'Update Task' : 'Create New Task'}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {formAlert && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+            {formAlert}
+          </div>
+        )}
+        {/* Assign To */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <label htmlFor="user" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             <User className="w-4 h-4 text-gray-500" />
             Assign To*
           </label>
-          <select 
-            value={task.user} 
-            onChange={e => setTask({ ...task, user: e.target.value })} 
-            className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800" 
+          <select
+            id="user"
+            name="user"
+            value={task.user}
+            onChange={handleTaskInputChange}
+            className={`w-full p-2.5 border ${formErrors.user ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
             required
           >
             <option value="">Select Team Member</option>
             {users.map(u => <option key={u._id} value={u._id}>{u.fullName}</option>)}
           </select>
+          {formErrors.user && <p className="text-red-500 text-xs mt-1">{formErrors.user}</p>}
         </div>
 
+        {/* Task Title */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             <Target className="w-4 h-4 text-gray-500" />
             Task Title*
           </label>
-          <input 
-            type="text" 
-            value={task.title} 
-            onChange={e => setTask({ ...task, title: e.target.value })} 
-            className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800" 
-            placeholder="Enter task title"
+          <input
+            id="title"
+            name="title"
+            type="text"
+            value={task.title}
+            onChange={handleTaskInputChange}
+            className={`w-full p-2.5 border ${formErrors.title ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
+            placeholder="Enter task title (only letters, spaces, hyphens)" // Updated placeholder
             required
+            maxLength={200}
+            minLength={5}
           />
+          {formErrors.title && <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>}
         </div>
 
+        {/* Due Date */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <label htmlFor="dueDate" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-gray-500" />
             Due Date*
           </label>
-          <input 
-            type="date" 
-            value={task.dueDate} 
-            onChange={e => setTask({ ...task, dueDate: e.target.value })} 
-            className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800" 
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="date"
+            value={task.dueDate}
+            onChange={handleTaskInputChange}
+            className={`w-full p-2.5 border ${formErrors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
             required
+            min={todayDateString} // Prevent past dates
           />
+          {formErrors.dueDate && <p className="text-red-500 text-xs mt-1">{formErrors.dueDate}</p>}
         </div>
 
+        {/* Status */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             {getStatusIcon(task.status)}
             <span className="ml-0.5">Status</span>
           </label>
           <div className={`p-0.5 rounded-md border ${getStatusColorClass(task.status)}`}>
-            <select 
-              value={task.status} 
-              onChange={e => setTask({ ...task, status: e.target.value })} 
-              className="w-full p-2.5 border-0 rounded-sm focus:outline-none bg-transparent font-medium"
+            <select
+              id="status"
+              name="status"
+              value={task.status}
+              onChange={handleTaskInputChange}
+              className={`w-full p-2.5 border-0 rounded-sm focus:outline-none bg-transparent font-medium ${formErrors.status ? 'border-red-500' : ''}`}
             >
               <option>To Do</option>
               <option>In Progress</option>
               <option>Completed</option>
             </select>
           </div>
+          {formErrors.status && <p className="text-red-500 text-xs mt-1">{formErrors.status}</p>}
         </div>
 
+        {/* Description */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             <FileText className="w-4 h-4 text-gray-500" />
             Description
           </label>
-          <textarea 
-            value={task.description} 
-            onChange={e => setTask({ ...task, description: e.target.value })} 
-            rows="3" 
-            className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors resize-none bg-white text-gray-800"
+          <textarea
+            id="description"
+            name="description"
+            value={task.description}
+            onChange={handleTaskInputChange}
+            rows="3"
+            className={`w-full p-2.5 border ${formErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors resize-none bg-white text-gray-800`}
             placeholder="Add task description or notes..."
+            maxLength={1000}
           />
+          {formErrors.description && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>}
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           {isEditing && (
-            <motion.button 
-              type="button" 
-              onClick={handleDeleteClick} 
+            <motion.button
+              type="button"
+              onClick={handleDeleteClick}
               className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600 transition-colors shadow-sm"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
@@ -230,19 +334,19 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
               Delete
             </motion.button>
           )}
-          
-          <button 
-            type="button" 
-            onClick={onClose} 
+
+          <button
+            type="button"
+            onClick={onClose}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300 transition-colors shadow-sm"
             disabled={onSave.isLoading}
           >
             Cancel
           </button>
-          <motion.button 
-            type="submit" 
+          <motion.button
+            type="submit"
             className={`px-4 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-colors shadow-sm ${onSave.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            whileHover={{ scale: onSave.isLoading ? 1 : 1.05 }} 
+            whileHover={{ scale: onSave.isLoading ? 1 : 1.05 }}
             whileTap={{ scale: onSave.isLoading ? 1 : 0.95 }}
             disabled={onSave.isLoading}
           >
@@ -255,40 +359,90 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
   );
 };
 
-// --- Report Modal (Simplified styling) ---
+// --- Report Modal with Validation ---
 const ReportModal = ({ show, onClose, onGenerate, month, setMonth, isGenerating }) => {
-  const handleSubmit = () => { 
-    if(month) onGenerate(month); 
-    else alert("Please select a month."); 
+  const [formErrors, setFormErrors] = useState({});
+  const [formAlert, setFormAlert] = useState("");
+
+  useEffect(() => {
+    if (show) {
+      setFormErrors({});
+      setFormAlert("");
+    }
+  }, [show]);
+
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+    const currentMonth = format(new Date(), 'yyyy-MM');
+
+    if (!month) {
+      errors.month = "Month selection is required.";
+      isValid = false;
+    } else if (month > currentMonth) { // Prevent future months
+      errors.month = "Cannot generate report for a future month.";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = () => {
+    setFormAlert("");
+    if (!validateForm()) {
+      setFormAlert("Please correct the errors in the form.");
+      return;
+    }
+    onGenerate(month);
   }
+
+  const handleMonthChange = (e) => {
+    setMonth(e.target.value);
+    if (formErrors.month) { // Clear error when user changes selection
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors.month;
+        return newErrors;
+      });
+    }
+    setFormAlert(""); // Clear general form alert
+  };
 
   return (
     <Modal show={show} onClose={onClose} title="Generate Task Report">
       <div className="space-y-4">
-        <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+        {formAlert && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+            {formAlert}
+          </div>
+        )}
+        <label htmlFor="reportMonth" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-gray-500" />
           Select Month*
         </label>
-        <input 
-          type="month" 
-          value={month} 
-          onChange={(e) => setMonth(e.target.value)} 
-          className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800"
+        <input
+          id="reportMonth"
+          type="month"
+          value={month}
+          onChange={handleMonthChange}
+          className={`w-full p-2.5 border ${formErrors.month ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
         />
+        {formErrors.month && <p className="text-red-500 text-xs mt-1">{formErrors.month}</p>}
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
-        <button 
-          type="button" 
-          onClick={onClose} 
+        <button
+          type="button"
+          onClick={onClose}
           className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300 transition-colors shadow-sm"
           disabled={isGenerating}
         >
           Cancel
         </button>
-        <motion.button 
-          onClick={handleSubmit} 
-          disabled={isGenerating} 
+        <motion.button
+          onClick={handleSubmit}
+          disabled={isGenerating}
           className={`px-4 py-2 bg-green-500 text-white rounded-md disabled:bg-gray-400 font-medium hover:bg-green-600 transition-colors shadow-sm flex items-center ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
           whileHover={{ scale: isGenerating ? 1 : 1.05 }} whileTap={{ scale: isGenerating ? 1 : 0.95 }}
         >
@@ -313,32 +467,32 @@ const ReportModal = ({ show, onClose, onGenerate, month, setMonth, isGenerating 
 // --- Status Badge for Tasks (Fixed and simplified styling) ---
 const TaskStatusBadge = ({ status }) => {
   let backgroundColorClass, textColorClass;
-  let IconComponent = ListTodo; 
+  let IconComponent = ListTodo;
 
   switch (status) {
     case 'Completed':
       backgroundColorClass = 'bg-green-100';
       textColorClass = 'text-green-800';
-      IconComponent = CheckCircle; 
+      IconComponent = CheckCircle;
       break;
     case 'In Progress':
       backgroundColorClass = 'bg-yellow-100';
       textColorClass = 'text-yellow-800';
-      IconComponent = Clock; 
+      IconComponent = Clock;
       break;
     default: // This will handle 'To Do' and any other statuses
       backgroundColorClass = 'bg-blue-100';
       textColorClass = 'text-blue-800';
-      IconComponent = ListTodo; 
-      break; 
+      IconComponent = ListTodo;
+      break;
   }
 
   return (
-    <motion.span 
+    <motion.span
       className={`px-2 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${backgroundColorClass} ${textColorClass}`}
       whileHover={{ scale: 1.05 }}
     >
-      <IconComponent className="w-3 h-3" /> 
+      <IconComponent className="w-3 h-3" />
       {status}
     </motion.span>
   );
@@ -353,7 +507,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
     start: new Date(task.dueDate),
     end: new Date(task.dueDate),
     allDay: true,
-    resource: task, 
+    resource: task,
   }));
 
   const eventStyleGetter = (event) => {
@@ -363,17 +517,17 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
       case 'In Progress': backgroundColor = '#059669'; break; // Emerald
       default: backgroundColor = '#65a30d'; // Lime (To Do)
     }
-    
-    return { 
-      style: { 
-        backgroundColor, 
-        color: 'white', 
+
+    return {
+      style: {
+        backgroundColor,
+        color: 'white',
         borderRadius: '4px', // Even smaller radius
         padding: '2px 4px', // Smaller padding
         fontSize: '9px', // Smallest font size for clarity
         fontWeight: '600',
         lineHeight: '1.2'
-      } 
+      }
     };
   };
 
@@ -381,15 +535,15 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
     return (
       <div className="rbc-toolbar mb-3 flex items-center justify-between p-2">
         <span className="rbc-btn-group">
-          <motion.button 
-            onClick={() => onNavigate('PREV')} 
+          <motion.button
+            onClick={() => onNavigate('PREV')}
             className="px-2 py-1 bg-green-500 text-white rounded-l-md hover:bg-green-600 text-sm"
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           >
             &lt;
           </motion.button>
-          <motion.button 
-            onClick={() => onNavigate('NEXT')} 
+          <motion.button
+            onClick={() => onNavigate('NEXT')}
             className="px-2 py-1 bg-green-500 text-white rounded-r-md hover:bg-green-600 text-sm"
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           >
@@ -401,9 +555,36 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
     );
   };
 
+  // Custom dayPropGetter to disable past dates
+  const dayPropGetter = useCallback((date) => {
+    const today = startOfDay(new Date());
+    if (isBefore(date, today)) {
+      return {
+        className: 'past-date',
+        style: {
+          backgroundColor: '#f1f8f3', // Lighter background for disabled dates
+          color: '#a0a0a0', // Grayed out text
+          cursor: 'not-allowed', // No cursor change
+        },
+      };
+    }
+    return {};
+  }, []);
+
+  // Modified onSelectSlot to prevent selection of past dates
+  const handleSelectSlot = useCallback((slotInfo) => {
+    const today = startOfDay(new Date());
+    if (isBefore(slotInfo.start, today)) {
+      // Do nothing if past date is clicked
+      return;
+    }
+    onDateSelect(slotInfo.start);
+  }, [onDateSelect]);
+
+
   return (
-    <motion.div 
-      className="bg-white p-5 rounded-xl shadow-md border border-gray-100 relative" 
+    <motion.div
+      className="bg-white p-5 rounded-xl shadow-md border border-gray-100 relative"
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
       style={{ height: '400px' }} // Fixed height for small calendar
     >
@@ -419,7 +600,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         .rbc-calendar { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .rbc-header {
           background: #f0fdf4; /* light green */
-          font-weight: 600; color: #14532d; padding: 8px 4px; 
+          font-weight: 600; color: #14532d; padding: 8px 4px;
           border: none; text-transform: uppercase;
           font-size: 10px; letter-spacing: 0.05em;
         }
@@ -434,12 +615,23 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         .rbc-month-row + .rbc-month-row { border-top: 1px solid #d1fae5; }
         .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #d1fae5; }
         .rbc-event { /* already defined by eventPropGetter */ }
+
+        /* Custom style for past dates */
+        .rbc-day-bg.past-date {
+          background-color: #f0f0f0 !important; /* Lighter gray */
+          color: #b0b0b0 !important; /* Grayed out text */
+          cursor: not-allowed !important;
+          opacity: 0.8;
+        }
+        .rbc-day-bg.past-date .rbc-button-link {
+          color: #b0b0b0 !important;
+        }
       `}</style>
       <Calendar
         localizer={localizer}
         events={events}
         onSelectEvent={onSelectEvent}
-        onSelectSlot={(slotInfo) => onDateSelect(slotInfo.start)} // New task on date click
+        onSelectSlot={handleSelectSlot} // Use modified handler
         selectable // Make days clickable
         views={['month']} // Only month view
         defaultView="month"
@@ -447,6 +639,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         endAccessor="end"
         components={{ toolbar: CustomToolbar }} // Use custom toolbar
         style={{ height: 'calc(100% - 30px)' }} // Adjust height for toolbar
+        dayPropGetter={dayPropGetter} // Apply custom day properties
       />
     </motion.div>
   );
@@ -464,7 +657,7 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
   const todoTasksCount = tasks.filter(task => task.status === 'To Do').length;
 
   return (
-    <motion.div 
+    <motion.div
       className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 space-y-6 min-h-[calc(100vh-180px)]"
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
     >
@@ -532,7 +725,7 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
                     <CalendarIcon className="w-4 h-4" /> Due: {task.dueDate ? format(new Date(task.dueDate), 'MMM d, yyyy') : 'No Date'}
                   </p>
                 </div>
-                
+
                 <div className="flex justify-between items-center border-t border-gray-100 pt-3">
                   <TaskStatusBadge status={task.status} />
                   {task.status !== 'Completed' && (
@@ -560,8 +753,9 @@ export default function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState({
-      tasks: true, 
+      tasks: true,
       users: true,
+      saveTask: false, // For TaskModal submission loading
   });
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -577,35 +771,34 @@ export default function TaskManagement() {
   const loadData = useCallback(async () => {
     setLoading(prev => ({ ...prev, tasks: true, users: true }));
     try {
-      const [tasksRes, usersRes] = await Promise.all([ 
-        api.get('/tasks'), 
-        api.get('/admin/users', { params: { role: 'Employee' } }) 
+      const [tasksRes, usersRes] = await Promise.all([
+        api.get('/tasks'),
+        api.get('/admin/users', { params: { role: 'Employee' } })
       ]);
       setTasks(tasksRes.data);
       setUsers(usersRes.data.items);
-    } catch (error) { 
-      console.error("Failed to load data:", error); 
-    } finally { 
-      setLoading(prev => ({ ...prev, tasks: false, users: false })); 
+    } catch (error) {
+      console.error("Failed to load data:", error);
+    } finally {
+      setLoading(prev => ({ ...prev, tasks: false, users: false }));
     }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleSaveTask = async (taskData, taskId) => {
+    setLoading(prev => ({ ...prev, saveTask: true }));
     try {
-      // Simulate loading for UI feedback
-      setLoading(prev => ({ ...prev, saveTask: true })); 
-      if (taskId) { 
-        await api.put(`/tasks/${taskId}`, taskData); 
-      } else { 
-        await api.post('/tasks', taskData); 
+      if (taskId) {
+        await api.put(`/tasks/${taskId}`, taskData);
+      } else {
+        await api.post('/tasks', taskData);
       }
       setShowTaskModal(false);
       setPreselectedDate(null); // Clear preselected date
       loadData();
-    } catch (error) { 
-      alert(`Failed to save task. ${error?.response?.data?.message || ''}`); 
+    } catch (error) {
+      alert(`Failed to save task. ${error?.response?.data?.message || ''}`);
     } finally {
       setLoading(prev => ({ ...prev, saveTask: false }));
     }
@@ -613,25 +806,25 @@ export default function TaskManagement() {
   handleSaveTask.isLoading = loading.saveTask; // Attach loading state to function
 
   const handleDeleteTask = async (taskId) => {
-    try { 
-      await api.delete(`/tasks/${taskId}`); 
+    try {
+      await api.delete(`/tasks/${taskId}`);
       setShowTaskModal(false);
-      loadData(); 
-    } catch (error) { 
-      alert(`Failed to delete task. ${error?.response?.data?.message || ''}`); 
+      loadData();
+    } catch (error) {
+      alert(`Failed to delete task. ${error?.response?.data?.message || ''}`);
     }
   }
 
-  const handleSelectEvent = (event) => { 
+  const handleSelectEvent = (event) => {
     setSelectedTask(event.resource || event); // event might be raw task obj from sidebar or BigCalendar event object
-    setShowTaskModal(true); 
+    setShowTaskModal(true);
     setPreselectedDate(null); // Clear any preselected date if editing
   };
-  
-  const handleAddNewClick = () => { 
+
+  const handleAddNewClick = () => {
     setSelectedTask(null);
     setPreselectedDate(null); // No specific date pre-selected
-    setShowTaskModal(true); 
+    setShowTaskModal(true);
   };
 
   // Handler for clicking a date on the small calendar
@@ -644,10 +837,10 @@ export default function TaskManagement() {
   const handleMarkTaskAsComplete = async (taskId) => {
     if (window.confirm("Are you sure you want to mark this task as 'Completed'?")) {
       try {
-        await api.patch(`/tasks/${taskId}/status`, { status: 'Completed' }); 
-        loadData(); 
+        await api.patch(`/tasks/${taskId}/status`, { status: 'Completed' });
+        loadData();
       } catch (error) {
-        alert(`Failed to mark task as complete. ${error?.response?.data?.message || ''}`); 
+        alert(`Failed to mark task as complete. ${error?.response?.data?.message || ''}`);
       }
     }
   };
@@ -664,14 +857,14 @@ export default function TaskManagement() {
         setShowReportModal(false);
         return;
       }
-      
+
       const doc = new jsPDF();
       doc.setFont('helvetica'); // Ensure a common font
-      
+
       doc.setFontSize(18);
       doc.setTextColor(52, 58, 64); // Dark gray
       doc.text("Monthly Task Report", 14, 20);
-      
+
       doc.setFontSize(10);
       doc.setTextColor(108, 117, 125); // Medium gray
       doc.text(`Month: ${format(new Date(year, month-1, 1), 'MMMM yyyy')}`, 14, 28);
@@ -690,12 +883,12 @@ export default function TaskManagement() {
         body: tableData,
         startY: 45, // Start below header text
         theme: 'striped', // Cleaner table theme
-        headStyles: { 
+        headStyles: {
           fillColor: [34, 139, 34], // Forest Green
-          textColor: 255, 
-          fontStyle: 'bold' 
-        }, 
-        alternateRowStyles: { 
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
           fillColor: [248, 248, 248] // Light gray for alternate rows
         },
         styles: {
@@ -722,37 +915,38 @@ export default function TaskManagement() {
       setIsGenerating(false);
     }
   };
-  
+
   // Overall Task Statistics for MainAssignedTasks
   const totalTasksCount = tasks.length;
-  const actionableTasksCount = tasks.filter(task => task.status !== 'Completed').length;
+  // This stat already exists in MainAssignedTasks, but for overall context, it's fine.
+  // const actionableTasksCount = tasks.filter(task => task.status !== 'Completed').length;
 
   return (
-    <motion.div 
+    <motion.div
       className="p-8 bg-white min-h-full" // Main background white
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
       {/* Task Creation/Edit Modal */}
-      <TaskModal 
-        show={showTaskModal} 
-        onClose={() => setShowTaskModal(false)} 
-        onSave={handleSaveTask} 
-        onDelete={handleDeleteTask} 
-        users={users} 
-        existingTask={selectedTask} 
+      <TaskModal
+        show={showTaskModal}
+        onClose={() => setShowTaskModal(false)}
+        onSave={handleSaveTask}
+        onDelete={handleDeleteTask}
+        users={users}
+        existingTask={selectedTask}
         preselectedDate={preselectedDate}
       />
-      
+
       {/* Report Generation Modal */}
-      <ReportModal 
-        show={showReportModal} 
-        onClose={() => setShowReportModal(false)} 
-        onGenerate={handleGenerateReport} 
-        month={reportMonth} 
-        setMonth={setReportMonth} 
-        isGenerating={isGenerating} 
+      <ReportModal
+        show={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onGenerate={handleGenerateReport}
+        month={reportMonth}
+        setMonth={setReportMonth}
+        isGenerating={isGenerating}
       />
 
       {/* Header */}
@@ -770,21 +964,21 @@ export default function TaskManagement() {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="flex flex-wrap gap-3"
           variants={itemVariants}
         >
-          <motion.button 
-            onClick={() => setShowReportModal(true)} 
+          <motion.button
+            onClick={() => setShowReportModal(true)}
             className="flex items-center px-5 py-2.5 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors"
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           >
             <TrendingUp className="w-5 h-5 mr-2" />
             Generate Report
           </motion.button>
-          
-          <motion.button 
-            onClick={handleAddNewClick} 
+
+          <motion.button
+            onClick={handleAddNewClick}
             className="flex items-center px-5 py-2.5 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors"
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           >
@@ -795,15 +989,15 @@ export default function TaskManagement() {
       </div>
 
       {/* Main Content Area: Left (Main Tasks List) + Right (Small Calendar) */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8"> 
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* Left Column (3/5 width): Main Tasks List */}
         <motion.div className="lg:col-span-3" variants={itemVariants}>
-          <MainAssignedTasks 
+          <MainAssignedTasks
             tasks={tasks}
             users={users}
             stats={{
                 totalTasks: totalTasksCount,
-                actionableTasks: actionableTasksCount,
+                // actionableTasks: actionableTasksCount, // Already calculated internally
             }}
             isLoading={loading}
             onSelectTask={handleSelectEvent}
