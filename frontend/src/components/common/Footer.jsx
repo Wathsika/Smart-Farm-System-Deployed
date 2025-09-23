@@ -3,10 +3,10 @@ import { motion } from "framer-motion";
 
 const Footer = () => {
   const socialLinks = [
-    { name: "Facebook", icon: "fab fa-facebook-f", href: "#" },
-    { name: "Instagram", icon: "fab fa-instagram", href: "#" },
-    { name: "Twitter", icon: "fab fa-twitter", href: "#" },
-    { name: "LinkedIn", icon: "fab fa-linkedin-in", href: "#" }
+    { name: "Facebook", icon: "fab fa-facebook-f", href: "https://www.facebook.com/" },
+    { name: "Instagram", icon: "fab fa-instagram", href: "https://www.instagram.com/" },
+   { name: "TikTok", icon: "fab fa-tiktok", href: "https://www.tiktok.com/" },
+    { name: "YouTube", icon: "fab fa-youtube", href: "https://www.youtube.com/" }
   ];
 
   return (
@@ -52,20 +52,41 @@ const Footer = () => {
           <div>
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
-              {["About Us", "Products", "Store", "Contact Us"].map((link, i) => (
-                <li key={i}>
-                  <a
-                    href="#"
-                    className="hover:text-green-500 transition-colors duration-300"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <a
+                  href="/"
+                  className="hover:text-green-500 transition-colors duration-300"
+                >
+                  Home
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/store"
+                  className="hover:text-green-500 transition-colors duration-300"
+                >
+                  Store
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/about"
+                  className="hover:text-green-500 transition-colors duration-300"
+                >
+                  About Us
+                </a>
+              </li>
+              
+              <li>
+                <a
+                  href="/contact"
+                  className="hover:text-green-500 transition-colors duration-300"
+                >
+                  Contact Us
+                </a>
+              </li>
             </ul>
           </div>
-
-          {/* Contact */}
           <div>
             <h3 className="text-white font-semibold mb-4">Contact</h3>
             <ul className="space-y-2 text-sm">
@@ -75,7 +96,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2">
                 <i className="fas fa-phone text-green-500"></i>
-                (555) 123-4567
+                +94 91 227 6246
               </li>
               <li className="flex items-center gap-2">
                 <i className="fas fa-envelope text-green-500"></i>

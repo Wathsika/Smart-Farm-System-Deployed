@@ -1,4 +1,16 @@
-import Discount from '../models/Discount.js';
+import Discount, { DISCOUNT_APPLICATION_MODES } from '../models/Discount.js';
+import { getStartOfDay } from '../utils/dateUtils.js';
+
+const DEFAULT_APPLICATION_MODE = DISCOUNT_APPLICATION_MODES[0];
+
+const normalizeApplicationMode = (mode) => {
+    if (mode === undefined || mode === null || mode === '') {
+        return DEFAULT_APPLICATION_MODE;
+    }
+
+    const normalized = String(mode).toUpperCase();
+    return DISCOUNT_APPLICATION_MODES.includes(normalized) ? normalized : null;
+};
 
 // --- CONTROLLER 1: GET ALL DISCOUNTS (Read) ---
 // Fetches all discount codes and returns them in a standardized, paginated-like object.
@@ -24,19 +36,37 @@ export const getAllDiscounts = async (req, res, next) => {
 // --- CONTROLLER 2: CREATE A NEW DISCOUNT (Create) ---
 export const createDiscount = async (req, res, next) => {
     try {
-        const { name, code, type, value, minPurchase, startDate, endDate, isActive } = req.body;
+        const { name, code, type, value, minPurchase, startDate, endDate, isActive, applicationMode } = req.body;
 
         if (!name || !code || !type || value === undefined || !startDate || !endDate) {
             return res.status(400).json({ message: "Missing required discount fields." });
         }
 
-        const newDiscount = new Discount({ name, code, type, value, minPurchase, startDate, endDate, isActive });
+        const normalizedMode = normalizeApplicationMode(applicationMode);
+        if (!normalizedMode) {
+            return res.status(400).json({ message: "Invalid application mode. Allowed values are 'AUTO' or 'MANUAL'." });
+        }
+
+        const newDiscount = new Discount({
+            name,
+            code,
+            type,
+            value,
+            minPurchase,
+            startDate,
+            endDate,
+            isActive,
+            applicationMode: normalizedMode,
+        });
         const savedDiscount = await newDiscount.save();
         res.status(201).json(savedDiscount);
 
     } catch (error) {
         if (error.code === 11000) {
             return res.status(409).json({ message: `A discount with the code '${error.keyValue.code}' already exists.` });
+        }
+         if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
         }
         console.error("Error creating discount:", error);
         next(error);
@@ -47,13 +77,25 @@ export const createDiscount = async (req, res, next) => {
 export const updateDiscount = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const updates = { ...req.body };
+
+        if (updates.applicationMode !== undefined) {
+            const normalizedMode = normalizeApplicationMode(updates.applicationMode);
+            if (!normalizedMode) {
+                return res.status(400).json({ message: "Invalid application mode. Allowed values are 'AUTO' or 'MANUAL'." });
+            }
+            updates.applicationMode = normalizedMode;
+        }
+
         const updatedDiscount = await Discount.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
         if (!updatedDiscount) return res.status(404).json({ message: "Discount not found." });
         res.status(200).json(updatedDiscount);
     } catch (error) {
         if (error.code === 11000) {
              return res.status(409).json({ message: `A discount with the code '${error.keyValue.code}' already exists.` });
+        }
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
         }
         console.error("Error updating discount:", error);
         next(error);
@@ -78,10 +120,12 @@ export const deleteDiscount = async (req, res, next) => {
 export const getActiveDiscount = async (req, res, next) => {
     try {
         const now = new Date();
+        const todayStart = getStartOfDay(now);
         const activeDiscount = await Discount.findOne({
             isActive: true,
+            applicationMode: 'AUTO',
             startDate: { $lte: now },
-            endDate: { $gte: now },
+             endDate: { $gte: todayStart },
             $or: [
                 { usageLimit: null },
                 { $expr: { $gt: ['$usageLimit', '$timesUsed'] } }
@@ -114,7 +158,8 @@ export const validateDiscount = async (req, res, next) => {
         }
 
         const now = new Date();
-        if (!discount.isActive || discount.startDate > now || discount.endDate < now) {
+         const todayStart = getStartOfDay(now);
+        if (!discount.isActive || discount.startDate > now || discount.endDate < todayStart) {
             return res.status(400).json({ message: "Discount code is expired or inactive." });
         }
 

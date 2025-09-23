@@ -1,10 +1,90 @@
 // src/pages/store/ProductModal.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
+
+const CATEGORY_OPTIONS = [
+  "General",
+  "Vegetables",
+  "Fruits",
+  "Dairy",
+  "Grains",
+  "Livestock",
+  "Supplies",
+  "Other",
+];
+
+const UNIT_OPTIONS = [
+  "kg",
+  "g",
+  "lb",
+  "pcs",
+  "dozen",
+  "liter",
+  "ml",
+  "bag",
+  "box",
+  "bundle",
+];
+
+const createEmptyForm = () => ({
+  name: "",
+  category: CATEGORY_OPTIONS[0],
+  price: "",
+  qty: "",
+  unit: "",
+  sku: "",
+  description: "",
+});
+
+const NAME_ALLOWED_PATTERN = /^[A-Za-z0-9\s-]+$/;
+const NAME_SANITIZE_REGEX = /[^A-Za-z0-9\s-]/g;
+
+const PRICE_MIN = 1.00;
+const PRICE_MAX = 100000;
+const QTY_MIN = 0;
+const TWO_DECIMAL_PATTERN = /^\d+(?:\.\d{1,2})?$/;
+const TWO_DECIMAL_INPUT_PATTERN = "\\d+(\\.\\d{1,2})?";
+
+
+
+const sanitizeDecimalInput = (input) => {
+  if (input === null || input === undefined) return "";
+  const stringValue = String(input);
+  const filtered = stringValue.replace(/[^\d.]/g, "");
+  if (!filtered) return "";
+
+  const [rawInteger = "", ...decimalSections] = filtered.split(".");
+  const hasDecimal = filtered.includes(".");
+  const decimalPart = decimalSections.join("").slice(0, 2);
+  let integerPart = rawInteger.replace(/^0+(?=\d)/, "");
+
+  if (!integerPart && (hasDecimal || decimalPart)) {
+    integerPart = "0";
+  }
+
+  let sanitized = integerPart;
+
+  if (hasDecimal && (decimalPart.length > 0 || filtered.endsWith("."))) {
+    sanitized = (sanitized || "0") + ".";
+  }
+
+  if (decimalPart) {
+    sanitized += decimalPart;
+  }
+
+  return sanitized;
+};
+const QTY_MAX = 100000;
+const formatPrice = (value) =>
+  new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
 
 // --- Reusable Field Wrapper (animated, with error line) ---
 const FormField = ({ label, name, error, children, required = false }) => (
-  <motion.div
+  <Motion.div
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.2 }}
@@ -19,7 +99,7 @@ const FormField = ({ label, name, error, children, required = false }) => (
     <div className="relative">{children}</div>
     <AnimatePresence>
       {error && (
-        <motion.p
+        <Motion.p
           initial={{ opacity: 0, height: 0, y: -4 }}
           animate={{ opacity: 1, height: "auto", y: 0 }}
           exit={{ opacity: 0, height: 0, y: -4 }}
@@ -28,10 +108,10 @@ const FormField = ({ label, name, error, children, required = false }) => (
         >
           <i className="fas fa-exclamation-circle" />
           {error}
-        </motion.p>
+        </Motion.p>
       )}
     </AnimatePresence>
-  </motion.div>
+  </Motion.div>
 );
 
 // --- Drag & Drop Image Upload (with preview) ---
@@ -58,7 +138,7 @@ const ImageUpload = ({ image, onImageChange }) => {
 
   return (
     <div className="space-y-4">
-      <motion.div
+      <Motion.div
         className={`relative w-full h-40 rounded-2xl border-2 border-dashed overflow-hidden group transition-all duration-300 ${
           isDragging
             ? "border-green-400 bg-green-50"
@@ -83,7 +163,7 @@ const ImageUpload = ({ image, onImageChange }) => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <motion.div
+            <Motion.div
               animate={{ y: isDragging ? -4 : 0 }}
               transition={{ duration: 0.15 }}
               className="flex flex-col items-center gap-3"
@@ -97,13 +177,13 @@ const ImageUpload = ({ image, onImageChange }) => {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Drag & drop or click to browse</p>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
         )}
-      </motion.div>
+      </Motion.div>
 
       <div className="flex items-center justify-between">
-        <motion.button
+        <Motion.button
           type="button"
           onClick={() => fileRef.current?.click()}
           className="px-4 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 hover:border-green-300 transition-colors duration-150 flex items-center gap-2 shadow-sm"
@@ -112,7 +192,7 @@ const ImageUpload = ({ image, onImageChange }) => {
         >
           <i className="fas fa-plus text-green-600" />
           {image ? "Change Image" : "Select Image"}
-        </motion.button>
+        </Motion.button>
         <div className="text-right">
           <p className="text-xs text-gray-500">PNG or JPG</p>
           <p className="text-xs text-gray-400">Max 5MB</p>
@@ -132,7 +212,7 @@ const ImageUpload = ({ image, onImageChange }) => {
 
 // --- Styled inputs (with subtle motion) ---
 const StyledInput = ({ error, className = "", ...props }) => (
-  <motion.input
+  <Motion.input
     {...props}
     className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-150 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-green-100 ${
       error ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-green-500 hover:border-gray-300"
@@ -141,8 +221,20 @@ const StyledInput = ({ error, className = "", ...props }) => (
   />
 );
 
+const StyledSelect = ({ error, className = "", children, ...props }) => (
+  <Motion.select
+    {...props}
+    className={`w-full px-4 py-3 pr-10 rounded-xl border-2 transition-all duration-150 bg-white text-gray-800 appearance-none focus:outline-none focus:ring-4 focus:ring-green-100 ${
+      error ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-green-500 hover:border-gray-300"
+    } ${className}`}
+    whileFocus={{ scale: 1.005 }}
+  >
+    {children}
+  </Motion.select>
+);
+
 const StyledTextarea = ({ error, className = "", ...props }) => (
-  <motion.textarea
+  <Motion.textarea
     {...props}
     className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-150 bg-white text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:ring-4 focus:ring-green-100 ${
       error ? "border-red-300 focus:border-red-500" : "border-gray-200 focus:border-green-500 hover:border-gray-300"
@@ -160,19 +252,11 @@ export default function ProductModal({
   isSaving,
 }) {
   // form state
-  const emptyForm = {
-    name: "",
-    category: "General",
-    price: "",
-    qty: "",
-    unit: "",
-    sku: "",
-    description: "",
-  };
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(createEmptyForm);
   const [errors, setErrors] = useState({});
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+   const [rawName, setRawName] = useState("");
   const prevPreviewRef = useRef(null); // for URL.revokeObjectURL
 
   // animations
@@ -199,17 +283,22 @@ export default function ProductModal({
     if (productToEdit) {
       setForm({
         name: productToEdit.name || "",
-        category: productToEdit.category || "General",
-        price: productToEdit.price ?? "",
+        category: productToEdit.category || CATEGORY_OPTIONS[0],
+        price:
+          typeof productToEdit.price === "number"
+            ? productToEdit.price.toFixed(2)
+            : productToEdit.price ?? "",
         qty: productToEdit.stock?.qty ?? "",
         unit: productToEdit.unit || "",
         sku: productToEdit.sku || "",
         description: productToEdit.description || "",
       });
+      setRawName(productToEdit.name || "");
       setImagePreview(productToEdit.images?.[0] || null);
       setImageFile(null);
     } else {
-      setForm(emptyForm);
+      setForm(createEmptyForm());
+       setRawName("");
       setImagePreview(null);
       setImageFile(null);
     }
@@ -223,9 +312,89 @@ export default function ProductModal({
   }, []);
 
   // handlers
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
+  const handleChange = (eventOrName, maybeValue) => {
+    const isSyntheticEvent = typeof eventOrName !== "string" && eventOrName?.target;
+    const name = isSyntheticEvent ? eventOrName.target.name : eventOrName;
+    const value = isSyntheticEvent ? eventOrName.target.value : maybeValue;
+
+    if (!name) return;
+
+     if (name === "name") {
+      setRawName(value);
+      const sanitizedValue = value.replace(NAME_SANITIZE_REGEX, "");
+
+      setForm((p) => ({ ...p, [name]: sanitizedValue }));
+
+      if (sanitizedValue !== value) {
+        setErrors((prev) => ({ ...prev, name: "Use letters and numbers only" }));
+      } else {
+        setErrors((prev) => {
+          if (!prev.name) return prev;
+          const next = { ...prev };
+          next.name = null;
+          return next;
+        });
+      }
+      return;
+    }
+
+    if (name === "price") {
+      const sanitized = sanitizeDecimalInput(value);
+
+      if (sanitized === "") {
+        setForm((p) => ({ ...p, price: "" }));
+        if (errors.price) setErrors((p) => ({ ...p, price: null }));
+        return;
+      }
+
+      if (!TWO_DECIMAL_PATTERN.test(sanitized)) {
+        return;
+      }
+
+      const numericValue = Number(sanitized);
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      if (numericValue < PRICE_MIN || numericValue > PRICE_MAX) {
+        return;
+      }
+      setForm((p) => ({ ...p, price: sanitized }));
+      if (errors.price) setErrors((p) => ({ ...p, price: null }));
+      return;
+    }
+
+    let nextValue = value;
+
+    if (name === "qty") {
+      const sanitized = sanitizeDecimalInput(value);
+
+      if (sanitized === "") {
+        setForm((p) => ({ ...p, qty: "" }));
+        if (errors.qty) setErrors((prev) => ({ ...prev, qty: null }));
+        return;
+      }
+      if (!TWO_DECIMAL_PATTERN.test(sanitized)) {
+        return;
+      }
+
+      const numericValue = Number(sanitized);
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      const clampedValue = Math.min(Math.max(numericValue, QTY_MIN), QTY_MAX);
+      const clampedString =
+        clampedValue === numericValue
+          ? sanitized
+          : sanitizeDecimalInput(clampedValue);
+
+      setForm((p) => ({ ...p, qty: clampedString }));
+      if (errors.qty) setErrors((prev) => ({ ...prev, qty: null }));
+      return;
+    }
+
+    setForm((p) => ({ ...p, [name]: nextValue }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: null }));
   };
 
@@ -246,12 +415,39 @@ export default function ProductModal({
 
   const validateForm = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Product name is required";
+    const sanitizedRawName = rawName.replace(NAME_SANITIZE_REGEX, "");
+    const trimmedName = form.name.trim();
+
+    if (!trimmedName) e.name = "Product name is required";
+    if (rawName && sanitizedRawName !== rawName) e.name = "Use letters and numbers only";
+    else if (trimmedName && !NAME_ALLOWED_PATTERN.test(trimmedName))
+      e.name = "Use letters and numbers only";
     if (form.price === "" || form.price === null) e.price = "Price is required";
-    else if (isNaN(form.price) || Number(form.price) < 0) e.price = "Enter a valid non-negative price";
+     else if (!TWO_DECIMAL_PATTERN.test(form.price)) {
+      e.price = "Enter a valid price with up to two decimal places";
+    } else {
+      const numericPrice = Number(form.price);
+      if (!Number.isFinite(numericPrice)) {
+        e.price = "Enter a valid price";
+      } else if (numericPrice < PRICE_MIN) {
+        e.price = `Price must be at least Rs ${formatPrice(PRICE_MIN)}`;
+      } else if (numericPrice > PRICE_MAX) {
+        e.price = `Price must be at most Rs ${formatPrice(PRICE_MAX)}`;
+      }
+    }
     if (form.qty === "" || form.qty === null) e.qty = "Stock quantity is required";
-    else if (isNaN(form.qty) || !Number.isInteger(Number(form.qty)) || Number(form.qty) < 0)
-      e.qty = "Enter a valid whole number for stock";
+     else if (!TWO_DECIMAL_PATTERN.test(form.qty)) {
+      e.qty = `Enter a valid quantity with up to two decimal places (${QTY_MIN.toLocaleString()} to ${QTY_MAX.toLocaleString()}).`;
+    } else {
+      const numericQty = Number(form.qty);
+      if (
+        !Number.isFinite(numericQty) ||
+        numericQty < QTY_MIN ||
+        numericQty > QTY_MAX
+      ) {
+        e.qty = `Enter a valid quantity with up to two decimal places (${QTY_MIN.toLocaleString()} to ${QTY_MAX.toLocaleString()}).`;
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -282,7 +478,7 @@ export default function ProductModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <Motion.div
           variants={backdropVariants}
           initial="hidden"
           animate="visible"
@@ -290,7 +486,7 @@ export default function ProductModal({
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onBackdropClick}
         >
-          <motion.div
+          <Motion.div
             variants={modalVariants}
             initial="hidden"
             animate="visible"
@@ -302,23 +498,23 @@ export default function ProductModal({
             <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 rounded-t-3xl z-10">
               <div className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-4">
-                  <motion.div
+                  <Motion.div
                     className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-green-600 shadow-sm"
                     whileHover={{ rotate: 5, scale: 1.05 }}
                     transition={{ duration: 0.2 }}
                   >
                     <i className="fas fa-box text-xl" />
-                  </motion.div>
+                  </Motion.div>
                   <div>
-                    <motion.h3
+                    <Motion.h3
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.05 }}
                       className="text-xl font-bold text-gray-900"
                     >
                       {productToEdit ? "Edit Product" : "Add New Product"}
-                    </motion.h3>
-                    <motion.p
+                    </Motion.h3>
+                    <Motion.p
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
@@ -327,10 +523,10 @@ export default function ProductModal({
                       {productToEdit
                         ? "Update your product information"
                         : "Fill in the details to add to your inventory"}
-                    </motion.p>
+                    </Motion.p>
                   </div>
                 </div>
-                <motion.button
+                <Motion.button
                   onClick={onClose}
                   disabled={isSaving}
                   className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors duration-150 disabled:opacity-50"
@@ -338,7 +534,7 @@ export default function ProductModal({
                   whileTap={{ scale: 0.95 }}
                 >
                   <i className="fas fa-times text-gray-600" />
-                </motion.button>
+                </Motion.button>
               </div>
             </div>
 
@@ -346,7 +542,7 @@ export default function ProductModal({
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Left: Image */}
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 }}
@@ -355,10 +551,10 @@ export default function ProductModal({
                   <FormField label="Product Image" name="image" error={errors.image}>
                     <ImageUpload image={imagePreview} onImageChange={handleImageChange} />
                   </FormField>
-                </motion.div>
+                </Motion.div>
 
                 {/* Right: Fields */}
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
@@ -379,14 +575,27 @@ export default function ProductModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField label="Category" name="category">
-                      <StyledInput
-                        id="category"
-                        name="category"
-                        type="text"
-                        value={form.category}
-                        onChange={handleChange}
-                        placeholder="e.g., Vegetables"
-                      />
+                     <div className="relative">
+                        <StyledSelect
+                          id="category"
+                          name="category"
+                          value={form.category || CATEGORY_OPTIONS[0]}
+                          onChange={handleChange}
+                        >
+                          {CATEGORY_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                          {form.category && !CATEGORY_OPTIONS.includes(form.category) && (
+                            <option value={form.category}>{form.category}</option>
+                          )}
+                        </StyledSelect>
+                        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
+                          <i className="fas fa-chevron-down text-xs" />
+                        </span>
+                      </div>
+                    
                     </FormField>
                     <FormField label="SKU" name="sku">
                       <StyledInput
@@ -409,8 +618,9 @@ export default function ProductModal({
                         <StyledInput
                           id="price"
                           name="price"
-                          type="number"
-                          step="0.01"
+                          type="text"
+                          inputMode="decimal"
+                          pattern={TWO_DECIMAL_PATTERN.source}
                           value={form.price}
                           onChange={handleChange}
                           placeholder="0.00"
@@ -423,7 +633,9 @@ export default function ProductModal({
                       <StyledInput
                         id="qty"
                         name="qty"
-                        type="number"
+                         type="text"
+                        inputMode="decimal"
+                        pattern={TWO_DECIMAL_PATTERN.source}
                         value={form.qty}
                         onChange={handleChange}
                         placeholder="0"
@@ -431,14 +643,27 @@ export default function ProductModal({
                       />
                     </FormField>
                     <FormField label="Unit" name="unit">
-                      <StyledInput
-                        id="unit"
-                        name="unit"
-                        type="text"
-                        value={form.unit}
-                        onChange={handleChange}
-                        placeholder="e.g., kg, pcs"
-                      />
+                      <div className="relative">
+                        <StyledSelect
+                          id="unit"
+                          name="unit"
+                          value={form.unit}
+                          onChange={handleChange}
+                        >
+                          <option value="">Select unit </option>
+                          {UNIT_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                          {form.unit && !UNIT_OPTIONS.includes(form.unit) && (
+                            <option value={form.unit}>{form.unit}</option>
+                          )}
+                        </StyledSelect>
+                        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
+                          <i className="fas fa-chevron-down text-xs" />
+                        </span>
+                      </div>
                     </FormField>
                   </div>
 
@@ -452,14 +677,14 @@ export default function ProductModal({
                       placeholder="Describe your product features, benefits, or other details..."
                     />
                   </FormField>
-                </motion.div>
+                </Motion.div>
               </div>
             </div>
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-gray-100 rounded-b-3xl">
               <div className="flex flex-col sm:flex-row justify-end gap-3 p-6">
-                <motion.button
+                <Motion.button
                   onClick={onClose}
                   disabled={isSaving}
                   className="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-colors duration-150 disabled:opacity-50 min-w-[100px]"
@@ -467,8 +692,8 @@ export default function ProductModal({
                   whileTap={{ scale: 0.98 }}
                 >
                   Cancel
-                </motion.button>
-                <motion.button
+                </Motion.button>
+                <Motion.button
                   onClick={handleSave}
                   disabled={isSaving}
                   className="px-8 py-3 text-sm font-semibold text-white bg-green-600 border-2 border-green-600 rounded-xl hover:bg-green-700 hover:border-green-700 disabled:bg-green-400 disabled:border-green-400 transition-colors duration-150 flex items-center justify-center min-w-[140px] shadow-lg shadow-green-600/20"
@@ -476,29 +701,29 @@ export default function ProductModal({
                   whileTap={{ scale: 0.98 }}
                 >
                   {isSaving ? (
-                    <motion.div
+                    <Motion.div
                       className="flex items-center gap-3"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      <motion.div
+                      <Motion.div
                         className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       />
                       Saving...
-                    </motion.div>
+                    </Motion.div>
                   ) : (
-                    <motion.span className="flex items-center gap-2">
+                    <Motion.span className="flex items-center gap-2">
                       <i className="fas fa-save" />
                       Save Product
-                    </motion.span>
+                    </Motion.span>
                   )}
-                </motion.button>
+                </Motion.button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       )}
     </AnimatePresence>
   );
