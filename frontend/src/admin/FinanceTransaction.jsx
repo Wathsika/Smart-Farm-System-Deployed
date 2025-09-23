@@ -1,4 +1,3 @@
-// src/admin/FinanceTransaction.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
@@ -17,8 +16,14 @@ function monthKey(iso) {
 }
 
 function downloadCSV(filename, rows) {
-  // 🔧 use the correct field name: description
-  const headers = ["id", "type", "date", "category", "amount", "description"];
+  const headers = [
+    "transaction_id",
+    "type",
+    "date",
+    "category",
+    "amount",
+    "description",
+  ];
   const body = rows.map((r) =>
     headers
       .map((h) => String(r[h] ?? "").replace(/"/g, '""'))
@@ -35,12 +40,9 @@ function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-// optional: make sure dates render safely
 function shortDate(d) {
   if (!d) return "—";
-  // if backend sends ISO string
   if (typeof d === "string") return d.slice(0, 10);
-  // if backend sends Date (unlikely in JSON), fallback
   try {
     return new Date(d).toISOString().slice(0, 10);
   } catch {
@@ -56,11 +58,10 @@ export default function FinanceTransaction() {
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all"); // "INCOME" | "EXPENSE" | "all"
   const [monthFilter, setMonthFilter] = useState("all");
-  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
 
-  // Load from backend whenever filters/search change
   useEffect(() => {
     let ignore = false;
 
@@ -70,23 +71,23 @@ export default function FinanceTransaction() {
       try {
         const res = await api.get("/transactions", {
           params: {
-            q: q || undefined, // your controller may ignore q; harmless
-            type: typeFilter !== "all" ? typeFilter : undefined, // INCOME/EXPENSE
-            month: monthFilter !== "all" ? monthFilter : undefined, // your controller may ignore; harmless
+            q: q || undefined,
+            type: typeFilter !== "all" ? typeFilter : undefined,
+            month: monthFilter !== "all" ? monthFilter : undefined,
           },
         });
 
-        // Backend might return array or {data: [...]}
         const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
-        // Normalize and keep only fields we actually use
+        // Normalize: keep both mongo _id (for actions) and transaction_id (for display/export)
         const rows = raw.map((r) => ({
-          id: r.id || r._id,
+          mongoId: r._id || r.id, // backend identifier for update/delete
+          transaction_id: r.transaction_id || r.tid || r.txnId || "", // display ID (TNXyyyy...)
           date: r.date,
-          type: r.type, // "INCOME" | "EXPENSE"
+          type: r.type,
           category: r.category,
           amount: r.amount,
-          description: r.description, // ✅ correct field
+          description: r.description,
         }));
 
         if (!ignore) setTransactions(rows);
@@ -107,19 +108,49 @@ export default function FinanceTransaction() {
     };
   }, [q, typeFilter, monthFilter]);
 
-  // derive month list from the loaded data
+  function handleYearInput(e, prev) {
+    // ---- 1) Block special keys (onKeyDown) ----
+    if (e.type === "keydown") {
+      const k = e.key;
+      if (["e", "E", "+", "-", "."].includes(k)) {
+        e.preventDefault();
+        return prev;
+      }
+      return prev; // no change on keydown itself
+    }
+
+    // ---- 2) Sanitize value (onChange or onPaste) ----
+    let raw = e.target.value;
+    let v = String(raw).replace(/\D/g, "").slice(0, 4); // digits only, max 4
+
+    // Must start with 20
+    if (v.length >= 1 && v[0] !== "2") return prev;
+    if (v.length >= 2 && v[1] !== "0") return prev;
+
+    // If 4 digits, must be >= 2021
+    if (v.length === 4 && Number(v) < 2021) return prev;
+
+    return v;
+  }
+
   const months = useMemo(() => {
     const set = new Set(transactions.map((r) => monthKey(r.date)));
     return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
   }, [transactions]);
 
-  // Server already did filtering; show as-is
   const filtered = transactions;
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (rowKey) => {
     try {
-      await api.delete(`/transactions/${id}`);
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      // Prefer mongoId for API path; fall back to transaction_id if needed
+      const row = transactions.find(
+        (t) => t.mongoId === rowKey || t.transaction_id === rowKey
+      );
+      const idForApi = row?.mongoId || row?.transaction_id || rowKey;
+      await api.delete(`/transactions/${idForApi}`);
+      setTransactions((prev) =>
+        prev.filter((t) => t.mongoId !== rowKey && t.transaction_id !== rowKey)
+      );
     } catch (e) {
       alert(e?.response?.data?.message || e.message || "Failed to delete");
     } finally {
@@ -128,7 +159,8 @@ export default function FinanceTransaction() {
   };
 
   const handleEdit = (row) =>
-    navigate(`/admin/finance/new_transaction?edit=${row.id}`);
+    // Use mongoId for editing route (most forms expect _id); adjust if your form expects transaction_id
+    navigate(`/admin/finance/new_transaction?edit=${row.mongoId}`);
 
   const handleAddNew = () => navigate("/admin/finance/new_transaction");
 
@@ -189,7 +221,7 @@ export default function FinanceTransaction() {
                     </svg>
                   </div>
                   <input
-                    placeholder="Search category, description, date…"
+                    placeholder="Search txn ID, category, description…"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-inner bg-white/80 backdrop-blur-sm transition-all duration-200"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
@@ -343,6 +375,9 @@ export default function FinanceTransaction() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Transaction Id
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -365,7 +400,7 @@ export default function FinanceTransaction() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center">
                             <svg
                               className="w-12 h-12 text-gray-400 mb-4"
@@ -393,9 +428,12 @@ export default function FinanceTransaction() {
                     )}
                     {filtered.map((r) => (
                       <tr
-                        key={r.id}
+                        key={r.mongoId || r.transaction_id}
                         className="hover:bg-gray-50 transition-colors"
                       >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                          {r.transaction_id || "—"}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {shortDate(r.date)}
                         </td>
@@ -414,7 +452,7 @@ export default function FinanceTransaction() {
                           {r.category || "—"}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {r.description || "—" /* ✅ correct field shown */}
+                          {r.description || "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {currency(r.amount)}
@@ -441,7 +479,11 @@ export default function FinanceTransaction() {
                               Edit
                             </button>
                             <button
-                              onClick={() => setShowDeleteModal(r.id)}
+                              onClick={() =>
+                                setShowDeleteModal(
+                                  r.mongoId || r.transaction_id
+                                )
+                              }
                               className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
                             >
                               <svg

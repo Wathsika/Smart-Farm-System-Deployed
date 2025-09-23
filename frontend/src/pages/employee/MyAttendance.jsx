@@ -4,6 +4,8 @@ import { api } from "../../lib/api";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Clock } from 'lucide-react'; // Import Clock icon for attendance
+import { Loader } from 'lucide-react'; // Import loader icon
 
 export default function MyAttendance() {
   const [todayRecord, setTodayRecord] = useState(null);
@@ -11,10 +13,10 @@ export default function MyAttendance() {
 
   const fetchToday = useCallback(async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0]; // Correctly get today's date string
     try {
       const { data } = await api.get("/attendance", { params: { startDate: today, endDate: today } });
-      setTodayRecord(data.items?.[0] || null);
+      setTodayRecord(data.items?.[0] || null); // Access the first item of the array
     } catch (err) {
       console.error("Failed to fetch today's attendance", err);
     } finally {
@@ -27,42 +29,97 @@ export default function MyAttendance() {
   }, [fetchToday]);
 
   const handleCheckIn = async () => {
-    await api.post("/attendance/clock-in"); fetchToday();
+    setLoading(true); // Indicate loading while checking in
+    try {
+      await api.post("/attendance/clock-in");
+      await fetchToday();
+    } catch (err) {
+      console.error("Check-in failed", err);
+      alert(err?.response?.data?.message || "Check-in failed. Please try again.");
+    } finally {
+      setLoading(false); // End loading
+    }
   };
+
   const handleCheckOut = async () => {
-    await api.post("/attendance/clock-out"); fetchToday();
+    setLoading(true); // Indicate loading while checking out
+    try {
+      await api.post("/attendance/clock-out");
+      await fetchToday();
+    } catch (err) {
+      console.error("Check-out failed", err);
+      alert(err?.response?.data?.message || "Check-out failed. Please try again.");
+    } finally {
+      setLoading(false); // End loading
+    }
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-      <Card className="w-64 border-green-100 bg-white/70 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-green-800 text-sm">My Attendance</CardTitle>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <Card className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 w-full max-w-sm"> {/* Refined card styling */}
+        <CardHeader className="p-0 pb-4 mb-4 border-b border-gray-100"> {/* Header styling */}
+          <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2"> {/* Title styling */}
+            <Clock className="w-5 h-5 text-green-500" /> My Attendance
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          {loading ? <p>Loading...</p> : todayRecord ? (
-            <>
-              <p className="text-xs text-green-700 mb-1">
-                Date: {new Date(todayRecord.date).toLocaleDateString()}
+        <CardContent className="p-0"> {/* Remove default padding if not needed */}
+          {loading ? (
+            <p className="flex items-center justify-center gap-2 text-gray-600">
+              <Loader className="w-4 h-4 animate-spin text-green-500" /> Loading...
+            </p>
+          ) : todayRecord ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">
+                Date: <span className="text-gray-900">{new Date(todayRecord.date).toLocaleDateString()}</span>
               </p>
-              <p className="text-xs">Check-In: {todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString() : "—"}</p>
-              <p className="text-xs mb-3">Check-Out: {todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString() : "—"}</p>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                Check-In: <span className="font-semibold text-gray-800">{todayRecord.checkIn ? new Date(todayRecord.checkIn).toLocaleTimeString() : "—"}</span>
+              </p>
+              <p className="text-sm text-gray-600 flex items-center gap-2 mb-4">
+                Check-Out: <span className="font-semibold text-gray-800">{todayRecord.checkOut ? new Date(todayRecord.checkOut).toLocaleTimeString() : "—"}</span>
+              </p>
 
-              {!todayRecord.checkIn && (
-                <Button onClick={handleCheckIn} className="w-full bg-green-600 hover:bg-green-700 text-xs">
-                  Check In
-                </Button>
-              )}
-              {todayRecord.checkIn && !todayRecord.checkOut && (
-                <Button onClick={handleCheckOut} className="w-full bg-red-600 hover:bg-red-700 text-xs">
-                  Check Out
-                </Button>
-              )}
-            </>
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                {!todayRecord.checkIn && (
+                  <Button
+                    onClick={handleCheckIn}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center px-4 py-2.5 font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <motion.span whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: loading ? 1 : 0.98 }}>
+                      {loading ? <Loader className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Check In
+                    </motion.span>
+                  </Button>
+                )}
+                {todayRecord.checkIn && !todayRecord.checkOut && (
+                  <Button
+                    onClick={handleCheckOut}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center px-4 py-2.5 font-medium text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <motion.span whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: loading ? 1 : 0.98 }}>
+                      {loading ? <Loader className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Check Out
+                    </motion.span>
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : (
-            <Button onClick={handleCheckIn} className="w-full bg-green-600 hover:bg-green-700 text-xs">
-              Check In
-            </Button>
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-gray-500 text-sm mb-4">You have not clocked in today.</p>
+              <Button
+                onClick={handleCheckIn}
+                disabled={loading}
+                className="w-full flex items-center justify-center px-4 py-2.5 font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <motion.span whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: loading ? 1 : 0.98 }}>
+                  {loading ? <Loader className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Check In
+                </motion.span>
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

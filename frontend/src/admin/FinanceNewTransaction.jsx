@@ -4,6 +4,13 @@ import { api } from "../lib/api";
 
 const CATEGORY_OPTIONS = ["crop", "milk", "store", "staff", "others"];
 
+const todayDate = new Date().toISOString().slice(0, 10);
+function formatWithCommas(value) {
+  const parts = value.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
+}
+
 export default function AddTransactionPage() {
   const [form, setForm] = useState({
     type: "",
@@ -54,25 +61,31 @@ export default function AddTransactionPage() {
       return;
     }
 
+    let updatedDescription = form.description?.trim() || "";
+
+    if (isEditing) {
+      if (!updatedDescription.toLowerCase().includes("updated transaction")) {
+        updatedDescription += " (Updated Transaction)";
+      }
+    }
+
     const payload = {
       type: form.type || "EXPENSE",
       date: form.date,
       category: form.category.trim(),
       amount: amt,
-      description: form.description?.trim() || "",
+      description: updatedDescription,
     };
 
     try {
       if (isEditing && editingId) {
-        // UPDATE
         await api.patch(`/transactions/${editingId}`, payload);
         alert("Transaction updated successfully.");
       } else {
-        // CREATE
         await api.post("/transactions", payload);
         alert("Transaction added successfully.");
       }
-      // Navigate back after success
+
       navigate("/admin/finance/transaction");
     } catch (err) {
       console.error(err);
@@ -149,6 +162,8 @@ export default function AddTransactionPage() {
                     type="date"
                     className="w-full py-4 px-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200"
                     value={form.date}
+                    max={todayDate}
+                    min={todayDate}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, date: e.target.value }))
                     }
@@ -204,15 +219,27 @@ export default function AddTransactionPage() {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-gray-500 text-lg">₨</span>
                   </div>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    className="w-full pl-10 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200"
-                    value={form.amount}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, amount: e.target.value }))
-                    }
-                  />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 text-lg">LKR</span>
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={formatWithCommas(form.amount)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/,/g, ""); // remove commas
+                        const regex = /^(?:0|[1-9]\d{0,7})(?:\.\d{0,2})?$/;
+
+                        // allow only valid number format
+                        if (raw === "" || regex.test(raw)) {
+                          setForm((f) => ({ ...f, amount: raw }));
+                        }
+                      }}
+                      className="w-full pl-16 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-lg bg-white transition-all duration-200"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -60,6 +60,9 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
       location.pathname.startsWith("/admin/leave"),
     [location.pathname]
   );
+
+  // I will update the logic for isOnCrop to correctly auto-open the accordion
+
   const isOnCrop = useMemo(
     () =>
       location.pathname.startsWith("/admin/crop") ||
@@ -111,9 +114,15 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
       </div>
 
       {/* Navigation */}
+
       <nav className="flex flex-1 flex-col space-y-1">
+
         <SectionLabel>Overview</SectionLabel>
-        <SidebarLink to="/admin" icon="fas fa-chart-pie" onNavigate={onNavigate}>
+        <SidebarLink
+          to="/admin"
+          icon="fas fa-chart-pie"
+          onNavigate={onNavigate}
+        >
           Dashboard
         </SidebarLink>
 
@@ -174,7 +183,9 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
           )}
         </AnimatePresence>
 
+
         {/* Crop accordion */}
+
         <button
           type="button"
           onClick={handleCropClick}
@@ -409,6 +420,16 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
               >
                 Payroll Management
               </SidebarLink>
+
+
+              <SidebarLink
+                to="/admin/finance/audit_log"
+                icon="fas fa-file-invoice-dollar"
+                onNavigate={onNavigate}
+              >
+                Audit Log
+              </SidebarLink>
+
             </motion.div>
           )}
         </AnimatePresence>

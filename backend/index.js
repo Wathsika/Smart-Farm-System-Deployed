@@ -43,7 +43,14 @@ import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
+import payrollRoutes from "./routes/payroll.routes.js";
+import auditRoutes from "./routes/audit.routes.js";
+
 import reportRoutes from "./routes/report.routes.js";
+
+
+import chatRoutes from "./routes/chat.routes.js";
+
 
 
 // --- Initialize App ---
@@ -60,7 +67,7 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-   "http://localhost:5000", 
+  "http://localhost:5000",
 ].filter(Boolean);
 
 const corsOptions = {
@@ -74,7 +81,7 @@ const corsOptions = {
 
 // Apply CORS globally except for webhook endpoints
 app.use((req, res, next) => {
-const webhookPaths = [
+  const webhookPaths = [
     "/api/stripe/webhook",
     "/api/orders/webhook",
     "/api/payment/webhook",
@@ -121,13 +128,12 @@ app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
 
-app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
+app.use("/api/admin/users", staffOwnerRoutes); // cleaner
 app.use("/api/employees", employeeRoutes);
 
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
-
 
 // Health check
 
@@ -135,6 +141,10 @@ app.use("/api/performance", performanceRoutes);
 
 app.use("/api/transactions", transactionRoutes);
 app.use("/api", payrollSettingsRoutes);
+app.use("/employees", employeeRoutes);
+app.use("/payrolls", payrollRoutes);
+app.use("/api/payrolls", payrollRoutes);
+app.use("/api/audit", auditRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
@@ -143,6 +153,9 @@ app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
 
+
+// ✅ Chatbot API
+app.use("/api/chat", chatRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>
@@ -156,3 +169,4 @@ app.use(errorHandler);
 // --- Start Server ---
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => console.log(`✅ API running on port :${PORT}`));
+

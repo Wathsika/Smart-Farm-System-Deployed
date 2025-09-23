@@ -1,3 +1,5 @@
+
+
 // controllers/staffOwner.controller.js
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
@@ -17,6 +19,9 @@ export const addUserByAdmin = async (req, res) => {
       status,
       basicSalary,
       workingHours,
+      // Add new fields
+      allowance, 
+      loan,
     } = req.body;
 
     // check duplicate
@@ -45,6 +50,9 @@ export const addUserByAdmin = async (req, res) => {
         jobTitle,
         basicSalary,
         workingHours: workingHours || 0,
+        // Include new fields
+        allowance: allowance || 0, 
+        loan: loan || 0,
       });
     }
 
@@ -92,6 +100,9 @@ export const listUsers = async (req, res) => {
       ...u,
       basicSalary: empMap[u._id]?.basicSalary || null,
       workingHours: empMap[u._id]?.workingHours || null,
+      // Attach new fields
+      allowance: empMap[u._id]?.allowance || 0, 
+      loan: empMap[u._id]?.loan || 0,
     }));
 
     res.json({
@@ -120,6 +131,9 @@ export const getUserById = async (req, res) => {
       if (emp) {
         user.basicSalary = emp.basicSalary;
         user.workingHours = emp.workingHours;
+        // Attach new fields
+        user.allowance = emp.allowance; 
+        user.loan = emp.loan;
       }
     }
 
@@ -153,7 +167,7 @@ export const updateUserByAdmin = async (req, res) => {
         email: updates.email,
         password: updates.password,
         status: updates.status,
-        jobTitle: updates.jobTitle,
+        jobTitle: updates.jobTitle, // User schema also has jobTitle
       },
       { new: true }
     );
@@ -167,6 +181,9 @@ export const updateUserByAdmin = async (req, res) => {
         jobTitle: updates.jobTitle,
         basicSalary: updates.basicSalary,
         workingHours: updates.workingHours,
+        // Update new fields
+        allowance: updates.allowance, 
+        loan: updates.loan,
       },
       { upsert: true, new: true }
     );
