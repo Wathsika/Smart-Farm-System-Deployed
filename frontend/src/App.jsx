@@ -24,6 +24,8 @@ import OrderCancelPage from "./pages/store/OrderCancelPage";
 // --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 
+import MainDashboard from "./admin/MainDashboard";
+
 // --- ADMIN (direct imports) ---
 import AdminUsers from "./pages/AdminUsers";
 import StaffAttendance from "./admin/StaffAttendance";
@@ -68,9 +70,6 @@ const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 
 // --- TEMP PLACEHOLDERS ---
 
-const FarmDashboard = () => (
-  <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
-);
 const LivestockPage = () => (
   <div className="p-6 text-2xl font-bold">Livestock Management</div>
 );
@@ -164,7 +163,7 @@ export default function App() {
           </AdminOnly>
         }
       >
-        <Route index element={<FarmDashboard />} />
+        <Route index element={<MainDashboard />} />
 
         {/* Farm management pages */}
         <Route path="livestock" element={<LivestockPage />} />
