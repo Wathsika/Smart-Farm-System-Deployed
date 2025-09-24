@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#16a34a',
     marginBottom: 16,
   },
-   headerLeft: {
+  headerLeft: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'flex-start',
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
     marginBottom: 2,
   },
-   lastFarmDetail: {
+  lastFarmDetail: {
     marginBottom: 0,
   },
   headerRight: {
@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
+    backgroundColor: '#f0fdf4',
   },
   tableHeader: {
     backgroundColor: '#047857',
@@ -159,22 +160,18 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   tableRowAlt: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#dcfce7',
   },
   tableColName: {
-    width: '40%',
+    width: '45%',
     padding: 8,
   },
   tableColCategory: {
-    width: '25%',
+    width: '30%',
     padding: 6,
   },
   tableColQty: {
-    width: '20%',
-    padding: 8,
-  },
-  tableColReorder: {
-    width: '15%',
+    width: '25%',
     padding: 8,
   },
   tableCell: {
@@ -199,15 +196,14 @@ const styles = StyleSheet.create({
   },
 });
 
-// format helpers
+// helpers
 const formatDate = (value) => {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${String(date.getDate()).padStart(2, '0')}/${String(
+    date.getMonth() + 1
+  ).padStart(2, '0')}/${date.getFullYear()}`;
 };
 
 const formatNumber = (value) => {
@@ -220,10 +216,9 @@ const formatTime = (value) => {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${hours}:${minutes}:${seconds}`;
+  return `${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes()
+  ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
 };
 
 export const InputInventoryReport = ({
@@ -255,13 +250,12 @@ export const InputInventoryReport = ({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-             <View style={styles.headerLeft}></View>
+          <View style={styles.headerLeft}>
             <Text style={styles.farmName}>GreenLeaf Farm</Text>
             <Text style={styles.farmDetails}>
               123 Farm Valley Road, Green County, Sri Lanka
             </Text>
-            <Text style={styles.farmDetails}>
+            <Text style={[styles.farmDetails, styles.lastFarmDetail]}>
               contact@greenleaffarm.com | +94 11 234 5678
             </Text>
           </View>
@@ -314,15 +308,13 @@ export const InputInventoryReport = ({
           ))}
         </View>
 
-        {/* Categories Card */}
+        {/* Categories */}
         <View style={styles.infoCard}>
           <View style={styles.infoCardAccent} />
           <View style={styles.infoContent}>
             <View style={styles.infoColumn}>
               <Text style={styles.infoLabel}>Categories Tracked</Text>
-              <Text style={styles.infoValue}>
-                {formatNumber(categoryCount)}
-              </Text>
+              <Text style={styles.infoValue}>{formatNumber(categoryCount)}</Text>
               {Array.isArray(categoryBreakdown) &&
                 categoryBreakdown.length > 0 && (
                   <View>
@@ -374,9 +366,6 @@ export const InputInventoryReport = ({
             <View style={styles.tableColQty}>
               <Text style={styles.tableHeaderText}>Stock Qty</Text>
             </View>
-            <View style={styles.tableColReorder}>
-              <Text style={styles.tableHeaderText}>Reorder Level</Text>
-            </View>
           </View>
 
           {inputs.length === 0 ? (
@@ -402,18 +391,11 @@ export const InputInventoryReport = ({
                   <Text style={styles.tableCell}>{item?.name || '—'}</Text>
                 </View>
                 <View style={styles.tableColCategory}>
-                  <Text style={styles.tableCell}>
-                    {item?.category || '—'}
-                  </Text>
+                  <Text style={styles.tableCell}>{item?.category || '—'}</Text>
                 </View>
                 <View style={styles.tableColQty}>
                   <Text style={styles.tableCell}>
                     {formatNumber(item?.stockQty || 0)}
-                  </Text>
-                </View>
-                <View style={styles.tableColReorder}>
-                  <Text style={styles.tableCell}>
-                    {formatNumber(item?.reorderLevel || 0)}
                   </Text>
                 </View>
               </View>
