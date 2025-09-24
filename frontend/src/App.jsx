@@ -42,7 +42,8 @@ import FieldPage from "./admin/FieldPage.jsx";
 import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
-import AddPlan from "./admin/EditPlan.jsx";
+import AddPlan from "./admin/AddPlan.jsx";
+import EditPlanPage from "./admin/EditPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
 import InputListPage from './admin/InputListPage.jsx';
 import AddInputPage from './admin/AddInputPage.jsx';
