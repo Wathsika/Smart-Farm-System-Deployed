@@ -25,7 +25,12 @@ import { motion, AnimatePresence } from "framer-motion";
    UI HELPERS
 ======================== */
 
-const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
+const formatCurrency = (amount) =>
+  `Rs ${Number(amount || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
 const formatDate = (dateString) =>
   new Date(dateString).toLocaleDateString("en-US", {
     month: "short",

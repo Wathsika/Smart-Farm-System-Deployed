@@ -1,6 +1,6 @@
 export const BRAND_DETAILS = Object.freeze({
   name: "GreenLeaf Farm",
-  address: "123 Farm Valley Road, Green County, Sri Lanka",
+  address: "10/F, Ginimellagaha, Baddegama, Sri Lanka",
   email: "contact@greenleaffarm.com",
   phone: "+94 11 234 5678",
 });

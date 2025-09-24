@@ -39,7 +39,7 @@ const statistics = [
 export default function AboutUs() {
   return (
     // NOTE: no min-h-screen or page-level background here
-    <div className="pb-12">
+    <div>
       {/* Hero (edge-to-edge) */}
       <motion.section
         className="relative flex h-[60vh] items-center justify-center bg-cover bg-center bg-no-repeat md:h-[70vh]"

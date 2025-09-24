@@ -27,7 +27,7 @@ const brandDetails = () => {
   const name = process.env.INVOICE_BRAND_NAME || "GreenLeaf Farm";
   const address =
     process.env.INVOICE_BRAND_ADDRESS ||
-    "123 Farm Valley Road, Green County, Sri Lanka";
+    "10/F, Ginimellagaha, Baddegama, Sri Lanka";
   const email =
     process.env.INVOICE_BRAND_EMAIL || process.env.SMTP_FROM_EMAIL || "";
   const phone = process.env.INVOICE_BRAND_PHONE || "";
