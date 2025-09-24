@@ -44,6 +44,8 @@ const validate = (schema, data) => {
   return { valid: Object.keys(errors).length === 0, errors };
 };
 // --------------------------------------------------------------------------
+export const STATUS_OPTIONS = ['In Use', 'Available', 'Planted', 'Fallow'];
+export const validateStatus = rules.oneOf(STATUS_OPTIONS);
 
 const AddFieldPage = () => {
   const navigate = useNavigate();
@@ -55,7 +57,7 @@ const AddFieldPage = () => {
     locationDescription: '',
     area: { value: '', unit: 'acres' },
     soilType: 'Loamy',
-    status: 'Available',
+    status: 'STATUS_OPTIONS[0]',
     irrigationSystem: '',
     notes: '',
   });
@@ -85,7 +87,7 @@ const AddFieldPage = () => {
       'area.value': [rules.required(), rules.number(), rules.gt(0)],
       'area.unit': [rules.oneOf(['acres', 'hectares', 'sqm'])],
       soilType: [rules.oneOf(['Loamy', 'Clay', 'Sandy'])],
-      status: [rules.oneOf(['Available', 'Under Preparation'])],
+      status: [validateStatus],
       irrigationSystem: [rules.maxLength(60)],
       notes: [rules.maxLength(500)],
     };
@@ -406,8 +408,11 @@ const AddFieldPage = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   >
-                    <option value="Available">Available</option>
-                    <option value="Under Preparation">Under Preparation</option>
+                  {STATUS_OPTIONS.map(option => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

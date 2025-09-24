@@ -13,6 +13,10 @@ const FieldPage = () => {
   const [sortDirection, setSortDirection] = useState("asc");
   const [deletingId, setDeletingId] = useState(null);
 
+ const statusOptions = ["Available", "In Use", "Planted", "Fallow"];
+
+  const normalizeStatus = (value) =>
+    typeof value === "string" ? value.trim().toLowerCase() : "";
   // --- API Calls ---
   const getFieldsAPI = async () => {
     const response = await api.get("/fields");
@@ -51,7 +55,7 @@ const FieldPage = () => {
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
       const matchesStatus =
-        statusFilter === "all" || field.status === statusFilter;
+        statusFilter === "all" ||  normalizeStatus(field.status) === normalizeStatus(statusFilter);
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
@@ -564,8 +568,11 @@ const FieldPage = () => {
                 className="block w-full px-3 py-3 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
                 <option value="all">All Status</option>
-                <option value="Available">Available</option>
-                <option value="In Use">In Use</option>
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

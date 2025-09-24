@@ -1,7 +1,8 @@
 // src/pages/EditFieldPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { api } from '../lib/api.js';
+import { api } from '../lib/api.js'; 
+export const STATUS_OPTIONS = ['In Use', 'Available', 'Planted', 'Fallow'];
 
 const EditFieldPage = () => {
   const { id } = useParams();
@@ -256,15 +257,17 @@ const EditFieldPage = () => {
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">Status</label>
                   <select 
-                    name="status" 
-                    value={formData.status || ''} 
-                    onChange={handleChange} 
+                    name="status"
+                    value={formData.status || ''}
+                    onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                   >
                     <option value="" disabled>Select Status</option>
-                    <option value="Available">Available</option>
-                    <option value="Planted">Planted</option>
-                    <option value="Fallow">Fallow</option>
+                      {STATUS_OPTIONS.map(option => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
