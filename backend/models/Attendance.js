@@ -14,4 +14,5 @@ const attendanceSchema = new mongoose.Schema({
 // බහුවිධ check-in/out සඳහා unique index එක ඉවත් කර ඇත.
 // attendanceSchema.index({ user: 1, date: 1 }, { unique: true });
 
-
+const Attendance = mongoose.model("Attendance", attendanceSchema);
+export default Attendance;

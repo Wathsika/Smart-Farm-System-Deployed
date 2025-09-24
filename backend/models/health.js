@@ -1,7 +1,3 @@
-
-import mongoose from "mongoose";
-
-
 import mongoose from "mongoose";
 const healthSchema = new mongoose.Schema(
   {
