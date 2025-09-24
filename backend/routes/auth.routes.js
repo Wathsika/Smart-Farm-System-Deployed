@@ -1,9 +1,18 @@
 // routes/auth.routes.js
 import express from "express";
-import { signup, login } from "../controllers/auth.controller.js";
+
+import { signup, login, updateProfile, changePassword, googleLogin } from "../controllers/auth.controller.js";
+import { requireAuth } from "../middlewares/auth.js";
+
 
 const router = express.Router();
 router.post("/signup", signup);
 router.post("/login", login);
+
+router.put("/profile", requireAuth, updateProfile);
+router.put("/profile/password", requireAuth, changePassword);
+
+router.post("/google", googleLogin);
+
 
 export default router;

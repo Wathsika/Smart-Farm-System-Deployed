@@ -19,6 +19,11 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('FATAL ERROR: STRIPE_SECRET_KEY could not be loaded. Check your .env file.');
 }
 
+// Ensure the Stripe webhook signing secret is present.
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('FATAL ERROR: STRIPE_WEBHOOK_SECRET could not be loaded. Check your .env file.');
+}
+
 // Initialize Stripe with the secret key.
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 

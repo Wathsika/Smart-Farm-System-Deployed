@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { api } from "../lib/api";
 import ProductCard from "../components/ProductCard"; // Ensure this path is correct for your project
 import { motion, AnimatePresence } from "framer-motion";
+import ChatbotWidget from "../components/ChatbotWidget";
 
 // These helper components are well-built and do not require changes.
 // I've included them here so you have a single file to copy-paste.
@@ -229,6 +230,9 @@ export default function Storefront() {
           </motion.div>
         )}
       </div>
-    </div>
+      {/* ✅ Mount chatbot here so it's available on this page */}
+      <ChatbotWidget />
+   </div>
+    
   );
 }

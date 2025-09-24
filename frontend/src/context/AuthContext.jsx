@@ -1,6 +1,11 @@
 // src/context/AuthContext.jsx
 import React, {
-  createContext, useState, useContext, useEffect, useMemo,
+   createContext,
+  useCallback,
+  useState,
+  useContext,
+  useEffect,
+  useMemo,
 } from "react";
 import { auth as storageAuth } from "../lib/auth"; // localStorage helper
 
@@ -22,19 +27,33 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const login = ({ token, user }) => {
+const login = useCallback(({ token, user }) => {
     // guard against malformed responses
     if (!token || !user) throw new Error("Malformed login response");
     storageAuth.login({ token, user }); // persist
     setUser(user);
     setToken(token);
-  };
+}, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     storageAuth.logout();
     setUser(null);
     setToken(null);
-  };
+  }, []);
+
+  const updateUser = useCallback((nextUser) => {
+    setUser((prev) => {
+      const resolved =
+        typeof nextUser === "function" ? nextUser(prev) : nextUser;
+
+      if (resolved === undefined) {
+        return prev;
+      }
+
+      storageAuth.updateUser(resolved);
+      return resolved;
+    });
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -43,8 +62,9 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       login,
       logout,
+      updateUser,
     }),
-    [user, token]
+     [user, token, login, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

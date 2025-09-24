@@ -1,9 +1,7 @@
-import express from "express";
-const router = express.Router();
+import { Router } from "express";
+import { listEmployeesMinimal } from "../controllers/employee.controller.js";
+const router = Router();
 
-// Employee routes will be added here in the future.
-// For example:
-// router.get('/attendance', viewMyAttendance);
-
+router.get("/min", listEmployeesMinimal);
 
 export default router;

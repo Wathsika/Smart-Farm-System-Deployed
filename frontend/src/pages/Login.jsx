@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 import {
   Leaf,
@@ -10,13 +10,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -25,9 +23,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGoogleScriptReady, setIsGoogleScriptReady] = useState(false);
+  const googleButtonRef = useRef(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const isGoogleAuthEnabled = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   const validateForm = () => {
     const newErrors = {};
@@ -47,6 +49,115 @@ export default function LoginPage() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const handleGoogleSuccess = useCallback(
+    async (credentialResponse) => {
+      const credential = credentialResponse?.credential;
+
+      if (!credential) {
+        setErrors((prev) => ({
+          ...prev,
+          submit: "Unable to retrieve Google credential. Please try again.",
+        }));
+        return;
+      }
+
+      setIsGoogleLoading(true);
+      setErrors((prev) => ({ ...prev, submit: undefined }));
+
+      try {
+        const { data } = await api.post("/auth/google", { credential });
+        login({ token: data.token, user: data.user });
+        navigate("/");
+      } catch (error) {
+        setErrors((prev) => ({
+          ...prev,
+          submit:
+            error.response?.data?.message ||
+            "We couldn't sign you in with Google. Please try again.",
+        }));
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    },
+    [login, navigate]
+  );
+
+  useEffect(() => {
+    if (!isGoogleAuthEnabled) {
+      return;
+    }
+
+    setIsGoogleScriptReady(false);
+    let isMounted = true;
+    const scriptSrc = "https://accounts.google.com/gsi/client";
+    let scriptTag = document.querySelector(`script[src="${scriptSrc}"]`);
+
+    const initializeGoogle = () => {
+      if (!isMounted) return;
+      const google = window.google?.accounts?.id;
+      if (!google || !googleButtonRef.current) return;
+
+      google.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          if (!isMounted) return;
+          handleGoogleSuccess(response);
+        },
+      });
+
+      googleButtonRef.current.innerHTML = "";
+      google.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        type: "standard",
+        shape: "pill",
+        text: "continue_with",
+        size: "large",
+        width: 320,
+      });
+
+      setIsGoogleScriptReady(true);
+    };
+
+    const handleScriptError = () => {
+      if (!isMounted) return;
+      setErrors((prev) => ({
+        ...prev,
+        submit:
+          "Google authentication script failed to load. Please refresh the page and try again.",
+      }));
+    };
+
+    if (scriptTag) {
+      if (window.google?.accounts?.id) {
+        initializeGoogle();
+      } else {
+        scriptTag.addEventListener("load", initializeGoogle);
+        scriptTag.addEventListener("error", handleScriptError);
+      }
+    } else {
+      scriptTag = document.createElement("script");
+      scriptTag.src = scriptSrc;
+      scriptTag.async = true;
+      scriptTag.defer = true;
+      scriptTag.addEventListener("load", initializeGoogle);
+      scriptTag.addEventListener("error", handleScriptError);
+      document.head.appendChild(scriptTag);
+    }
+
+    return () => {
+      isMounted = false;
+      if (scriptTag) {
+        scriptTag.removeEventListener("load", initializeGoogle);
+        scriptTag.removeEventListener("error", handleScriptError);
+      }
+      const google = window.google?.accounts?.id;
+      if (google) {
+        google.cancel();
+        google.disableAutoSelect();
+      }
+    };
+  }, [handleGoogleSuccess, isGoogleAuthEnabled]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,10 +181,17 @@ export default function LoginPage() {
         rememberMe: form.rememberMe,
       });
       login({ token: data.token, user: data.user });
-      navigate("/");
+      const userRole = data?.user?.role;
+
+      if (userRole === "Admin") {
+        navigate("/admin", { replace: true });
+      } else if (userRole === "Employee") {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       setErrors({ submit: error.response?.data?.message });
-
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +205,6 @@ export default function LoginPage() {
   };
 
   return (
-
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
@@ -100,10 +217,8 @@ export default function LoginPage() {
           </h1>
           <p className="text-gray-600">
             Sign in to your GreenLeaf Store account
-
           </p>
         </div>
-
 
         {/* Login Form */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
@@ -133,9 +248,7 @@ export default function LoginPage() {
                   {errors.email}
                 </p>
               )}
-
             </div>
-
 
             {/* Password Field */}
             <div className="space-y-2">
@@ -230,10 +343,39 @@ export default function LoginPage() {
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
-
             </button>
+            {isGoogleAuthEnabled && (
+              <div className="pt-2">
+                <div className="relative py-2">
+                  <div
+                    className="absolute inset-0 flex items-center"
+                    aria-hidden="true"
+                  >
+                    <span className="w-full border-t border-gray-200"></span>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-white px-3 text-sm font-medium text-gray-500">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className={`mt-4 flex justify-center ${
+                    isGoogleLoading ? "opacity-70 pointer-events-none" : ""
+                  }`}
+                >
+                  <div ref={googleButtonRef} className="flex justify-center" />
+                </div>
+                {(isGoogleLoading || !isGoogleScriptReady) && (
+                  <p className="mt-3 text-center text-sm text-gray-500">
+                    {isGoogleLoading
+                      ? "Connecting to Google..."
+                      : "Loading Google sign-in..."}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-
 
           {/* Sign Up Link */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
@@ -252,7 +394,6 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>© 2025 GreenLeaf Store. Fresh products, delivered with care.</p>
-
         </div>
       </div>
     </div>

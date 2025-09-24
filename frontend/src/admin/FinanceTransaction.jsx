@@ -1,7 +1,10 @@
-// src/admin/FinanceTransaction.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { useReactToPrint } from "react-to-print";
+import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 function currency(n) {
   if (isNaN(n)) return "—";
@@ -16,36 +19,98 @@ function monthKey(iso) {
   return (iso || "").slice(0, 7);
 }
 
-function downloadCSV(filename, rows) {
-  // 🔧 use the correct field name: description
-  const headers = ["id", "type", "date", "category", "amount", "description"];
-  const body = rows.map((r) =>
-    headers
-      .map((h) => String(r[h] ?? "").replace(/"/g, '""'))
-      .map((v) => `"${v}"`)
-      .join(",")
-  );
-  const csv = [headers.join(","), ...body].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function downloadExcel(filename, rows) {
+  const headers = [
+    "Transaction Id",
+    "Date",
+    "Type",
+    "Category",
+    "Description",
+    "Amount",
+  ];
+
+  const headerRow = `<tr>${headers
+    .map(
+      (label) =>
+        `<th style="text-align:left;padding:8px;">${escapeHtml(label)}</th>`
+    )
+    .join("")}</tr>`;
+
+  const bodyRows = rows
+    .map((row) => {
+      const amountRaw = Number(row.amount) || 0;
+      const normalizedAmount =
+        row.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+      const cells = [
+        row.transaction_id,
+        shortDate(row.date),
+        row.type,
+        row.category,
+        row.description,
+        normalizedAmount,
+      ];
+      return `<tr>${cells
+        .map((value) => `<td style="padding:6px;">${escapeHtml(value)}</td>`)
+        .join("")}</tr>`;
+    })
+    .join("");
+
+  const tableHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body><table border="1" cellspacing="0" cellpadding="0">${headerRow}${bodyRows}</table></body></html>`;
+  const blob = new Blob(["\ufeff" + tableHtml], {
+    type: "application/vnd.ms-excel;charset=utf-8;",
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = `${filename}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-// optional: make sure dates render safely
 function shortDate(d) {
   if (!d) return "—";
-  // if backend sends ISO string
   if (typeof d === "string") return d.slice(0, 10);
-  // if backend sends Date (unlikely in JSON), fallback
   try {
     return new Date(d).toISOString().slice(0, 10);
   } catch {
     return String(d);
   }
+}
+
+function resolveRowId(row) {
+  if (!row) return undefined;
+
+  const candidates = [
+    row.mongoId,
+    row._id,
+    row.id,
+    row.transaction_id,
+    row.transactionId,
+    row.tid,
+    row.txnId,
+    row.txn_id,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+    if (typeof candidate === "number") {
+      return String(candidate);
+    }
+  }
+
+  return undefined;
 }
 
 export default function FinanceTransaction() {
@@ -56,11 +121,11 @@ export default function FinanceTransaction() {
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all"); // "INCOME" | "EXPENSE" | "all"
   const [monthFilter, setMonthFilter] = useState("all");
-  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
+  const invoiceRef = useRef(null);
 
-  // Load from backend whenever filters/search change
   useEffect(() => {
     let ignore = false;
 
@@ -70,24 +135,35 @@ export default function FinanceTransaction() {
       try {
         const res = await api.get("/transactions", {
           params: {
-            q: q || undefined, // your controller may ignore q; harmless
-            type: typeFilter !== "all" ? typeFilter : undefined, // INCOME/EXPENSE
-            month: monthFilter !== "all" ? monthFilter : undefined, // your controller may ignore; harmless
+            q: q || undefined,
+            type: typeFilter !== "all" ? typeFilter : undefined,
+            month: monthFilter !== "all" ? monthFilter : undefined,
           },
         });
 
-        // Backend might return array or {data: [...]}
         const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
-        // Normalize and keep only fields we actually use
-        const rows = raw.map((r) => ({
-          id: r.id || r._id,
-          date: r.date,
-          type: r.type, // "INCOME" | "EXPENSE"
-          category: r.category,
-          amount: r.amount,
-          description: r.description, // ✅ correct field
-        }));
+        // Normalize: keep both mongo _id (for actions) and transaction_id (for display/export)
+        const rows = raw.map((r) => {
+          const transactionId =
+            r.transaction_id ||
+            r.transactionId ||
+            r.tid ||
+            r.txnId ||
+            r.txn_id ||
+            "";
+          const mongoId = r._id || r.id || r.mongoId || r.recordId || undefined;
+
+          return {
+            mongoId,
+            transaction_id: transactionId, // display ID (TNXyyyy...)
+            date: r.date,
+            type: r.type,
+            category: r.category,
+            amount: r.amount,
+            description: r.description,
+          };
+        });
 
         if (!ignore) setTransactions(rows);
       } catch (e) {
@@ -107,19 +183,147 @@ export default function FinanceTransaction() {
     };
   }, [q, typeFilter, monthFilter]);
 
-  // derive month list from the loaded data
   const months = useMemo(() => {
     const set = new Set(transactions.map((r) => monthKey(r.date)));
     return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
   }, [transactions]);
 
-  // Server already did filtering; show as-is
   const filtered = transactions;
 
-  const handleDelete = async (id) => {
+  const exportDate = useMemo(() => {
+    if (monthFilter && monthFilter !== "all") {
+      const [year, month] = monthFilter.split("-");
+      const y = Number(year);
+      const m = Number(month) - 1;
+      if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 0 && m < 12) {
+        const d = new Date(y, m, 1);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+    }
+    return new Date();
+  }, [monthFilter]);
+
+  const exportFileBase = useMemo(() => {
+    const year = exportDate.getFullYear();
+    const month = String(exportDate.getMonth() + 1).padStart(2, "0");
+    return `Transaction-${year}-${month}`;
+  }, [exportDate]);
+
+  const pdfOrder = useMemo(() => {
+    if (!filtered.length) return null;
+
+    const items = filtered.map((txn) => {
+      const amountRaw = Number(txn.amount) || 0;
+      const amount =
+        txn.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+      return {
+        name: `${shortDate(txn.date)} • ${txn.type || "Transaction"} • ${
+          txn.category || "General"
+        }`,
+        qty: 1,
+        price: amount,
+      };
+    });
+
+    const totalPrice = items.reduce(
+      (sum, item) => sum + item.price * (item.qty || 1),
+      0
+    );
+
+    return {
+      orderNumber: exportFileBase,
+      createdAt: exportDate,
+      status: "Approved",
+      paymentMethod: "Transactions",
+      customer: {
+        name: "Smart Farm Finance",
+        email: "finance@smartfarm.local",
+      },
+      shippingAddress: {
+        addressLine1: "Transaction Summary Report",
+        city: "",
+        postalCode: "",
+      },
+      orderItems: items,
+      totalPrice,
+      discount: { amount: 0 },
+      templateOptions: {
+        showBillingDetails: false,
+        showOrderSummary: false,
+        showFooter: false,
+      },
+    };
+  }, [filtered, exportDate, exportFileBase]);
+
+  const triggerPrint = useReactToPrint({
+    contentRef: invoiceRef,
+    documentTitle: exportFileBase,
+    removeAfterPrint: true,
+    suppressErrors: true,
+  });
+
+  const handleExportPdf = async () => {
+    if (!filtered.length || !pdfOrder) {
+      alert("No transactions to export.");
+      return;
+    }
+
+    // Use invoiceRef to render the InvoiceTemplate
+    const input = invoiceRef.current;
+
+    if (!input) {
+      alert("Invoice not ready.");
+      return;
+    }
+
     try {
-      await api.delete(`/transactions/${id}`);
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+
+      pdf.save(`${exportFileBase}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to generate PDF");
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!filtered.length) {
+      alert("No transactions to export.");
+      return;
+    }
+    downloadExcel(exportFileBase, filtered);
+  };
+
+  const handleDelete = async (rowKey) => {
+    try {
+      // Prefer mongoId for API path; fall back to transaction_id if needed
+      const row = transactions.find((t) => {
+        const id = resolveRowId(t);
+        return (
+          id &&
+          (id === rowKey || t.mongoId === rowKey || t.transaction_id === rowKey)
+        );
+      });
+      const idForApi = resolveRowId(row) || rowKey;
+      if (!idForApi) {
+        alert(
+          "Cannot delete this transaction because its identifier is missing."
+        );
+        return;
+      }
+      await api.delete(`/transactions/${idForApi}`);
+      setTransactions((prev) =>
+        prev.filter((t) => resolveRowId(t) !== idForApi)
+      );
     } catch (e) {
       alert(e?.response?.data?.message || e.message || "Failed to delete");
     } finally {
@@ -127,8 +331,17 @@ export default function FinanceTransaction() {
     }
   };
 
-  const handleEdit = (row) =>
-    navigate(`/admin/finance/new_transaction?edit=${row.id}`);
+  const handleEdit = (row) => {
+    const idForEdit = resolveRowId(row);
+    if (!idForEdit) {
+      alert("Cannot edit this transaction because its identifier is missing.");
+      return;
+    }
+    // Use mongoId for editing route (most forms expect _id); adjust if your form expects transaction_id
+    navigate(
+      `/admin/finance/new_transaction?edit=${encodeURIComponent(idForEdit)}`
+    );
+  };
 
   const handleAddNew = () => navigate("/admin/finance/new_transaction");
 
@@ -189,7 +402,7 @@ export default function FinanceTransaction() {
                     </svg>
                   </div>
                   <input
-                    placeholder="Search category, description, date…"
+                    placeholder="Search txn ID, category, description…"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-inner bg-white/80 backdrop-blur-sm transition-all duration-200"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
@@ -293,7 +506,7 @@ export default function FinanceTransaction() {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => downloadCSV("finance-report.csv", filtered)}
+                  onClick={handleExportPdf}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                 >
                   <svg
@@ -309,7 +522,26 @@ export default function FinanceTransaction() {
                       d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Export CSV
+                  Export PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Export Excel
                 </button>
                 <button
                   onClick={handleAddNew}
@@ -343,6 +575,9 @@ export default function FinanceTransaction() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Transaction Id
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -365,7 +600,7 @@ export default function FinanceTransaction() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center">
                             <svg
                               className="w-12 h-12 text-gray-400 mb-4"
@@ -391,78 +626,93 @@ export default function FinanceTransaction() {
                         </td>
                       </tr>
                     )}
-                    {filtered.map((r) => (
-                      <tr
-                        key={r.id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {shortDate(r.date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              r.type === "INCOME"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {r.type === "INCOME" ? "💰" : "💸"} {r.type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {r.category || "—"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {r.description || "—" /* ✅ correct field shown */}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {currency(r.amount)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => handleEdit(r)}
-                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    {filtered.map((r) => {
+                      const rowId = resolveRowId(r);
+                      return (
+                        <tr
+                          key={rowId || r.mongoId || r.transaction_id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                            {r.transaction_id || "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {shortDate(r.date)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                r.type === "INCOME"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
                             >
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
+                              {r.type === "INCOME" ? "💰" : "💸"} {r.type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {r.category || "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                            {r.description || "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {currency(r.amount)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <button
+                                onClick={() => handleEdit(r)}
+                                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteModal(r.id)}
-                              className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
-                            >
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
+                                <svg
+                                  className="w-3 h-3 mr-1"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const id = rowId;
+                                  if (!id) {
+                                    alert(
+                                      "Cannot delete this transaction because its identifier is missing."
+                                    );
+                                    return;
+                                  }
+                                  setShowDeleteModal(id);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                                <svg
+                                  className="w-3 h-3 mr-1"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -517,6 +767,9 @@ export default function FinanceTransaction() {
             </div>
           )}
         </div>
+      </div>
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        {pdfOrder && <InvoiceTemplate ref={invoiceRef} order={pdfOrder} />}
       </div>
     </div>
   );

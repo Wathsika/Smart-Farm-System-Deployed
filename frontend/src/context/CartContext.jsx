@@ -68,6 +68,12 @@ export const CartProvider = ({ children }) => {
     const fetchAutoDiscount = useCallback(async () => {
         try {
             const { data } = await api.get('/discounts/active');
+             if (!data || data.applicationMode !== 'AUTO') {
+                if (discount?.source === 'AUTO') {
+                    setDiscount(null);
+                }
+                return;
+            }
             if (cartTotal >= data.minPurchase && (!discount || discount.source !== 'CODE')) {
                 setDiscount({ ...data, source: 'AUTO' });
             } else if (discount?.source === 'AUTO') {

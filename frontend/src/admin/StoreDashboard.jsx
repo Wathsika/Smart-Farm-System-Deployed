@@ -39,6 +39,18 @@ const trendBadge = (pct) => {
 const StatCard = ({ to, icon, label, value, hint, rightHint, tone = "green", index = 0 }) => {
   const [isHovered, setIsHovered] = useState(false);
   
+  const displayValue = useMemo(() => {
+    if (value === null || value === undefined) {
+      return "";
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return formatNumber(value);
+    }
+
+    return value;
+  }, [value]);
+
   const toneStyles = {
     green: "from-emerald-50 to-green-50 border-emerald-100 text-emerald-600",
     amber: "from-amber-50 to-orange-50 border-amber-100 text-amber-600",
@@ -70,7 +82,17 @@ const StatCard = ({ to, icon, label, value, hint, rightHint, tone = "green", ind
           </motion.div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
-            <p className="text-3xl font-bold text-gray-900 mb-1">{formatNumber(value)}</p>
+             <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 flex items-baseline gap-1">
+  {typeof value === "string" && value.startsWith("Rs") ? (
+    <>
+      <span className="text-lg text-gray-600">Rs</span>
+      <span>{value.replace("Rs", "").trim()}</span>
+    </>
+  ) : (
+    <span>{displayValue}</span>
+  )}
+</p>
+
             {hint && <p className="text-xs text-gray-400">{hint}</p>}
           </div>
         </div>
@@ -237,7 +259,14 @@ export default function StoreDashboard() {
 
   const summary = storeSummary || {};
   const pieColors = ["#10b981", "#059669", "#34d399", "#6ee7b7", "#84cc16", "#65a30d", "#22c55e", "#16a34a"];
-
+const topSellerMaxQty = useMemo(
+    () =>
+      topSellers.reduce(
+        (max, seller) => Math.max(max, Number(seller?.qty ?? seller?.units ?? 0)),
+        0
+      ),
+    [topSellers]
+  );
   const renderPieLabel = ({ name, percent }) => {
     if (percent < 0.05) return null; // Hide labels for very small slices
     const short = name?.length > 10 ? name.slice(0, 10) + "…" : name || "—";
@@ -339,11 +368,11 @@ export default function StoreDashboard() {
           <div className="flex flex-col sm:flex-row gap-3">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
-                to="/admin/analytics"
+                to="/admin/store/reports"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-all duration-200 shadow-sm"
               >
                 <i className="fas fa-chart-bar" />
-                Analytics
+                Reports
               </Link>
             </motion.div>
             
@@ -375,7 +404,8 @@ export default function StoreDashboard() {
         </AnimatePresence>
 
         {/* Enhanced metrics grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
           {loading ? (
             Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} index={i} />)
           ) : (
@@ -657,11 +687,11 @@ export default function StoreDashboard() {
                               to={`/admin/store/orders/${o._id}`}
                               className="text-emerald-700 hover:text-emerald-800 font-medium hover:underline"
                             >
-                              #{o.code || o._id?.slice(-6)}
+                              #{o.orderNumber || o.code || o._id?.slice(-6)}
                             </Link>
                           </TCell>
                           <TCell className="font-medium">{o.customer?.name || o.customer || "Guest"}</TCell>
-                          <TCell className="font-semibold">{formatCurrency(o.total)}</TCell>
+                          <TCell className="font-semibold">{formatCurrency(o.totalPrice)}</TCell>
                           <TCell>
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -716,52 +746,58 @@ export default function StoreDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {topSellers.map((p, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-emerald-50/30 hover:from-emerald-50 hover:to-green-50 transition-all duration-200 border border-gray-100"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                            i === 0 ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-lg shadow-amber-200' :
-                            i === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-lg shadow-gray-200' :
-                            i === 2 ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-200' :
-                            'bg-gradient-to-r from-emerald-400 to-green-500 text-white shadow-lg shadow-emerald-200'
-                          }`}>
-                            #{i + 1}
-                          </div>
-                          {i < 3 && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                              <i className={`fas fa-${i === 0 ? 'crown' : i === 1 ? 'medal' : 'award'} text-xs ${
-                                i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-500' : 'text-orange-500'
-                              }`} />
+                  {topSellers.map((p, i) => {
+                    const units = Number(p?.qty ?? p?.units ?? 0);
+                    const percentageOfTop = topSellerMaxQty > 0 ? ((units / topSellerMaxQty) * 100).toFixed(0) : "0";
+
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-emerald-50/30 hover:from-emerald-50 hover:to-green-50 transition-all duration-200 border border-gray-100"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                              i === 0 ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-lg shadow-amber-200' :
+                              i === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-lg shadow-gray-200' :
+                              i === 2 ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-200' :
+                              'bg-gradient-to-r from-emerald-400 to-green-500 text-white shadow-lg shadow-emerald-200'
+                            }`}>
+                              #{i + 1}
                             </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{p.name}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <i className="fas fa-box text-emerald-500" />
-                              {formatNumber(p.units || 0)} sold
-                            </span>
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <i className="fas fa-chart-line text-emerald-500" />
-                              {((p.units || 0) / Math.max(...topSellers.map(s => s.units || 0)) * 100).toFixed(0)}% of top
-                            </span>
+                            {i < 3 && (
+                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                <i className={`fas fa-${i === 0 ? 'crown' : i === 1 ? 'medal' : 'award'} text-xs ${
+                                  i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-500' : 'text-orange-500'
+                                }`} />
+                              </div>
+                            )}
+                          </div>
+                           <div>
+                            <p className="font-semibold text-gray-900">{p.name}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <i className="fas fa-box text-emerald-500" />
+                                {formatNumber(units)} sold
+                              </span>
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <i className="fas fa-chart-line text-emerald-500" />
+                                {`${percentageOfTop}% of top`}
+                              </span>
+                            </div>
+                       
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">{formatCurrency(p.revenue || 0)}</div>
-                        <div className="text-xs text-gray-500">Revenue</div>
-                      </div>
-                    </motion.div>
-                  ))}
+                    <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">{formatCurrency(p.revenue || 0)}</div>
+                          <div className="text-xs text-gray-500">Revenue</div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
@@ -797,7 +833,7 @@ export default function StoreDashboard() {
               <i className="fas fa-plus text-lg" />
             </Link>
             <Link
-              to="/admin/analytics"
+              to="/admin/store/reports"
               className="w-12 h-12 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-600 shadow-lg hover:shadow-xl transition-all duration-200"
             >
               <i className="fas fa-chart-bar" />

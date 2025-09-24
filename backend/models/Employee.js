@@ -17,9 +17,29 @@ const employeeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    workingHours: {
+    workingHours: { // This field will now represent standard/expected working hours
       type: Number,
       default: 0,
+    },
+    // NEW FIELD: To accumulate actual hours worked from attendance
+    accumulatedWorkingHours: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    allowance: {
+      // Ensure allowance is defined
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    loan: {
+      // Ensure loan is defined
+      type: Number,
+      default: 0,
+
+      min: 0,
     },
   },
   { timestamps: true }

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "dev": "nodemon index.js",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "stripe:listen": "stripe listen --forward-to http://localhost:5001/api/orders/webhook"
   },
   "keywords": [],
   "author": "",
@@ -14,17 +15,20 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
+    "google-auth-library": "^10.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "nodemailer": "^6.9.13",
+    "openai": "^5.23.0",
+    "pdfkit": "^0.15.0",
     "stripe": "^18.4.0"
   },
   "devDependencies": {

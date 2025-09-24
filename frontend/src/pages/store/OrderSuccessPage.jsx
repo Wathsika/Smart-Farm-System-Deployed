@@ -45,7 +45,11 @@ const OrderSuccessPage = () => {
         <h1 className="text-3xl font-bold text-gray-800">Thank You!</h1>
         <p className="text-gray-600 mt-2">Your order has been placed successfully.</p>
         <p className="text-gray-500 text-sm mt-1">You will receive an email confirmation shortly.</p>
-
+         {order?.orderNumber && (
+          <p className="text-gray-600 mt-2">
+            Order Number: <span className="font-semibold">{order.orderNumber}</span>
+          </p>
+        )}
         {order && (
           <button
             onClick={handleDownloadInvoice}

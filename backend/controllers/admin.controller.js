@@ -75,12 +75,13 @@ export const getStoreSummary = async (req, res, next) => {
         const yesterdayStart = new Date(todayStart);
         yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-        const [ordersToday, ordersYesterday] = await Promise.all([
+        const [ordersToday, ordersYesterday, orderCount] = await Promise.all([
             Order.countDocuments({ createdAt: { $gte: todayStart } }),
-            Order.countDocuments({ createdAt: { $gte: yesterdayStart, $lt: todayStart } })
+            Order.countDocuments({ createdAt: { $gte: yesterdayStart, $lt: todayStart } }),
+            Order.countDocuments({})
         ]);
 
-        const revenueAgg = await Promise.all([
+        const [revenueTodayAgg, revenueYesterdayAgg, revenueAllTimeAgg] = await Promise.all([
             Order.aggregate([
                 { $match: { createdAt: { $gte: todayStart } } },
                 { $group: { _id: null, total: { $sum: "$totalPrice" } } }
@@ -88,11 +89,15 @@ export const getStoreSummary = async (req, res, next) => {
             Order.aggregate([
                 { $match: { createdAt: { $gte: yesterdayStart, $lt: todayStart } } },
                 { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+                ]),
+            Order.aggregate([
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
             ])
         ]);
 
-        const revenueToday = revenueAgg[0][0]?.total || 0;
-        const revenueYesterday = revenueAgg[1][0]?.total || 0;
+        const revenueToday = revenueTodayAgg[0]?.total || 0;
+        const revenueYesterday = revenueYesterdayAgg[0]?.total || 0;
+        const revenueAllTime = revenueAllTimeAgg[0]?.total || 0;
 
         const ordersTodayChangePct = ordersYesterday
             ? ((ordersToday - ordersYesterday) / ordersYesterday) * 100
@@ -113,9 +118,11 @@ export const getStoreSummary = async (req, res, next) => {
             productCount,
              lowStockCount,
             ordersToday,
+            orderCount,
             ordersTodayChangePct,
             customers,
             revenueToday,
+            revenueAllTime,
             revenueTodayChangePct,
             activeDiscounts,
         });
@@ -207,5 +214,7 @@ export const getRecentOrders = async (req, res, next) => {
   } catch (err) {
     console.error("Error fetching recent orders:", err);
     next(err);
+
   }
 };
+

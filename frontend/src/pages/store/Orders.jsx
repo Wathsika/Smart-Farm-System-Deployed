@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import InvoiceModal from "../../components/common/InvoiceModal.jsx";
 import {
   Eye,
   FileText,
@@ -24,7 +25,12 @@ import { motion, AnimatePresence } from "framer-motion";
    UI HELPERS
 ======================== */
 
-const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
+const formatCurrency = (amount) =>
+  `Rs ${Number(amount || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
 const formatDate = (dateString) =>
   new Date(dateString).toLocaleDateString("en-US", {
     month: "short",
@@ -32,6 +38,14 @@ const formatDate = (dateString) =>
     year: "numeric",
   });
 
+  const getOrderDisplayId = (order) => {
+  if (!order) return "#ORDER";
+  if (order.orderNumber) return order.orderNumber;
+  const fallback =
+    order.stripeSessionId?.slice(-10)?.toUpperCase() ||
+    (order._id ? String(order._id).slice(-6).toUpperCase() : undefined);
+  return fallback ? `#${fallback}` : "#ORDER";
+};
 /* ========================
    BADGE
 ======================== */
@@ -92,7 +106,7 @@ const StatusDropdown = ({ order, onStatusChange, isUpdating }) => (
    ORDER DETAILS MODAL
 ======================== */
 
-const OrderDetailsModal = ({ order, onClose }) => {
+const OrderDetailsModal = ({ order, onClose, onExport }) => {
   if (!order) return null;
 
   return (
@@ -117,7 +131,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">
-                  Order #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                  Order {getOrderDisplayId(order)}
                 </h2>
                 <p className="text-green-100 mt-1">
                   Placed on{" "}
@@ -289,7 +303,10 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
           {/* Footer */}
           <footer className="flex justify-end gap-3 p-6 bg-gray-50 border-t">
-            <button className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+             <button
+              className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+              onClick={() => onExport?.(order)}
+            >
               <Download size={16} />
               Export
             </button>
@@ -381,6 +398,8 @@ export default function AdminOrdersPage() {
   const [updatingId, setUpdatingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+   const [invoiceOrder, setInvoiceOrder] = useState(null);
+  const [autoPrint, setAutoPrint] = useState(false);
 
   const {
     data: orders = [],
@@ -388,6 +407,7 @@ export default function AdminOrdersPage() {
     isError,
     error,
     refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["adminAllOrders"],
     queryFn: async () => {
@@ -396,6 +416,14 @@ export default function AdminOrdersPage() {
     },
     enabled: isAuthenticated,
   });
+
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+    } catch (err) {
+      console.error("Failed to refresh orders", err);
+    }
+  };
 
   const { mutate: updateStatus } = useMutation({
     mutationFn: async ({ orderId, status }) => {
@@ -418,7 +446,9 @@ export default function AdminOrdersPage() {
       const matchesSearch =
         order.customer?.name?.toLowerCase().includes(q) ||
         order.customer?.email?.toLowerCase().includes(q) ||
-        order.stripeSessionId?.toLowerCase().includes(q);
+        order.orderNumber?.toLowerCase().includes(q) ||
+        order.stripeSessionId?.toLowerCase().includes(q) ||
+        order._id?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "ALL" || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -476,10 +506,18 @@ export default function AdminOrdersPage() {
             {error?.message || "Something went wrong"}
           </p>
           <button
-            onClick={() => refetch()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+             onClick={handleRefresh}
+            disabled={isFetching}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Try Again
+            {isFetching ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                Retrying...
+              </span>
+            ) : (
+              "Try Again"
+            )}
           </button>
         </motion.div>
       </div>
@@ -504,11 +542,21 @@ export default function AdminOrdersPage() {
               <p className="text-gray-600 mt-1">Manage and track all customer orders</p>
             </div>
             <button
-              onClick={() => refetch()}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <RefreshCw size={16} />
-              Refresh
+            onClick={handleRefresh}
+              disabled={isFetching}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+             {isFetching ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Refreshing
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={16} />
+                  Refresh
+                </>
+              )}
             </button>
           </div>
         </motion.header>
@@ -620,7 +668,7 @@ export default function AdminOrdersPage() {
                       >
                         <td className="px-6 py-4">
                           <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                            #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                            {getOrderDisplayId(order)}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -672,7 +720,7 @@ export default function AdminOrdersPage() {
                   <div key={order._id} className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                        #{order.stripeSessionId?.slice(-10).toUpperCase()}
+                       {getOrderDisplayId(order)}
                       </span>
                       <Badge text={order.isPaid ? "PAID" : "PENDING"} />
                     </div>
@@ -715,8 +763,21 @@ export default function AdminOrdersPage() {
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onExport={(order) => {
+            setInvoiceOrder(order);
+            setAutoPrint(true);
+          }}
         />
       )}
+       <InvoiceModal
+        isOpen={!!invoiceOrder}
+        order={invoiceOrder}
+        autoPrint={autoPrint}
+        onClose={() => {
+          setInvoiceOrder(null);
+          setAutoPrint(false);
+        }}
+      />
     </div>
   );
 }

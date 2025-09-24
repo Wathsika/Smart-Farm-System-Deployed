@@ -43,11 +43,28 @@ import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import payrollSettingsRoutes from "./routes/payrollSettings.routes.js";
+import payrollRoutes from "./routes/payroll.routes.js";
+import auditRoutes from "./routes/audit.routes.js";
+
 import reportRoutes from "./routes/report.routes.js";
 
 
+import chatRoutes from "./routes/chat.routes.js";
+import contactRoutes from './routes/contact.routes.js';
+
+
+
+import path from "path";
+import { fileURLToPath } from "url";
+// --- File Uploads (static serving) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // --- Initialize App ---
 const app = express();
+
+// serve uploaded images (e.g. /uploads/cows/abc.jpg)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- DB ---
 connectDB().catch((err) => {
@@ -60,18 +77,28 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:5000",
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      // ❗ Explicitly reject unknown origins (more secure)
-      return cb(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    // ❗ Explicitly reject unknown origins (more secure)
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
+
+// Apply CORS globally except for webhook endpoints
+app.use((req, res, next) => {
+  const webhookPaths = [
+    "/api/stripe/webhook",
+    "/api/orders/webhook",
+    "/api/payment/webhook",
+  ];
+  if (webhookPaths.includes(req.path)) return next();
+  return cors(corsOptions)(req, res, next);
+});
 
 app.use(morgan("dev")); // HTTP request logger
 
@@ -85,10 +112,12 @@ app.use(morgan("dev")); // HTTP request logger
 
 app.use("/api/orders/webhook", express.raw({ type: "application/json" }));
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
 // Attach handlers for both webhook paths
 app.post("/api/orders/webhook", stripeWebhookHandler);
 app.post("/api/stripe/webhook", stripeWebhookHandler);
+app.post("/api/payment/webhook", stripeWebhookHandler);
 
 // --- Body Parsers (after raw webhook parsers) ---
 app.use(express.json({ limit: "5mb" }));
@@ -109,13 +138,12 @@ app.use("/api/breeding", breedingRoutes);
 
 app.use("/api/discounts", discountRoutes);
 
-app.use("/api/admin/users", staffOwnerRoutes);  // cleaner
+app.use("/api/admin/users", staffOwnerRoutes); // cleaner
 app.use("/api/employees", employeeRoutes);
 
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/tasks", taskRoutes);
-
 
 // Health check
 
@@ -123,6 +151,10 @@ app.use("/api/performance", performanceRoutes);
 
 app.use("/api/transactions", transactionRoutes);
 app.use("/api", payrollSettingsRoutes);
+app.use("/employees", employeeRoutes);
+app.use("/payrolls", payrollRoutes);
+app.use("/api/payrolls", payrollRoutes);
+app.use("/api/audit", auditRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
@@ -131,6 +163,11 @@ app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
 
+
+// ✅ Chatbot API
+app.use("/api/chat", chatRoutes);
+
+app.use('/api/contact', contactRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>
@@ -144,3 +181,4 @@ app.use(errorHandler);
 // --- Start Server ---
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => console.log(`✅ API running on port :${PORT}`));
+

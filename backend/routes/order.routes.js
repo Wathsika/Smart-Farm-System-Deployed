@@ -3,13 +3,15 @@ import express from 'express';
 // Controllers
 import {
   createCheckoutSession,
-  stripeWebhookHandler,
   getAllOrders,
   getOrderById,
   updateOrderStatus,
   getMyOrders,
   cancelOrder,
-  getOrderBySessionId
+   getOrderBySessionId,
+  addOrderItemReview,
+  updateOrderItemReview
+
 } from '../controllers/order.controller.js';
 
 // Auth
@@ -21,9 +23,6 @@ const router = express.Router();
 
 router.post('/create-checkout-session', express.json(), createCheckoutSession);
 
-// This path remains for compatibility with your existing setup
-router.post('/webhook', stripeWebhookHandler);
-
 // ✅ Make the session lookup PUBLIC so success page works without login
 router.get('/session/:sessionId', getOrderBySessionId);
 
@@ -32,6 +31,11 @@ router.get('/myorders', protect, getMyOrders);
 
 // Cancel own order (requires auth)
 router.put('/:id/cancel', protect, cancelOrder);
+
+// Review order items (requires auth)
+router.post('/:orderId/reviews', protect, express.json(), addOrderItemReview);
+router.put('/:orderId/reviews', protect, express.json(), updateOrderItemReview);
+
 
 // --- Admin-only ---
 router.get('/', protect, requireRole('Admin'), getAllOrders);
