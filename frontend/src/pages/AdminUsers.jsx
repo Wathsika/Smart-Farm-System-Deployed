@@ -11,13 +11,14 @@ import {
   Filter, 
   Users, 
   DollarSign, 
-  Clock, // Keep Clock for general time display if needed elsewhere, not for status
+  Clock, 
   Mail, 
   Briefcase, 
   Plus,
-  UserCheck, // For Present (Clocked In) status
-  Coffee, // For On Leave status
-  AlertCircle // For Late (Clocked In) and Absent status
+  UserCheck, 
+  Coffee, 
+  AlertCircle,
+  Zap // Added for 'No Data' status fallback
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
@@ -49,6 +50,7 @@ export default function AdminUsers() {
     loan: "",
   });
   const [formError, setFormError] = useState(""); // General error for form submission
+  // FIX: Changed from {} to useState({})
   const [formValidationErrors, setFormValidationErrors] = useState({}); // Specific validation errors for each field
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -214,7 +216,7 @@ export default function AdminUsers() {
       } else if (salary < 0) {
         errors.basicSalary = "Basic Salary cannot be negative.";
         isValid = false;
-      } else if (salary > 1000000) { // Example max salary
+      } else if (salary > 1000000) { // Max salary check (10 Lakhs)
         errors.basicSalary = "Basic Salary cannot exceed Rs. 1,000,000."; 
         isValid = false;
       } else if (/\.\d{3,}/.test(form.basicSalary)) { // Check for more than 2 decimal places
@@ -250,8 +252,8 @@ export default function AdminUsers() {
       } else if (allowance < 0) {
         errors.allowance = "Allowance cannot be negative.";
         isValid = false;
-      } else if (allowance > 10000) { // Example max allowance
-        errors.allowance = "Allowance cannot exceed Rs. 10,000."; 
+      } else if (allowance > 1000000) { // Max allowance check (10 Lakhs)
+        errors.allowance = "Allowance cannot exceed Rs. 1,000,000."; 
         isValid = false;
       } else if (/\.\d{3,}/.test(form.allowance)) { // Allow up to 2 decimal places
         errors.allowance = "Allowance can have at most 2 decimal places.";
@@ -268,8 +270,8 @@ export default function AdminUsers() {
       } else if (loan < 0) {
         errors.loan = "Loan cannot be negative.";
         isValid = false;
-      } else if (loan > 100000) { // Example max loan
-        errors.loan = "Loan cannot exceed Rs. 100,000."; 
+      } else if (loan > 1000000) { // Max loan check (10 Lakhs)
+        errors.loan = "Loan cannot exceed Rs. 1,000,000."; 
         isValid = false;
       } else if (/\.\d{3,}/.test(form.loan)) { // Allow up to 2 decimal places
         errors.loan = "Loan can have at most 2 decimal places.";
@@ -388,16 +390,41 @@ export default function AdminUsers() {
         // Allow letters, spaces, and hyphens. Remove anything else (including periods).
         newValue = value.replace(/[^a-zA-Z\s-]/g, ''); 
     } 
-    // Special handling for number inputs to ensure only valid numbers are typed
+    // Special handling for number inputs to ensure only valid numbers are typed and respect length limits
     else if (['basicSalary', 'workingHours', 'allowance', 'loan'].includes(name)) {
-        // Allow digits and a single decimal point, strictly up to 2 decimal places.
-        // Do not allow negative sign here, as validation prevents negative values later.
-        if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) { 
-            newValue = value;
-        } else {
-            // If an invalid character is typed, revert to the previous valid value
-            newValue = form[name]; 
+        // 1. Remove non-numeric characters except for a single decimal point
+        let cleanedValue = value.replace(/[^0-9.]/g, ''); 
+
+        // 2. Ensure only one decimal point
+        const parts = cleanedValue.split('.');
+        if (parts.length > 2) {
+            // If more than one decimal point, take the first part and the first decimal part
+            cleanedValue = parts[0] + '.' + parts.slice(1).join('');
         }
+
+        // 3. Ensure maximum two decimal places
+        if (parts[1] && parts[1].length > 2) {
+            cleanedValue = parts[0] + '.' + parts[1].substring(0, 2);
+        }
+
+        let integerPart = cleanedValue.split('.')[0];
+        let decimalPart = cleanedValue.includes('.') ? cleanedValue.split('.')[1] : '';
+            
+        let maxIntegerLength;
+        if (name === 'workingHours') {
+            maxIntegerLength = 2; // Max value 60. Max integer part length 2 (e.g., "60")
+        } else {
+            maxIntegerLength = 7; // For basicSalary, allowance, loan: Max value 1,000,000. Max integer part length 7 (e.g., "1000000")
+        }
+
+        // 4. Enforce max integer part length
+        if (integerPart.length > maxIntegerLength) {
+            integerPart = integerPart.substring(0, maxIntegerLength);
+            // Reconstruct the value with the truncated integer part
+            cleanedValue = integerPart + (decimalPart ? `.${decimalPart}` : (value.includes('.') ? '.' : ''));
+        }
+
+        newValue = cleanedValue;
     }
 
     setForm((prev) => ({ ...prev, [name]: newValue }));
@@ -712,7 +739,7 @@ export default function AdminUsers() {
                       value={form.basicSalary} 
                       onChange={handleInputChange} 
                       className={`w-full p-4 bg-white border ${formValidationErrors.basicSalary ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter salary amount (e.g., 50000.00)"
+                      placeholder="Enter salary amount (max Rs. 1,000,000.00)"
                     />
                     {formValidationErrors.basicSalary && <p className="text-red-500 text-xs mt-1">{formValidationErrors.basicSalary}</p>}
                   </div>
@@ -732,7 +759,7 @@ export default function AdminUsers() {
                       value={form.workingHours} 
                       onChange={handleInputChange} 
                       className={`w-full p-4 bg-white border ${formValidationErrors.workingHours ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Hours per week (e.g., 40.00)" 
+                      placeholder="Hours per week (max 60.00)" 
                     />
                     {formValidationErrors.workingHours && <p className="text-red-500 text-xs mt-1">{formValidationErrors.workingHours}</p>}
                   </div>
@@ -752,7 +779,7 @@ export default function AdminUsers() {
                       value={form.allowance} 
                       onChange={handleInputChange} 
                       className={`w-full p-4 bg-white border ${formValidationErrors.allowance ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter allowance amount (e.g., 500.00)"
+                      placeholder="Enter allowance amount (max Rs. 1,000,000.00)"
                     />
                     {formValidationErrors.allowance && <p className="text-red-500 text-xs mt-1">{formValidationErrors.allowance}</p>}
                   </div>
@@ -772,7 +799,7 @@ export default function AdminUsers() {
                       value={form.loan} 
                       onChange={handleInputChange} 
                       className={`w-full p-4 bg-white border ${formValidationErrors.loan ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter outstanding loan amount (e.g., 1500.00)"
+                      placeholder="Enter outstanding loan amount (max Rs. 1,000,000.00)"
                     />
                     {formValidationErrors.loan && <p className="text-red-500 text-xs mt-1">{formValidationErrors.loan}</p>}
                   </div>

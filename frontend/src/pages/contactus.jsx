@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import ChatbotWidget from "../components/ChatbotWidget";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -199,7 +200,7 @@ const ContactUs = () => {
     {
       icon: "fas fa-map-marker-alt",
       title: "Visit Our Farm",
-      details: ["244/9, Dines Place, Kaduwela Rd", "Malabe, Sri Lanka"],
+      details: ["10/F, Ginimallagaha, Baddegama, Sri Lanka"],
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
@@ -209,7 +210,7 @@ const ContactUs = () => {
     {
       icon: "fas fa-phone-alt",
       title: "Call Us",
-      details: ["(555) 123-4567", "Available 7 days a week"],
+      details: ["+94 91 227 6246", "Available 7 days a week"],
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
@@ -311,7 +312,7 @@ const ContactUs = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.4 }}
             >
-              Get in touch with GreenLeaf Farm. We're here to answer your questions and welcome visitors to our Malabe location.
+              Get in touch with GreenLeaf Farm. We're here to answer your questions and welcome visitors to our Ginimallagaha location.
             </motion.p>
           </motion.div>
         </div>
@@ -757,16 +758,15 @@ const ContactUs = () => {
           >
             <button className="bg-white text-green-600 hover:bg-gray-50 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg shadow-lg transition-all duration-300 hover:shadow-xl">
               <i className="fas fa-phone-volume mr-2"></i>
-               Call Now: (555) 123-4567
+               Call Now: +94 91 227 6246
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-green-600 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg transition-all duration-300">
-              <i className="fas fa-envelope-open mr-2"></i>
-              Send Email
-            </button>
+            
           </motion.div>
         </div>
       </motion.section>
-    </div>
+    {/* ✅ Mount chatbot here so it's available on this page */}
+          <ChatbotWidget />
+       </div>
   );
 };
 
