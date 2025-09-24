@@ -92,13 +92,10 @@ function AddBreedingModal({ open, onClose, cows, onSaved }) {
     }
 
     // notes 
-    if (!form.notes.trim()) {
-      e.notes = "Notes are required";
-    } else {
+     if (form.notes.trim()) {
       const allowed = /^[A-Za-z0-9\s(),.'/-]+$/;
       if (!allowed.test(form.notes.trim())) {
-        e.notes =
-          "Only letters, numbers, spaces, and symbols ( ) , . ' / - are allowed";
+        e.notes = "Invalid characters in notes";
       }
     }
     return e;
@@ -188,7 +185,7 @@ function AddBreedingModal({ open, onClose, cows, onSaved }) {
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
           className={inputCls}
-          placeholder="Only letters, numbers, spaces, and symbols ( ) , . ' / - are allowed"
+          placeholder="notes..."
         />
       </Field>
       <div className="sticky bottom-0 bg-white pt-4 flex justify-end gap-3 border-t mt-5">
@@ -253,17 +250,14 @@ function EditBreedingModal({ open, onClose, cows, row, onSaved }) {
       if (d <= today) e.nextDueDate = "Must be after today";
     }
 
-    if (!form.notes.trim()) {
-      e.notes = "Notes are required";
-    } else {
+    if (form.notes.trim()) {
       const allowed = /^[A-Za-z0-9\s(),.'/-]+$/;
-      if (!allowed.test(form.notes)) {
-        e.notes =
-          "Only letters, numbers, spaces, and symbols ( ) , . ' / - are allowed";
+      if (!allowed.test(form.notes.trim())) {
+        e.notes = "Invalid characters in notes";
       }
     }
-    return e;
-  };
+      return e;
+    };
 
   const submit = async (e) => {
     e.preventDefault();

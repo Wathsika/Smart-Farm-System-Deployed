@@ -44,8 +44,17 @@ import inputRoutes from "./routes/input.routes.js";
 import planRoutes from "./routes/plan.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+// --- File Uploads (static serving) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // --- Initialize App ---
 const app = express();
+
+// serve uploaded images (e.g. /uploads/cows/abc.jpg)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- DB ---
 connectDB().catch((err) => {

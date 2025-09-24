@@ -24,7 +24,8 @@ const cowSchema = new mongoose.Schema(
         },
         message: 'Birth date cannot be in the future',
       }
-    }
+    },
+    photoUrl: { type: String, default: "" } 
   },
   { timestamps: true }
 );

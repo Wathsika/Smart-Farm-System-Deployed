@@ -326,9 +326,11 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
 export function ViewCowModal({ data, age, onClose, onEdit }) {
   if (!data) return null;
 
-  const photo =
-    data.photoUrl ||
-    "https://dummyimage.com/200x200/f7fafc/4a5568.png&text=Cow";
+  const API_HOST = "http://localhost:5001";
+
+  const photo = data.photoUrl
+    ? `${API_HOST}${data.photoUrl}`   // build full URL if exists
+    : "https://dummyimage.com/200x200/f7fafc/4a5568.png&text=Cow";
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
