@@ -1,7 +1,7 @@
 export const farmInfo = {
   name: "Smart Farm",
-  address: "123 Country Lane, Colombo, Sri Lanka",
-  phone: "+94 11 234 5678",
+  address: "10/F, Ginimellagaha, Baddegama, Sri Lanka",
+  phone: "+94 91 227 6246",
   email: "info@smartfarm.com"
 };
 

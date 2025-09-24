@@ -75,7 +75,7 @@ const contactDetails = [
   {
     icon: "fas fa-phone",
     title: "Call us any day",
-    details: ["(555) 123-4567", "Open daily 7AM – 6PM"]
+    details: ["+94 91 227 6246", "Open daily 7AM – 6PM"]
   },
   {
     icon: "fas fa-envelope-open-text",
