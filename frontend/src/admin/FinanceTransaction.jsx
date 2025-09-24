@@ -27,6 +27,7 @@ function escapeHtml(text) {
 }
 
 function downloadExcel(filename, rows) {
+
   const headers = [
     "Transaction Id",
     "Date",
@@ -113,15 +114,21 @@ export default function FinanceTransaction() {
         const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
 
         // Normalize: keep both mongo _id (for actions) and transaction_id (for display/export)
-        const rows = raw.map((r) => ({
-          mongoId: r._id || r.id, // backend identifier for update/delete
-          transaction_id: r.transaction_id || r.tid || r.txnId || "", // display ID (TNXyyyy...)
-          date: r.date,
-          type: r.type,
-          category: r.category,
-          amount: r.amount,
-          description: r.description,
-        }));
+        const rows = raw.map((r) => {
+          const transactionId =
+            r.transaction_id || r.transactionId || r.tid || r.txnId || r.txn_id || "";
+          const mongoId = r._id || r.id || r.mongoId || r.recordId || undefined;
+
+          return {
+            mongoId,
+            transaction_id: transactionId, // display ID (TNXyyyy...)
+            date: r.date,
+            type: r.type,
+            category: r.category,
+            amount: r.amount,
+            description: r.description,
+          };
+        });
 
         if (!ignore) setTransactions(rows);
       } catch (e) {
@@ -140,31 +147,6 @@ export default function FinanceTransaction() {
       ignore = true;
     };
   }, [q, typeFilter, monthFilter]);
-
-  function handleYearInput(e, prev) {
-    // ---- 1) Block special keys (onKeyDown) ----
-    if (e.type === "keydown") {
-      const k = e.key;
-      if (["e", "E", "+", "-", "."].includes(k)) {
-        e.preventDefault();
-        return prev;
-      }
-      return prev; // no change on keydown itself
-    }
-
-    // ---- 2) Sanitize value (onChange or onPaste) ----
-    let raw = e.target.value;
-    let v = String(raw).replace(/\D/g, "").slice(0, 4); // digits only, max 4
-
-    // Must start with 20
-    if (v.length >= 1 && v[0] !== "2") return prev;
-    if (v.length >= 2 && v[1] !== "0") return prev;
-
-    // If 4 digits, must be >= 2021
-    if (v.length === 4 && Number(v) < 2021) return prev;
-
-    return v;
-  }
 
   const months = useMemo(() => {
     const set = new Set(transactions.map((r) => monthKey(r.date)));
@@ -256,13 +238,18 @@ export default function FinanceTransaction() {
   const handleDelete = async (rowKey) => {
     try {
       // Prefer mongoId for API path; fall back to transaction_id if needed
-      const row = transactions.find(
-        (t) => t.mongoId === rowKey || t.transaction_id === rowKey
-      );
-      const idForApi = row?.mongoId || row?.transaction_id || rowKey;
+      const row = transactions.find((t) => {
+        const id = resolveRowId(t);
+        return id && (id === rowKey || t.mongoId === rowKey || t.transaction_id === rowKey);
+      });
+      const idForApi = resolveRowId(row) || rowKey;
+      if (!idForApi) {
+        alert("Cannot delete this transaction because its identifier is missing.");
+        return;
+      }
       await api.delete(`/transactions/${idForApi}`);
       setTransactions((prev) =>
-        prev.filter((t) => t.mongoId !== rowKey && t.transaction_id !== rowKey)
+        prev.filter((t) => resolveRowId(t) !== idForApi)
       );
     } catch (e) {
       alert(e?.response?.data?.message || e.message || "Failed to delete");
@@ -271,9 +258,17 @@ export default function FinanceTransaction() {
     }
   };
 
-  const handleEdit = (row) =>
+  const handleEdit = (row) => {
+    const idForEdit = resolveRowId(row);
+    if (!idForEdit) {
+      alert("Cannot edit this transaction because its identifier is missing.");
+      return;
+    }
     // Use mongoId for editing route (most forms expect _id); adjust if your form expects transaction_id
-    navigate(`/admin/finance/new_transaction?edit=${row.mongoId}`);
+    navigate(
+      `/admin/finance/new_transaction?edit=${encodeURIComponent(idForEdit)}`
+    );
+  };
 
   const handleAddNew = () => navigate("/admin/finance/new_transaction");
 
@@ -558,11 +553,13 @@ export default function FinanceTransaction() {
                         </td>
                       </tr>
                     )}
-                    {filtered.map((r) => (
-                      <tr
-                        key={r.mongoId || r.transaction_id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
+                    {filtered.map((r) => {
+                      const rowId = resolveRowId(r);
+                      return (
+                        <tr
+                          key={rowId || r.mongoId || r.transaction_id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
                           {r.transaction_id || "—"}
                         </td>
@@ -611,11 +608,16 @@ export default function FinanceTransaction() {
                               Edit
                             </button>
                             <button
-                              onClick={() =>
-                                setShowDeleteModal(
-                                  r.mongoId || r.transaction_id
-                                )
-                              }
+                              onClick={() => {
+                                const id = rowId;
+                                if (!id) {
+                                  alert(
+                                    "Cannot delete this transaction because its identifier is missing."
+                                  );
+                                  return;
+                                }
+                                setShowDeleteModal(id);
+                              }}
                               className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-white hover:bg-red-50 transition-colors"
                             >
                               <svg
@@ -635,8 +637,9 @@ export default function FinanceTransaction() {
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
