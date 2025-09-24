@@ -5,6 +5,7 @@ import ourstory from "../assets/ourstory.jpg";
 import freshdiary from "../assets/freshdiary.jpg";
 import crop from "../assets/crop.jpg";
 import produce from "../assets/produce.jpg";
+import { Link } from "react-router-dom";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -176,8 +177,12 @@ export default function AboutUs() {
           <h2 className="mb-6 text-3xl font-bold sm:text-4xl">Visit Our Farm</h2>
           <p className="mx-auto mb-8 max-w-3xl text-lg opacity-90">Experience farm life firsthand. Schedule a visit to see how we grow your food with care and dedication.</p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <button className="rounded-full bg-white px-6 py-3 font-semibold text-green-600 shadow-lg sm:px-8 sm:py-4">Schedule Visit</button>
-            <button className="rounded-full border-2 border-white px-6 py-3 font-semibold text-white hover:bg-white hover:text-green-600 sm:px-8 sm:py-4">Contact Us</button>
+            <Link
+  to="/contact"
+  className="rounded-full border-2 border-white px-6 py-3 font-semibold text-white hover:bg-white hover:text-green-600 sm:px-8 sm:py-4"
+>
+  Contact Us
+</Link>
           </div>
         </div>
       </motion.section>

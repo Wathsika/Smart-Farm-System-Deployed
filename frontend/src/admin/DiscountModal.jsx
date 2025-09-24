@@ -379,15 +379,21 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      name="value"
-                      value={form.value}
-                      onChange={handleChange}
-                      min="0"
-                      max={isPercent ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE}
-                      step={DISCOUNT_VALUE_STEP}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-9 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
-                    />
+                    type="number"
+                    name="value"
+                    value={form.value}
+                    onChange={handleChange}
+                    onKeyDown={(e) => {
+                      // ❌ Block minus, 'e', '+'
+                      if (e.key === "-" || e.key === "e" || e.key === "+") {
+                        e.preventDefault();
+                      }
+                    }}
+                    min="0"
+                    max={isPercent ? MAX_PERCENT_VALUE : MAX_FLAT_VALUE}
+                    step={DISCOUNT_VALUE_STEP}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm pr-9 focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-500"
+                  />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{valueSuffix}</span>
                   </div>
                 </div>
@@ -407,6 +413,12 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                       value={form.minPurchase}
                       onChange={handleChange}
                       onBlur={handleBlur}
+                      onKeyDown={(e) => {
+                        // ❌ Block minus, 'e', '+'
+                        if (e.key === "-" || e.key === "e" || e.key === "+") {
+                          e.preventDefault();
+                        }
+                      }}
                       min="0"
                       max={MAX_MIN_PURCHASE}
                       step="0.01"
@@ -435,11 +447,7 @@ export default function DiscountModal({ isOpen, onClose, onSave, discountToEdit,
                     <Calendar className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
 
                   </div>
-                   {startDateInvalid && (
-                    <p className="mt-1 text-xs text-red-500">
-                      Start date cannot be earlier than today ({startDateMin}).
-                    </p>
-                  )}
+                  
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">End Date</label>
