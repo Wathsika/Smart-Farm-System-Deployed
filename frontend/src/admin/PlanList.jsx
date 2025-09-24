@@ -164,29 +164,50 @@ const PlanList = () => {
   );
 
   const renderActions = (plan, { compact = false } = {}) => {
-    const containerClass = compact 
-      ? 'flex items-center gap-1 justify-end min-w-0' 
+    const containerClass = compact
+      ? 'flex items-center gap-1 justify-end min-w-0'
       : 'flex items-center gap-2 justify-end';
       
     const buttonBaseClass = compact
       ? 'inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 whitespace-nowrap'
       : 'inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 whitespace-nowrap min-w-[68px]';
+     const productId = extractId(plan.product);
+    const editDisabled = !productId;
+    const editDestination = productId
+      ? `/admin/crop/inputs/edit/${productId}`
+      : '/admin/crop/inputs';
+    const editButtonClass = `${buttonBaseClass} text-slate-700 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-200${
+      editDisabled ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''
+    }`;
+    const editButtonContent = compact ? (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+        />
+      </svg>
+    ) : (
+      'Edit'
+    );
 
     return (
       <div className={containerClass}>
-        <Link
-          to={`/admin/crop/plan/edit/${plan._id}`}
-          className={`${buttonBaseClass} text-slate-700 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-200`}
-        >
-          {compact ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          ) : (
-            'Edit'
-          )}
-        </Link>
-        
+         {editDisabled ? (
+          <span
+            className={editButtonClass}
+            role="button"
+            aria-disabled="true"
+            title="Cannot edit plan because its associated input is unavailable."
+          >
+            {editButtonContent}
+          </span>
+        ) : (
+          <Link to={editDestination} className={editButtonClass}>
+            {editButtonContent}
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => handleMarkApplied(plan)}
@@ -488,4 +509,4 @@ const PlanList = () => {
   );
 };
 
-export default PlanList;
+export default PlanList; 
