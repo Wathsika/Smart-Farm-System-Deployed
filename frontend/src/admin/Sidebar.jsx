@@ -81,6 +81,12 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   const [isCropOpen, setCropOpen] = useState(isOnCrop || false);
   const [isLivestockOpen, setLivestockOpen] = useState(isOnLivestock || false);
 
+  useEffect(() => {
+    if (isOnLivestock) {
+      setLivestockOpen(true);
+    }
+  }, [isOnLivestock]);
+
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
     navigate("/admin/store/dashboard");
@@ -100,6 +106,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   const handleLivestockClick = () => {
     setLivestockOpen((v) => !v);
     navigate("/admin/livestock");
+     closeMobile?.();
   };
 
   return (
@@ -149,7 +156,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
               className="overflow-hidden pl-6 space-y-1"
             >
               <SidebarLink
-                to="/admin/livestock/profile"
+                to="/admin/livestock"
                 icon="fas fa-id-card"
                 onNavigate={onNavigate}
               >

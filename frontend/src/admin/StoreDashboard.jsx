@@ -430,7 +430,7 @@ const topSellerMaxQty = useMemo(
                 index={1}
               />
               <StatCard
-                to="/admin/customers"
+                to="/admin/store/reports"
                 icon="fas fa-users"
                 label="Total Customers"
                 value={summary.customers}
