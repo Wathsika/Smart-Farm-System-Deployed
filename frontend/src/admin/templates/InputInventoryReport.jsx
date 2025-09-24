@@ -20,17 +20,31 @@ const styles = StyleSheet.create({
     borderBottomColor: '#16a34a',
     marginBottom: 16,
   },
+   headerLeft: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    paddingRight: 12,
+  },
   farmName: {
     fontSize: 24,
     fontFamily: 'Helvetica-Bold',
     color: '#166534',
+    marginBottom: 6,
   },
   farmDetails: {
     fontSize: 10,
     color: '#4b5563',
+    textAlign: 'left',
+    lineHeight: 1.4,
+    marginBottom: 2,
+  },
+   lastFarmDetail: {
+    marginBottom: 0,
   },
   headerRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   reportTitle: {
     fontSize: 18,
@@ -242,6 +256,7 @@ export const InputInventoryReport = ({
         {/* Header */}
         <View style={styles.header}>
           <View>
+             <View style={styles.headerLeft}></View>
             <Text style={styles.farmName}>GreenLeaf Farm</Text>
             <Text style={styles.farmDetails}>
               123 Farm Valley Road, Green County, Sri Lanka
