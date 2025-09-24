@@ -445,9 +445,9 @@ export default function AdminUsers() {
     emp => (emp.currentAttendanceStatus === 'Present' || emp.currentAttendanceStatus === 'Late') && !emp.todayLastCheckOut
   ).length : 0;
 
-  // Stats calculation for Total Payroll (unchanged)
-  const totalPayrollAmount = Array.isArray(employees) ? employees.reduce((sum, emp) => 
-    sum + (parseFloat(emp.basicSalary) || 0) + (parseFloat(emp.allowance) || 0) - (parseFloat(emp.loan) || 0), 0) : 0; 
+  // NEW: Calculate Total Basic Salary
+  const totalBasicSalary = Array.isArray(employees) ? employees.reduce((sum, emp) =>
+    sum + (parseFloat(emp.basicSalary) || 0), 0) : 0;
 
   if (loading) {
     return (
@@ -522,8 +522,9 @@ export default function AdminUsers() {
         </motion.div>
 
         {/* Stats Cards */}
+        {/* Adjusted grid to 3 columns since one card was removed */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
           variants={itemVariants}
         >
           {/* Total Employees (unchanged) */}
@@ -531,7 +532,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Employees</p>
-                <p className="text-3xl font-bold text-gray-900">{employees.length}</p>
+                <p className="text-3xl font-bold text-green-600">{employees.length}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
                 <Users className="w-6 h-6 text-green-600" />
@@ -551,19 +552,21 @@ export default function AdminUsers() {
               </div>
             </div>
           </div>
-          
-          {/* Total Payroll (unchanged) */}
+
+          {/* NEW: Total Basic Salary Card (Styled with green) */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Total Payroll</p>
-                <p className="text-3xl font-bold text-green-600">Rs.{totalPayrollAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-gray-600 text-sm font-medium">Total Basic Salary</p>
+                <p className="text-3xl font-bold text-green-600">Rs.{totalBasicSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </div>
+          
+          {/* Removed: Total Payroll Card */}
         </motion.div>
 
         {/* Search and Filter Bar (unchanged) */}
@@ -902,7 +905,7 @@ export default function AdminUsers() {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{emp.fullName}</div>
-                            <div className="text-sm text-gray-500">ID: {emp._id?.slice(-6)}</div>
+                            {/* Removed ID line as per previous request */}
                           </div>
                         </div>
                       </td>
