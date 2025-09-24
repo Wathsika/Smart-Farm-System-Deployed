@@ -245,6 +245,11 @@ export default function FinanceTransaction() {
       orderItems: items,
       totalPrice,
       discount: { amount: 0 },
+      templateOptions: {
+        showBillingDetails: false,
+        showOrderSummary: false,
+        showFooter: false,
+      },
     };
   }, [filtered, exportDate, exportFileBase]);
 
