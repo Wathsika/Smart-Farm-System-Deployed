@@ -9,6 +9,9 @@ const todayISO = () => {
   return new Date(Date.now() - off).toISOString().slice(0, 10);
 };
 
+
+const decimalDraftPattern = /^\d+(?:\.\d{0,2})?$/;
+
 const rules = {
   required: (msg = 'Required') => v =>
     v === undefined || v === null || String(v).trim() === '' ? msg : null,
@@ -18,6 +21,11 @@ const rules = {
     String(v || '').length > n ? msg : null,
   number: (msg = 'Must be a number') => v =>
     v === '' || v === null || v === undefined || isNaN(Number(v)) ? msg : null,
+    decimalPlaces: (places = 2, msg = `Use up to ${places} decimal places`) => v => {
+    if (v === '' || v === null || v === undefined) return null;
+    const re = new RegExp(`^\\d+(?:\\.\\d{1,${places}})?$`);
+    return re.test(String(v)) ? null : msg;
+  },
   gt: (n, msg = `Must be > ${n}`) => v => Number(v) > n ? null : msg,
   oneOf: (arr, msg = 'Invalid value') => v => arr.includes(v) ? null : msg,
   pattern: (re, msg = 'Invalid format') => v =>
@@ -44,7 +52,7 @@ const validate = (schema, data) => {
   return { valid: Object.keys(errors).length === 0, errors };
 };
 // --------------------------------------------------------------------------
-export const STATUS_OPTIONS = ['In Use', 'Available', 'Planted', 'Fallow'];
+export const STATUS_OPTIONS = ['Available', 'Planted', 'Fallow', 'Under Preparation'];
 export const validateStatus = rules.oneOf(STATUS_OPTIONS);
 
 const AddFieldPage = () => {
@@ -57,7 +65,7 @@ const AddFieldPage = () => {
     locationDescription: '',
     area: { value: '', unit: 'acres' },
     soilType: 'Loamy',
-    status: 'STATUS_OPTIONS[0]',
+    status: STATUS_OPTIONS[0],
     irrigationSystem: '',
     notes: '',
   });
@@ -71,6 +79,16 @@ const AddFieldPage = () => {
 
   const handleAreaChange = e => {
     const { name, value } = e.target;
+    if (name === 'value') {
+      if (value === '' || decimalDraftPattern.test(value)) {
+        setFormData(prev => ({
+          ...prev,
+          area: { ...prev.area, value },
+        }));
+      }
+      return;
+    }
+
     setFormData(prev => ({ ...prev, area: { ...prev.area, [name]: value } }));
   };
 
@@ -84,7 +102,11 @@ const AddFieldPage = () => {
         rules.maxLength(20),
       ],
       locationDescription: [rules.required(), rules.minLength(3)],
-      'area.value': [rules.required(), rules.number(), rules.gt(0)],
+      'area.value': [
+        rules.required(),
+        rules.decimalPlaces(2, 'Allow up to two decimal places'),
+        rules.gt(0, 'Must be greater than 0'),
+      ],
       'area.unit': [rules.oneOf(['acres', 'hectares', 'sqm'])],
       soilType: [rules.oneOf(['Loamy', 'Clay', 'Sandy'])],
       status: [validateStatus],
@@ -102,7 +124,10 @@ const AddFieldPage = () => {
 
     setIsSubmitting(true);
     try {
-      await api.post('/fields', formData);
+       const payload = {
+        ...formData,
+        area: { ...formData.area, value: Number(formData.area.value) },
+      };
       alert('Field added successfully!');
       navigate('/admin/fields');
     } catch (err) {
@@ -121,7 +146,7 @@ const AddFieldPage = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">  
             <div className="flex items-center space-x-4">
               <Link
                 to="/admin/fields"
@@ -324,16 +349,19 @@ const AddFieldPage = () => {
               </div>
 
               {/* Area */}
-              <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
                     Area Size *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     name="value"
                     step="0.01"
                     min="0.01"
+                    value={formData.area.value}
+                    inputMode="decimal"
+                    pattern="^\\d+(?:\\.\\d{1,2})?$"
                     onChange={handleAreaChange}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
@@ -342,6 +370,7 @@ const AddFieldPage = () => {
                         : 'border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500'
                     }`}
                     placeholder="0.00"
+                    aria-describedby={errors['area.value'] ? 'area-error' : undefined}
                   />
                   {errors['area.value'] && (
                     <div className="flex items-center mt-2">
@@ -358,7 +387,7 @@ const AddFieldPage = () => {
                           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
                         />
                       </svg>
-                      <p className="text-red-600 text-sm font-medium">
+                        <p id="area-error" className="text-red-600 text-sm font-medium">
                         {errors['area.value']}
                       </p>
                     </div>

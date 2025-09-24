@@ -533,9 +533,9 @@ const FieldPage = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Use</p>
+                <p className="text-sm font-medium text-gray-600">Under Preparation</p>
                 <p className="text-3xl font-bold text-gray-900">
-                {countByStatus("In Use")}
+                {countByStatus("Under Preparation")}
                 </p>
               </div>
             </div>
