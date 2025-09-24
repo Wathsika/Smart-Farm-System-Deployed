@@ -1,25 +1,28 @@
 // src/pages/employee/EmployeeDashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User, Clock, Loader, LayoutDashboard } from "lucide-react"; // Added LayoutDashboard for main title
+import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User, Clock, Loader, LayoutDashboard, LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MyTasks from "./MyTasks";
 import MyLeaveRequests from "./MyLeaveRequests";
-import PerformanceTab from "./Performance"; // Renamed from Performance.jsx to Performance
+import PerformanceTab from "./Performance";
 import TaskCalendar from "./TaskCalendar";
 import { api } from "../../lib/api";
+import { useNavigate } from "react-router-dom";
+import { auth } from "../../lib/auth"; // Import your auth utility here
 
 export default function EmployeeDashboard() {
-  const [status, setStatus] = useState("idle"); // idle | checked-in | checked-out
-  const [loading, setLoading] = useState(true); // Changed initial loading to true for initial data fetch
+  const [status, setStatus] = useState("idle");
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("today");
   const [todayRecords, setTodayRecords] = useState([]);
+  const navigate = useNavigate();
 
   const loadToday = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/attendance/today"); // Use specific endpoint for today's records
+      const { data } = await api.get("/attendance/today");
 
       if (data.items && data.items.length > 0) {
         setTodayRecords(data.items);
@@ -27,14 +30,19 @@ export default function EmployeeDashboard() {
         setStatus(hasActiveSession ? "checked-in" : "checked-out");
       } else {
         setTodayRecords([]);
-        setStatus("idle"); // FIXED: Set to idle if no records found for today
+        setStatus("idle");
       }
     } catch (err) {
       console.error("Failed to load attendance", err);
+      // If loading attendance fails due to auth issue, consider logging out
+      if (err?.response?.status === 401) { // Example: if server returns 401 Unauthorized
+        auth.logout();
+        navigate("/login");
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]); // Add navigate to dependency array for useCallback
 
   useEffect(() => {
     loadToday();
@@ -44,10 +52,14 @@ export default function EmployeeDashboard() {
     setLoading(true);
     try {
       await api.post("/attendance/clock-in");
-      await loadToday(); // Re-fetch to update the state
+      await loadToday();
     } catch (err) {
       console.error("Check-in failed", err);
       alert(err?.response?.data?.message || "Check-in failed. Please try again.");
+      if (err?.response?.status === 401) {
+        auth.logout();
+        navigate("/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -57,30 +69,52 @@ export default function EmployeeDashboard() {
     setLoading(true);
     try {
       await api.post("/attendance/clock-out");
-      await loadToday(); // Re-fetch to update the state
+      await loadToday();
     } catch (err) {
       console.error("Check-out failed", err);
       alert(err?.response?.data?.message || "Check-out failed. Please try again.");
+      if (err?.response?.status === 401) {
+        auth.logout();
+        navigate("/login");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // OPTIONAL: If you have a backend logout endpoint for JWT blacklisting
+      // (less common but possible with JWTs for immediate invalidation)
+      // await api.post("/auth/logout");
+      
+      // Client-side logout: clear token and user data from local storage
+      auth.logout();
+      navigate("/login"); // Redirect to the login page
+    } catch (err) {
+      console.error("Logout failed", err);
+      // Even if API call fails (e.g., if there's no backend /logout endpoint),
+      // we should still clear client-side auth and redirect.
+      auth.logout(); // Ensure client-side logout happens
+      navigate("/login");
+      alert(err?.response?.data?.message || "Logout failed. Please try again.");
+    }
+  };
+
   const tabs = [
     { id: "today", label: "Today’s Tasks", icon: CheckSquare },
-    { id: "calendar", label: "Task Calendar", icon: Calendar }, // Changed order
+    { id: "calendar", label: "Task Calendar", icon: Calendar },
     { id: "leave", label: "Leave Requests", icon: FileText },
     { id: "performance", label: "Performance", icon: TrendingUp },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8"> {/* Main background like TaskManagement */}
+    <div className="min-h-screen bg-gray-50 p-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
           <div className="flex items-center">
             <div className="p-4 bg-green-500 rounded-lg shadow-md mr-4">
-              <LayoutDashboard className="w-10 h-10 text-white" /> {/* New icon for dashboard title */}
+              <LayoutDashboard className="w-10 h-10 text-white" />
             </div>
             <div>
               <h1 className="text-4xl font-bold text-gray-800">Employee Dashboard</h1>
@@ -94,18 +128,25 @@ export default function EmployeeDashboard() {
             >
               <Bell className="h-5 w-5 text-gray-600" />
             </motion.button>
-            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-200">
+            <div className="flex items-center gap-2 bg-white rounded-full pl-4 pr-3 py-2 shadow-sm border border-gray-200">
               <User className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-800 font-medium">Employee</span>
+              <span className="text-gray-800 font-medium">{auth.user ? auth.user.username : 'Employee'}</span> {/* Display username from auth.user */}
             </div>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              className="flex items-center text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors px-3 py-2 rounded-lg"
+            >
+              <LogOut className="h-4 w-4 mr-1" />
+              Logout
+            </Button>
           </div>
         </div>
 
-        {/* Check-in/out buttons */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-8 flex flex-wrap gap-4">
           <Button
             onClick={handleCheckIn}
-            disabled={loading || status === "checked-in"} // Disabled if loading or already checked in
+            disabled={loading || status === "checked-in"}
             className="flex items-center px-6 py-3 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <motion.span whileHover={{ scale: (loading || status === "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status === "checked-in") ? 1 : 0.95 }} className="flex items-center">
@@ -115,7 +156,7 @@ export default function EmployeeDashboard() {
           </Button>
           <Button
             onClick={handleCheckOut}
-            disabled={loading || status !== "checked-in"} // Disabled if loading or NOT checked in
+            disabled={loading || status !== "checked-in"}
             className="flex items-center px-6 py-3 font-medium text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <motion.span whileHover={{ scale: (loading || status !== "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status !== "checked-in") ? 1 : 0.95 }} className="flex items-center">
@@ -125,7 +166,6 @@ export default function EmployeeDashboard() {
           </Button>
         </motion.div>
 
-        {/* Show ALL times for the day */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}
           className="mb-8 text-gray-700 space-y-2 p-6 bg-white rounded-xl shadow-sm border border-gray-100"
@@ -155,7 +195,6 @@ export default function EmployeeDashboard() {
           )}
         </motion.div>
 
-        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.5 }}
           className="flex space-x-1 p-1 rounded-xl border border-gray-200 bg-white shadow-sm mb-8"
@@ -181,7 +220,6 @@ export default function EmployeeDashboard() {
           })}
         </motion.div>
 
-        {/* Content */}
         {activeTab === "today" && <MyTasks />}
         {activeTab === "calendar" && <TaskCalendar />}
         {activeTab === "leave" && <MyLeaveRequests />}
