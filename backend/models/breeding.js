@@ -1,4 +1,4 @@
-// backend/models/breeding.js
+
 import mongoose from "mongoose";
 
 const breedingSchema = new mongoose.Schema(
@@ -19,7 +19,9 @@ const breedingSchema = new mongoose.Schema(
 
     status: {
       type: String,
+
       enum: ["planned", "done", "missed", "cancelled"],
+
       default: "planned",
       index: true,
     },

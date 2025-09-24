@@ -85,11 +85,31 @@ export const updateField = async (req, res) => {
     const field = await Field.findById(req.params.id);
 
     if (field) {
-      // එන data එක field එකට දාලා update කරනවා
-      field.fieldName = req.body.fieldName || field.fieldName;
-      field.locationDescription = req.body.locationDescription || field.locationDescription;
-      // ... (අනිත් හැම field එකකටම මෙහෙම update logic එක දාන්න පුළුවන්)
-      
+       const {
+        fieldName,
+        locationDescription,
+        soilType,
+        status,
+        irrigationSystem,
+        notes,
+        currentCrop,
+      } = req.body;
+
+      if (typeof fieldName !== 'undefined') field.fieldName = fieldName;
+      if (typeof locationDescription !== 'undefined') field.locationDescription = locationDescription;
+      if (typeof soilType !== 'undefined') field.soilType = soilType;
+      if (typeof status !== 'undefined') field.status = status;
+      if (typeof irrigationSystem !== 'undefined') field.irrigationSystem = irrigationSystem;
+      if (typeof notes !== 'undefined') field.notes = notes;
+      if (typeof currentCrop !== 'undefined') field.currentCrop = currentCrop;
+
+      // Nested area object requires special handling so we don't lose values
+      if (req.body.area && typeof req.body.area === 'object') {
+        const { value, unit } = req.body.area;
+        if (typeof value !== 'undefined') field.area.value = value;
+        if (typeof unit !== 'undefined') field.area.unit = unit;
+      }
+
       const updatedField = await field.save();
       res.json(updatedField);
     } else {

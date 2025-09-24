@@ -43,6 +43,7 @@ import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
+import EditPlanPage from "./admin/EditPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
 import InputListPage from "./admin/InputListPage.jsx";
 import AddInputPage from "./admin/AddInputPage.jsx";
@@ -185,6 +186,9 @@ export default function App() {
         {/* Plan management */}
         <Route path="crop/plans" element={<PlanList />} />
         <Route path="crop/plan/new" element={<AddPlan />} />
+
+        <Route path="crop/plan/edit/:id" element={<EditPlanPage />} />
+        
 
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />

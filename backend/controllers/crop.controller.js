@@ -165,3 +165,19 @@ export const updateCropAPI = async (cropId, cropData) => {
         throw new Error(error.response?.data?.message || 'Failed to update crop.');
     }
 };
+
+//Add new function for 404 error 
+export const getCropById = async (req, res) => {
+    try {
+        const crop = await Crop.findById(req.params.id);
+        if (!crop) {
+            return res.status(404).json({ message: 'Crop not found.' });
+        }
+        return res.status(200).json({ crop });
+    } catch (error) {
+        console.error('Error fetching crop:', error);
+        return res.status(500).json({ message: 'Server error. Could not fetch crop.' });
+    }
+};
+
+

@@ -40,6 +40,7 @@ const drawerVariants = {
   exit: { x: -320, opacity: 0, transition: { duration: 0.2 } },
 };
 
+
 const SidebarInner = ({ location, navigate, closeMobile }) => {
   const { logout } = useAuth();
 
@@ -196,48 +197,46 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
         </button>
         <AnimatePresence>
           {isCropOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
-            >
-              <SidebarLink
-                to="/admin/crop"
-                icon="fas fa-tractor"
-                onNavigate={onNavigate}
-              >
-                Crop List
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/fields"
-                icon="fas fa-map-marked-alt"
-                onNavigate={onNavigate}
-              >
-                Farm Fields
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/plans"
-                icon="fas fa-clipboard-list"
-                onNavigate={onNavigate}
-              >
-                Plans
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/plan/new"
-                icon="fas fa-plus-circle"
-                onNavigate={onNavigate}
-              >
-                Add Plan
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/inputs"
-                icon="fas fa-vial"
-                onNavigate={onNavigate}
-              >
-                Inputs Inventory
-              </SidebarLink>
-            </motion.div>
+
+<motion.div
+  initial={{ height: 0, opacity: 0 }}
+  animate={{ height: "auto", opacity: 1 }}
+  exit={{ height: 0, opacity: 0 }}
+  className="overflow-hidden pl-6 space-y-1"
+>
+  <SidebarLink
+    to="/admin/crop"
+    icon="fas fa-tractor"
+    onNavigate={onNavigate}
+  >
+    Crop List
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/fields"
+    icon="fas fa-map-marked-alt"
+    onNavigate={onNavigate}
+  >
+    Farm Fields
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/crop/plans"
+    icon="fas fa-clipboard-list"
+    onNavigate={onNavigate}
+  >
+    Plans
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/crop/inputs"
+    icon="fas fa-plus-circle"
+    onNavigate={onNavigate}
+  > 
+ 
+    Inputs Inventory
+  </SidebarLink>
+</motion.div>    
+
+            
+
           )}
         </AnimatePresence>
 

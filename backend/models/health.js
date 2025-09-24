@@ -1,8 +1,12 @@
+
 import mongoose from "mongoose";
 
+
+import mongoose from "mongoose";
 const healthSchema = new mongoose.Schema(
   {
     cow: { type: mongoose.Schema.Types.ObjectId, ref: "Cow", required: true, index: true },
+
     date: { type: Date, required: true, index: true },   // event date
     type: {
       type: String,
@@ -14,6 +18,7 @@ const healthSchema = new mongoose.Schema(
         "INJURY",
         "OTHER",
       ],
+
       default: "CHECKUP",
       index: true,
     },
@@ -24,14 +29,19 @@ const healthSchema = new mongoose.Schema(
     medication: { type: String, trim: true },
     dosage: { type: Number, min: 0 },
     vet: { type: String, trim: true },
+
     nextDueDate: { type: Date }, // e.g. next vaccine due
+
     notes: { type: String, trim: true, maxlength: 1000 },
   },
   { timestamps: true }
 );
-
-// helpful compound index for ranges
 healthSchema.index({ cow: 1, date: -1, type: 1 });
 
 const Health = mongoose.models.Health || mongoose.model("Health", healthSchema);
 export default Health;
+
+
+
+
+
