@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api';
 
-// ---------- Inline validators (no extra files) ----------
+// ---------- Inline validators ----------
 const todayISO = () => {
   const off = new Date().getTimezoneOffset() * 60000;
   return new Date(Date.now() - off).toISOString().slice(0, 10);
@@ -19,8 +19,6 @@ const rules = {
     String(v || '').length > n ? msg : null,
   pattern: (re, msg = 'Invalid format') => v =>
     v == null || re.test(String(v)) ? null : msg,
-  dateNotPast: (msg = 'Date cannot be in the past') => v =>
-    !v ? msg : (v >= todayISO() ? null : msg),
   dateOnOrAfter: (field, msg) => (v, all) =>
     !v || !all[field] || v >= all[field] ? null : (msg || `Must be on/after ${field}`),
   oneOf: (arr, msg = 'Invalid value') => v => (arr.includes(v) ? null : msg),
@@ -150,10 +148,6 @@ const EditCrop = () => {
         rules.maxLength(60),
         rules.pattern(/^[A-Za-z0-9()\-.\s]+$/, 'Only letters, numbers, (), -, . allowed')
       ],
-      plantingDate: [
-        rules.required('Planting Date is required'),
-        rules.dateNotPast()
-      ],
       expectedHarvestDate: [
         rules.dateOnOrAfter('plantingDate', 'Harvest must be after planting')
       ],
@@ -171,10 +165,7 @@ const EditCrop = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
-      ...(name === 'plantingDate' && prev.expectedHarvestDate && prev.expectedHarvestDate < value
-        ? { expectedHarvestDate: '' }
-        : null)
+      [name]: value
     }));
   };
 
@@ -187,7 +178,6 @@ const EditCrop = () => {
     try {
       await api.put(`/crops/${id}`, formData);
       setMessage('Crop updated successfully!');
-      // <-- මෙන්න මෙතන වෙනස: navigate කරන විට state එකක් යැව්වා
       setTimeout(() => navigate('/admin/crop', { state: { cropUpdated: true } }), 1200); 
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
@@ -218,37 +208,13 @@ const EditCrop = () => {
     );
   }
 
-  const canSubmit = formData.cropName && formData.plantingDate && Object.keys(errors).length === 0;
+  const canSubmit = formData.cropName && Object.keys(errors).length === 0;
 
   const statusConfig = {
-    'Seeding': { 
-      color: 'bg-blue-500', 
-      bg: 'bg-blue-50', 
-      text: 'text-blue-700',
-      icon: '🌱',
-      label: 'Seeding Phase'
-    },
-    'Flowering': { 
-      color: 'bg-yellow-500', 
-      bg: 'bg-yellow-50', 
-      text: 'text-yellow-700',
-      icon: '🌸',
-      label: 'Flowering Stage'
-    },
-    'Harvest Ready': { 
-      color: 'bg-green-500', 
-      bg: 'bg-green-50', 
-      text: 'text-green-700',
-      icon: '🌾',
-      label: 'Ready for Harvest'
-    },
-    'Harvested': { 
-      color: 'bg-purple-500', 
-      bg: 'bg-purple-50', 
-      text: 'text-purple-700',
-      icon: '✅',
-      label: 'Harvest Complete'
-    }
+    'Seeding': { color: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', icon: '🌱', label: 'Seeding Phase' },
+    'Flowering': { color: 'bg-yellow-500', bg: 'bg-yellow-50', text: 'text-yellow-700', icon: '🌸', label: 'Flowering Stage' },
+    'Harvest Ready': { color: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-700', icon: '🌾', label: 'Ready for Harvest' },
+    'Harvested': { color: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', icon: '✅', label: 'Harvest Complete' }
   };
 
   const currentStatus = statusConfig[formData.status] || statusConfig['Seeding'];
@@ -326,13 +292,13 @@ const EditCrop = () => {
                 </div>
               </div>
 
-              {/* Date Fields Grid */}
+              {/* Dates Grid */}
               <div className="grid lg:grid-cols-2 gap-8">
                 
-                {/* Planting Date */}
+                {/* Planting Date (read-only) */}
                 <div className="space-y-3">
                   <label className="block text-sm font-semibold text-slate-700">
-                    Planting Date <span className="text-red-500">*</span>
+                    Planting Date <span className="text-slate-400 font-normal ml-2">(Fixed)</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
@@ -342,19 +308,10 @@ const EditCrop = () => {
                       type="date"
                       name="plantingDate"
                       value={formData.plantingDate}
-                      onChange={handleChange}
-                      onBlur={() => runValidation()}
-                      min={todayISO()}
-                      className={`w-full pl-12 pr-5 py-4 bg-slate-50 border-2 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 focus:bg-white hover:bg-white text-slate-900 ${
-                        errors['plantingDate'] ? 'border-red-300 bg-red-50 focus:ring-red-100 focus:border-red-400' : 'border-slate-200'
-                      }`}
+                      readOnly
+                      disabled
+                      className="w-full pl-12 pr-5 py-4 bg-slate-100 border-2 rounded-2xl text-slate-500 cursor-not-allowed"
                     />
-                    {errors['plantingDate'] && (
-                      <div className="flex items-center space-x-2 mt-2 text-red-600 text-sm">
-                        <AlertCircleIcon />
-                        <span>{errors['plantingDate']}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
