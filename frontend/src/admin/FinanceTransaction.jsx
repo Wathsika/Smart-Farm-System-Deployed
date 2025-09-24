@@ -776,7 +776,28 @@ export default function FinanceTransaction() {
         </div>
       </div>
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        {pdfOrder && <InvoiceTemplate ref={invoiceRef} order={pdfOrder} />}
+        {pdfOrder && (
+          <div ref={invoiceRef}>
+            {/* override title */}
+            <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
+              <h1
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#4B5563",
+                }}
+              >
+                REPORT
+              </h1>
+              <p style={{ marginTop: "4px", color: "#6B7280" }}>
+                Report #: {exportFileBase}
+              </p>
+            </div>
+
+            {/* reuse invoice template content except header */}
+            <InvoiceTemplate order={pdfOrder} hideHeader />
+          </div>
+        )}
       </div>
     </div>
   );
