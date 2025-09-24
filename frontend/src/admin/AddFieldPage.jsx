@@ -21,7 +21,9 @@ const rules = {
     String(v || '').length > n ? msg : null,
   number: (msg = 'Must be a number') => v =>
     v === '' || v === null || v === undefined || isNaN(Number(v)) ? msg : null,
-    decimalPlaces: (places = 2, msg = `Use up to ${places} decimal places`) => v => {
+    max: (n, msg = `Must be ≤ ${n}`) => v =>
+    v === '' || v === null || v === undefined ? null : Number(v) <= n ? null : msg,
+  decimalPlaces: (places = 2, msg = `Use up to ${places} decimal places`) => v => {
     if (v === '' || v === null || v === undefined) return null;
     const re = new RegExp(`^\\d+(?:\\.\\d{1,${places}})?$`);
     return re.test(String(v)) ? null : msg;
@@ -106,6 +108,7 @@ const AddFieldPage = () => {
         rules.required(),
         rules.decimalPlaces(2, 'Allow up to two decimal places'),
         rules.gt(0, 'Must be greater than 0'),
+        rules.max(100, 'Must be 100 or less'),
       ],
       'area.unit': [rules.oneOf(['acres', 'hectares', 'sqm'])],
       soilType: [rules.oneOf(['Loamy', 'Clay', 'Sandy'])],
