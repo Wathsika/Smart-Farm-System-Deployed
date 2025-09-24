@@ -471,11 +471,15 @@ export default function AuditLogPage() {
       const headerClasses = isOriginal
         ? "bg-red-100 text-red-700"
         : "bg-emerald-100 text-emerald-700";
-      const borderClasses = isOriginal ? "border-red-200" : "border-emerald-200";
+      const borderClasses = isOriginal
+        ? "border-red-200"
+        : "border-emerald-200";
 
       return (
         <div className={`border ${borderClasses} rounded-md overflow-hidden`}>
-          <div className={`${headerClasses} px-2 py-1 text-xs font-semibold uppercase`}>
+          <div
+            className={`${headerClasses} px-2 py-1 text-xs font-semibold uppercase`}
+          >
             {isOriginal ? "Original Data" : "Updated Data"}
           </div>
           <div className="p-2">
@@ -527,11 +531,12 @@ export default function AuditLogPage() {
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
           {filteredLogs.map((row) => {
-            const key = row._id || row.recordId || row.transactionId || row.timestamp;
+            const key =
+              row._id || row.recordId || row.transactionId || row.timestamp;
             const diffs = getAuditFieldDiffs(row.originalData, row.newData);
-            const changedLabels = AUDIT_FIELDS.filter(({ key }) => diffs[key]).map(
-              ({ label }) => label
-            );
+            const changedLabels = AUDIT_FIELDS.filter(
+              ({ key }) => diffs[key]
+            ).map(({ label }) => label);
             return (
               <React.Fragment key={key}>
                 <tr className="align-top">
@@ -547,7 +552,9 @@ export default function AuditLogPage() {
                       {row.action || "—"}
                     </span>
                   </td>
-                  <td className="p-2 text-gray-800 align-top">{row.user || "—"}</td>
+                  <td className="p-2 text-gray-800 align-top">
+                    {row.user || "—"}
+                  </td>
                   <td className="p-2 text-gray-800 align-top">
                     {row.collection || "—"}
                   </td>
@@ -583,7 +590,11 @@ export default function AuditLogPage() {
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderChangeColumn(row.originalData, "original", diffs)}
+                        {renderChangeColumn(
+                          row.originalData,
+                          "original",
+                          diffs
+                        )}
                         {renderChangeColumn(row.newData, "updated", diffs)}
                       </div>
                     </div>
@@ -675,6 +686,7 @@ export default function AuditLogPage() {
             </div>
 
             {/* Transaction ID filter */}
+            {/* Transaction ID filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Search className="w-4 h-4 inline mr-1" />
@@ -685,17 +697,25 @@ export default function AuditLogPage() {
                   type="text"
                   placeholder="Search by transaction ID..."
                   value={filters.transactionId}
-                  onChange={(e) =>
+                  maxLength={19} // ✅ Limit max characters
+                  onChange={(e) => {
+                    const cleanValue = e.target.value.replace(
+                      /[^a-zA-Z0-9]/g,
+                      ""
+                    );
                     setFilters((f) => ({
                       ...f,
-                      transactionId: e.target.value,
-                    }))
-                  }
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      transactionId: cleanValue,
+                    }));
+                  }}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm 
+                 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
                 <button
                   onClick={loadLogs}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 
+                 bg-emerald-600 text-white rounded-lg text-xs font-medium 
+                 hover:bg-emerald-700 transition-colors"
                   title="Refresh data"
                 >
                   <RefreshCw size={14} />
@@ -733,7 +753,8 @@ export default function AuditLogPage() {
             </div>
           ) : !filteredLogs.length ? (
             <div className="p-12 text-center text-gray-500">
-              No audit logs found for {formatDateOnly(filters.date) || "all dates"}.
+              No audit logs found for{" "}
+              {formatDateOnly(filters.date) || "all dates"}.
             </div>
           ) : (
             <>
@@ -778,7 +799,9 @@ export default function AuditLogPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm">{row.user || "—"}</td>
-                        <td className="px-6 py-4 text-sm">{row.collection || "—"}</td>
+                        <td className="px-6 py-4 text-sm">
+                          {row.collection || "—"}
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                             {row.transactionId || row.recordId || "—"}
