@@ -5,7 +5,11 @@ import ourstory from "../assets/ourstory.jpg";
 import freshdiary from "../assets/freshdiary.jpg";
 import crop from "../assets/crop.jpg";
 import produce from "../assets/produce.jpg";
+
 import { Link } from "react-router-dom";
+
+import ChatbotWidget from "../components/ChatbotWidget";
+
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -186,6 +190,8 @@ export default function AboutUs() {
           </div>
         </div>
       </motion.section>
-    </div>
+    {/* ✅ Mount chatbot here so it's available on this page */}
+          <ChatbotWidget />
+       </div>
   );
 }

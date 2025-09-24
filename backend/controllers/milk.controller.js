@@ -15,10 +15,10 @@ function startOfDay(input) {
   return d;
 }
 
-/* ------------ CRUD ------------ */
+// create new milk record
 export const createMilk = async (req, res, next) => {
   try {
-    const { cow, date, shift = "AM", volumeLiters, fatPct, snfPct, notes, recordedBy } = req.body;
+    const { cow, date, shift = "AM", volumeLiters } = req.body;
 
     if (!cow || !date || volumeLiters == null) {
       return res.status(400).json({ message: "cow, date, volumeLiters are required" });
@@ -26,11 +26,11 @@ export const createMilk = async (req, res, next) => {
     const d = startOfDay(date);
     if (!d) return res.status(400).json({ message: "Invalid date" });
 
-    // make sure cow exists (optional but helpful)
+    // make sure cow exists
     const exists = await Cow.exists({ _id: cow });
     if (!exists) return res.status(404).json({ message: "Cow not found" });
 
-    const doc = await Milk.create({ cow, date: d, shift, volumeLiters, fatPct, snfPct, notes, recordedBy });
+    const doc = await Milk.create({ cow, date: d, shift, volumeLiters });
     res.status(201).json(doc);
   } catch (err) {
     if (err?.code === 11000) {
@@ -45,13 +45,13 @@ export const listMilk = async (req, res, next) => {
     const { cow, shift, from, to, page = 1, limit = 20 } = req.query;
     const q = {};
     if (cow) q.cow = cow;
-    if (shift) q.shift = shift;
+    if (shift && (shift === "AM" || shift === "PM")) q.shift = shift;
     if (from || to) {
       q.date = {};
       if (from) q.date.$gte = startOfDay(from);
       if (to) {
         const t = startOfDay(to);
-        if (t) t.setDate(t.getDate() + 1); // inclusive
+        if (t) t.setDate(t.getDate() + 1); 
         q.date.$lt = t;
       }
     }
@@ -82,9 +82,16 @@ export const getMilk = async (req, res, next) => {
   }
 };
 
+// edit milk record
 export const updateMilk = async (req, res, next) => {
   try {
-    const payload = { ...req.body };
+    const payload = {};
+  if (req.body.cow) payload.cow = req.body.cow;
+  if (req.body.shift && (req.body.shift === "AM" || req.body.shift === "PM")) {
+    payload.shift = req.body.shift;
+  }
+  if (req.body.volumeLiters != null) payload.volumeLiters = req.body.volumeLiters;
+   if (req.body.date) payload.date = req.body.date; 
     if (payload.date) {
       const d = startOfDay(payload.date);
       if (!d) return res.status(400).json({ message: "Invalid date" });
@@ -105,6 +112,7 @@ export const updateMilk = async (req, res, next) => {
   }
 };
 
+// delete milk record
 export const deleteMilk = async (req, res, next) => {
   try {
     const del = await Milk.findByIdAndDelete(req.params.id);
@@ -115,7 +123,7 @@ export const deleteMilk = async (req, res, next) => {
   }
 };
 
-/* ------------ Analytics / Summaries ------------ */
+/*  Analytics / Summaries  */
 
 // Farm daily totals between dates
 export const farmDailyTotals = async (req, res, next) => {
@@ -188,8 +196,8 @@ export const cowMonthlyStats = async (req, res, next) => {
 
     const match = { cow: new mongoose.Types.ObjectId(cowId) };
     if (year) {
-      const from = new Date(`${year}-01-01`);
-      const to = new Date(`${Number(year) + 1}-01-01`);
+      const from = startOfDay(`${year}-01-01`);
+      const to = startOfDay(`${Number(year) + 1}-01-01`);
       match.date = { $gte: from, $lt: to };
     }
 

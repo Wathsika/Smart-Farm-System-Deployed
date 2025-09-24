@@ -112,7 +112,7 @@ export const upcomingDue = async (req, res, next) => {
     to.setDate(to.getDate() + Number(days));
 
     const docs = await Breeding.find({
-      nextDueDate: { $gte: from, $lte: to }
+      nextDueDate: { $gte: from, $lte: to },
     })
       .populate("cow", "cowId name breed")
       .sort({ nextDueDate: 1 });

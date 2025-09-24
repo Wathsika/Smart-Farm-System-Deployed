@@ -3,18 +3,23 @@ import mongoose from "mongoose";
 
 const breedingSchema = new mongoose.Schema(
   {
-    cow: { type: mongoose.Schema.Types.ObjectId, ref: "Cow", required: true, index: true },
+    cow: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cow",
+      required: true,
+      index: true,
+    },
 
     eventType: {
       type: String,
-      enum: ["insemination", "pregnancyCheck", "calving", "heat"],
+      enum: ["pregnancyCheck", "calving"],  
       required: true,
       index: true,
     },
 
     status: {
       type: String,
-      enum: ["planned", "done", "missed", "cancelled"],   // <-- add planned here
+      enum: ["planned", "done", "missed", "cancelled"],
       default: "planned",
       index: true,
     },
@@ -26,4 +31,5 @@ const breedingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.Breeding || mongoose.model("Breeding", breedingSchema);
+export default mongoose.models.Breeding ||
+  mongoose.model("Breeding", breedingSchema);

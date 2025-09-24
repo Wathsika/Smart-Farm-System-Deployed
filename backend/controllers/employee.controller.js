@@ -12,8 +12,9 @@ export const listEmployeesMinimal = async (_req, res) => {
       empId: e.user?.empId || String(e._id).slice(-6),
       name: e.user?.fullName || "Unknown",
       basicSalary: Number(e.basicSalary) || 0,
-      workingHours: Number(e.workingHours) || 0,
-      allowances: Number(e.allowances ?? 0),
+      workingHours: Number(e.workingHours) || 0, // This is standard/expected hours
+      accumulatedWorkingHours: Number(e.accumulatedWorkingHours ?? 0), // Include new accumulated hours
+      allowances: Number(e.allowance ?? 0), // Corrected field name from allowances to allowance
       loan: Number(e.loan ?? 0),
     }));
     res.json(rows);

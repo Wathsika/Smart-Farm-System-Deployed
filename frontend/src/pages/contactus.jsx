@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
+import ChatbotWidget from "../components/ChatbotWidget";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -12,63 +14,175 @@ const ContactUs = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('success'); // 'success' or 'error'
+
+  const [formErrors, setFormErrors] = useState({}); // State to hold validation errors for each field
+
+  // Client-side validation function
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = "Name is required.";
+      isValid = false;
+    } else if (formData.name.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters.";
+      isValid = false;
+    } else if (formData.name.trim().length > 100) {
+      errors.name = "Name cannot exceed 100 characters.";
+      isValid = false;
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = "Email is required.";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) { // Basic regex for email format
+      errors.email = "Please enter a valid email address.";
+      isValid = false;
+    }
+
+    // Phone validation (optional field, validate only if present)
+    if (formData.phone.trim()) {
+      const digitsOnly = formData.phone.replace(/\D/g, ''); // Ensure only digits are considered for length check
+      if (digitsOnly.length < 7) { // Minimum 7 digits for a valid number
+        errors.phone = "Phone number must have at least 7 digits.";
+        isValid = false;
+      } else if (digitsOnly.length > 15) { // Maximum 15 digits
+        errors.phone = "Phone number cannot exceed 15 digits.";
+        isValid = false;
+      }
+    }
+
+    // Subject validation
+    if (!formData.subject) {
+      errors.subject = "Please select a subject.";
+      isValid = false;
+    }
+
+    // Message validation
+    if (!formData.message.trim()) {
+      errors.message = "Message is required.";
+      isValid = false;
+    } else if (formData.message.trim().length < 10) {
+      errors.message = "Message must be at least 10 characters.";
+      isValid = false;
+    } else if (formData.message.trim().length > 1000) {
+      errors.message = "Message cannot exceed 1000 characters.";
+      isValid = false;
+    }
+
+    setFormErrors(errors); // Update formErrors state
+    return isValid;
+  };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    let newValue = value;
+
+    // Specific handling for the phone number field: allow only digits
+    if (name === 'phone') {
+      newValue = value.replace(/\D/g, ''); // Remove all non-digit characters
+      if (newValue.length > 15) { // Prevent typing beyond 15 digits
+        newValue = newValue.substring(0, 15);
+      }
+    }
+
+    setFormData(prevFormData => ({
+      ...prevFormData,
+      [name]: newValue
+    }));
+    // Clear the error for this field as the user types, if it exists
+    if (formErrors[name]) {
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setShowAlert(false); // Hide any previous alert when a new submission starts
+    setFormErrors({}); // Clear all errors at the start of submission attempt
+
+    if (!validateForm()) {
+      // If client-side validation fails, show an error alert and stop submission
+      setAlertMessage('Please correct the errors in the form.');
+      setAlertType('error');
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+      return;
+    }
+
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log('Form submitted:', formData);
-    setShowAlert(true);
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-    setIsSubmitting(false);
-    
-    // Hide alert after 5 seconds
-    setTimeout(() => setShowAlert(false), 5000);
+
+    try {
+      // Make a POST request to your backend API endpoint
+      const response = await axios.post('http://localhost:5001/api/contact', formData);
+
+      console.log('Form submitted successfully:', response.data);
+      setAlertMessage('Thank you for your message! We\'ll get back to you within 24 hours.');
+      setAlertType('success');
+      setShowAlert(true);
+
+      // Clear the form fields only on successful submission
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+
+    } catch (error) {
+      console.error('Error submitting form:', error.response ? error.response.data : error.message);
+      setAlertMessage(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : 'There was an error submitting your message. Please try again later.'
+      );
+      setAlertType('error');
+      setShowAlert(true);
+
+    } finally {
+      setIsSubmitting(false);
+      // Hide the alert after 5 seconds, regardless of success or error
+      setTimeout(() => setShowAlert(false), 5000);
+    }
   };
 
-  // Animation variants
+  // Animation variants (unchanged)
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
-    animate: { 
-      opacity: 1, 
+    animate: {
+      opacity: 1,
       y: 0,
-      transition: { 
-        duration: 0.8, 
-        ease: [0.25, 0.46, 0.45, 0.94] 
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.46, 0.45, 0.94]
       }
     }
   };
 
   const slideInLeft = {
     initial: { opacity: 0, x: -80 },
-    animate: { 
-      opacity: 1, 
+    animate: {
+      opacity: 1,
       x: 0,
-      transition: { 
-        duration: 0.8, 
-        ease: "easeOut" 
+      transition: {
+        duration: 0.8,
+        ease: "easeOut"
       }
     }
   };
 
   const slideInRight = {
     initial: { opacity: 0, x: 80 },
-    animate: { 
-      opacity: 1, 
+    animate: {
+      opacity: 1,
       x: 0,
-      transition: { 
-        duration: 0.8, 
-        ease: "easeOut" 
+      transition: {
+        duration: 0.8,
+        ease: "easeOut"
       }
     }
   };
@@ -86,7 +200,7 @@ const ContactUs = () => {
     {
       icon: "fas fa-map-marker-alt",
       title: "Visit Our Farm",
-      details: ["244/9, Dines Place, Kaduwela Rd", "Malabe, Sri Lanka"],
+      details: ["10/F, Ginimallagaha, Baddegama, Sri Lanka"],
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
@@ -96,7 +210,7 @@ const ContactUs = () => {
     {
       icon: "fas fa-phone-alt",
       title: "Call Us",
-      details: ["(555) 123-4567", "Available 7 days a week"],
+      details: ["+94 91 227 6246", "Available 7 days a week"],
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
@@ -148,10 +262,19 @@ const ContactUs = () => {
     }
   ];
 
+  // Dynamic Tailwind CSS classes for the alert based on `alertType`
+  const alertClass = alertType === 'success'
+    ? 'border-green-200 bg-green-50 text-green-800'
+    : 'border-red-200 bg-red-50 text-red-800';
+  const alertIcon = alertType === 'success'
+    ? 'fas fa-check-circle text-green-600'
+    : 'fas fa-exclamation-triangle text-red-600';
+
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <motion.section 
+      <motion.section
         className="relative h-96 flex items-center justify-center bg-gradient-to-r from-green-600 to-green-700"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -163,7 +286,7 @@ const ContactUs = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.3 }}
           >
-            <motion.div 
+            <motion.div
               className="flex justify-center mb-6"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -173,8 +296,8 @@ const ContactUs = () => {
                 <i className="fas fa-envelope-open-text text-white text-2xl sm:text-3xl"></i>
               </div>
             </motion.div>
-            
-            <motion.h1 
+
+            <motion.h1
               className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -182,21 +305,21 @@ const ContactUs = () => {
             >
               Contact <span className="text-green-300">Us</span>
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               className="text-lg sm:text-xl lg:text-2xl mb-8 leading-relaxed opacity-90 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.4 }}
             >
-              Get in touch with GreenLeaf Farm. We're here to answer your questions and welcome visitors to our Malabe location.
+              Get in touch with GreenLeaf Farm. We're here to answer your questions and welcome visitors to our Ginimallagaha location.
             </motion.p>
           </motion.div>
         </div>
       </motion.section>
 
       {/* Contact Information Cards */}
-      <motion.section 
+      <motion.section
         className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50"
         initial="initial"
         whileInView="animate"
@@ -204,11 +327,11 @@ const ContactUs = () => {
         variants={staggerContainer}
       >
         <div className="max-w-6xl mx-auto">
-          <motion.div 
-            className="text-center mb-12 sm:mb-16" 
+          <motion.div
+            className="text-center mb-12 sm:mb-16"
             variants={fadeInUp}
           >
-            <motion.h2 
+            <motion.h2
               className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -217,7 +340,7 @@ const ContactUs = () => {
             >
               Get In <span className="text-green-600">Touch</span>
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -234,8 +357,8 @@ const ContactUs = () => {
                 key={index}
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.8, 
+                transition={{
+                  duration: 0.8,
                   delay: index * 0.2
                 }}
                 viewport={{ once: false, amount: 0.3 }}
@@ -247,9 +370,9 @@ const ContactUs = () => {
                         {info.badge}
                       </span>
                     </div>
-                    <motion.div 
+                    <motion.div
                       className={`w-12 h-12 sm:w-16 sm:h-16 ${info.bgColor} ${info.borderColor} border-2 rounded-full flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform duration-300`}
-                      whileHover={{ 
+                      whileHover={{
                         scale: 1.1,
                         transition: { duration: 0.3 }
                       }}
@@ -273,7 +396,7 @@ const ContactUs = () => {
       </motion.section>
 
       {/* Contact Form and Map Section */}
-      <motion.section 
+      <motion.section
         className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8"
         initial="initial"
         whileInView="animate"
@@ -282,9 +405,9 @@ const ContactUs = () => {
       >
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-            
+
             {/* Contact Form */}
-            <motion.div 
+            <motion.div
               variants={slideInLeft}
             >
               <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
@@ -296,17 +419,19 @@ const ContactUs = () => {
                   <div className="mt-4 h-px bg-gray-200"></div>
                 </div>
                 <div className="p-6">
+                  {/* Dynamic Alert Message Display */}
                   {showAlert && (
-                    <div className="mb-6 p-4 border border-green-200 bg-green-50 rounded-lg flex items-center gap-3">
-                      <i className="fas fa-check-circle text-green-600 text-lg"></i>
-                      <p className="text-green-800 font-medium">
-                        Thank you for your message! We'll get back to you within 24 hours.
+                    <div className={`mb-6 p-4 border ${alertClass} rounded-lg flex items-center gap-3`}>
+                      <i className={`${alertIcon} text-lg`}></i>
+                      <p className="font-medium">
+                        {alertMessage} {/* Display dynamic message */}
                       </p>
                     </div>
                   )}
-                  
+
                   <div className="space-y-6">
-                    <motion.div 
+                    {/* Name and Phone */}
+                    <motion.div
                       className="grid sm:grid-cols-2 gap-4"
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -322,24 +447,29 @@ const ContactUs = () => {
                           value={formData.name}
                           onChange={handleInputChange}
                           placeholder="Your full name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                          className={`w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                           required
                         />
+                        {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone</label>
                         <input
                           id="phone"
                           name="phone"
-                          type="tel"
+                          type="tel" // Use type="tel" for better mobile keyboard
                           value={formData.phone}
                           onChange={handleInputChange}
-                          placeholder="Your phone number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                          placeholder="Your phone number (up to 15 digits)" // Updated placeholder
+                          maxLength={10} // HTML5 max length for user typing
+                          // inputmode="numeric" pattern="[0-9]*" can be added for mobile keyboards, but JS handles strictness
+                          className={`w-full px-3 py-2 border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         />
+                        {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
                       </div>
                     </motion.div>
-                    
+
+                    {/* Email */}
                     <motion.div
                       className="space-y-2"
                       initial={{ opacity: 0, y: 20 }}
@@ -355,11 +485,13 @@ const ContactUs = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="your.email@example.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                        className={`w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         required
                       />
+                      {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                     </motion.div>
-                    
+
+                    {/* Subject */}
                     <motion.div
                       className="space-y-2"
                       initial={{ opacity: 0, y: 20 }}
@@ -373,7 +505,7 @@ const ContactUs = () => {
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+                        className={`w-full px-3 py-2 border ${formErrors.subject ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         required
                       >
                         <option value="">Select a subject</option>
@@ -383,8 +515,10 @@ const ContactUs = () => {
                         <option value="partnership">Partnership Opportunity</option>
                         <option value="general">General Question</option>
                       </select>
+                      {formErrors.subject && <p className="text-red-500 text-xs mt-1">{formErrors.subject}</p>}
                     </motion.div>
-                    
+
+                    {/* Message */}
                     <motion.div
                       className="space-y-2"
                       initial={{ opacity: 0, y: 20 }}
@@ -400,11 +534,13 @@ const ContactUs = () => {
                         onChange={handleInputChange}
                         rows={5}
                         placeholder="Tell us more about your inquiry..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 resize-none"
+                        className={`w-full px-3 py-2 border ${formErrors.message ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 resize-none`}
                         required
                       />
+                      {formErrors.message && <p className="text-red-500 text-xs mt-1">{formErrors.message}</p>}
                     </motion.div>
-                    
+
+                    {/* Submit Button */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -412,8 +548,9 @@ const ContactUs = () => {
                       viewport={{ once: false }}
                     >
                       <button
-                        onClick={handleSubmit}
+                        type="submit"
                         disabled={isSubmitting}
+                        onClick={handleSubmit}
                         className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white text-lg font-semibold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         {isSubmitting ? (
@@ -435,7 +572,7 @@ const ContactUs = () => {
             </motion.div>
 
             {/* Map Section */}
-            <motion.div 
+            <motion.div
               variants={slideInRight}
             >
               <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
@@ -447,7 +584,7 @@ const ContactUs = () => {
                   <div className="mt-4 h-px bg-gray-200"></div>
                 </div>
                 <div className="p-6">
-                  <motion.div 
+                  <motion.div
                     className="mb-6"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -457,8 +594,8 @@ const ContactUs = () => {
                     <div className="flex items-start gap-3 mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
                       <i className="fas fa-map-pin text-green-600 text-lg flex-shrink-0 mt-1"></i>
                       <div>
-                        <p className="font-semibold text-gray-900">244/9, Dines Place, Kaduwela Rd</p>
-                        <p className="text-gray-600">Malabe, Sri Lanka</p>
+                        <p className="font-semibold text-gray-900">10/F,Ginimallagaha</p>
+                        <p className="text-gray-600">Baddegama, Sri Lanka</p>
                       </div>
                     </div>
                     <p className="text-gray-600 leading-relaxed">
@@ -467,7 +604,7 @@ const ContactUs = () => {
                   </motion.div>
 
                   {/* Interactive Map */}
-                  <motion.div 
+                  <motion.div
                     className="w-full h-96 bg-gray-200 rounded-lg overflow-hidden shadow-lg relative mb-6"
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -475,17 +612,17 @@ const ContactUs = () => {
                     viewport={{ once: false }}
                   >
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.798225099747!2d79.97315631477394!3d6.914742594993306!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae256db1a6771c5%3A0x2c63e344ab9a7536!2sMalabe%2C%20Sri%20Lanka!5e0!3m2!1sen!2s!4v1649880373164!5m2!1sen!2s"
+                      src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d20657.642448788385!2d80.17352694701248!3d6.1188832611760295!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2slk!4v1758632857577!5m2!1sen!2slk"
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}
                       allowFullScreen=""
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
-                      title="GreenLeaf Farm Location - Malabe"
+                      title="GreenLeaf Farm Location - Badde"
                       className="rounded-lg"
                     ></iframe>
-                    
+
                     {/* Map overlay with farm info */}
                     <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm shadow-lg border-2 border-gray-200 rounded-lg p-3">
                       <div className="flex items-center gap-3">
@@ -503,24 +640,22 @@ const ContactUs = () => {
                   </motion.div>
 
                   {/* Action Buttons */}
-                  <motion.div 
-                    className="grid sm:grid-cols-2 gap-4"
+                  <motion.div
+                    className="flex justify-center gap-4 max-w-fit mx-auto" // Changed to flex justify-center
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
                     viewport={{ once: false }}
                   >
                     <button
-                      onClick={() => window.open('https://maps.google.com', '_blank')}
+                      // Corrected Google Maps URL to directly open directions
+                      onClick={() => window.open('https://www.google.com/maps/dir/?api=1&destination=Baddegama,Sri lanka', '_blank')}
                       className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md font-semibold transition-all duration-300 hover:shadow-md"
                     >
                       <i className="fas fa-route"></i>
-                      🧭 Get Directions
+                      Get Directions
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold transition-all duration-300 hover:shadow-md">
-                      <i className="fas fa-calendar-check"></i>
-                      📅 Schedule Visit
-                    </button>
+
                   </motion.div>
                 </div>
               </div>
@@ -530,7 +665,7 @@ const ContactUs = () => {
       </motion.section>
 
       {/* FAQ Section */}
-      <motion.section 
+      <motion.section
         className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50"
         initial="initial"
         whileInView="animate"
@@ -538,11 +673,11 @@ const ContactUs = () => {
         variants={staggerContainer}
       >
         <div className="max-w-4xl mx-auto">
-          <motion.div 
-            className="text-center mb-12 sm:mb-16" 
+          <motion.div
+            className="text-center mb-12 sm:mb-16"
             variants={fadeInUp}
           >
-            <motion.h2 
+            <motion.h2
               className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -551,7 +686,7 @@ const ContactUs = () => {
             >
               Frequently Asked <span className="text-green-600">Questions</span>
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-lg sm:text-xl text-gray-600"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -588,7 +723,7 @@ const ContactUs = () => {
       </motion.section>
 
       {/* Call to Action */}
-      <motion.section 
+      <motion.section
         className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-green-600"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -596,7 +731,7 @@ const ContactUs = () => {
         viewport={{ once: false, amount: 0.3 }}
       >
         <div className="max-w-4xl mx-auto text-center text-white">
-          <motion.h2 
+          <motion.h2
             className="text-3xl sm:text-4xl font-bold mb-6"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -605,7 +740,7 @@ const ContactUs = () => {
           >
             Ready to Experience Farm Life?
           </motion.h2>
-          <motion.p 
+          <motion.p
             className="text-lg sm:text-xl mb-8 opacity-90 leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -614,7 +749,7 @@ const ContactUs = () => {
           >
             Join us for a farm tour, taste our fresh produce, and learn about sustainable farming practices.
           </motion.p>
-          <motion.div 
+          <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -623,16 +758,15 @@ const ContactUs = () => {
           >
             <button className="bg-white text-green-600 hover:bg-gray-50 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg shadow-lg transition-all duration-300 hover:shadow-xl">
               <i className="fas fa-phone-volume mr-2"></i>
-               Call Now: (555) 123-4567
+               Call Now: +94 91 227 6246
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-green-600 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg transition-all duration-300">
-              <i className="fas fa-envelope-open mr-2"></i>
-              ✉️ Send Email
-            </button>
+            
           </motion.div>
         </div>
       </motion.section>
-    </div>
+    {/* ✅ Mount chatbot here so it's available on this page */}
+          <ChatbotWidget />
+       </div>
   );
 };
 

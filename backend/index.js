@@ -50,11 +50,21 @@ import reportRoutes from "./routes/report.routes.js";
 
 
 import chatRoutes from "./routes/chat.routes.js";
+import contactRoutes from './routes/contact.routes.js';
 
 
+
+import path from "path";
+import { fileURLToPath } from "url";
+// --- File Uploads (static serving) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- Initialize App ---
 const app = express();
+
+// serve uploaded images (e.g. /uploads/cows/abc.jpg)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- DB ---
 connectDB().catch((err) => {
@@ -156,6 +166,8 @@ app.use("/api/applications", applicationRoutes);
 
 // ✅ Chatbot API
 app.use("/api/chat", chatRoutes);
+
+app.use('/api/contact', contactRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>

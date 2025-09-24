@@ -6,6 +6,7 @@ import heroImage from "../assets/ourstory.jpg";
 import produceImage from "../assets/produce.jpg";
 import dairyImage from "../assets/freshdiary.jpg";
 import cropImage from "../assets/crop.jpg";
+import ChatbotWidget from "../components/ChatbotWidget";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -368,10 +369,14 @@ const Home = () => {
               <i className="fas fa-envelope" />
             </Link>
           </div>
+          {/* ✅ Mount chatbot here so it's available on this page */}
+                    <ChatbotWidget />
+                 
         </div>
          </section>
     </main>
   );
 };
+
 
 export default Home;

@@ -13,10 +13,19 @@ export default function MyAttendance() {
 
   const fetchToday = useCallback(async () => {
     setLoading(true);
-    const today = new Date().toISOString().split("T")[0]; // Correctly get today's date string
     try {
-      const { data } = await api.get("/attendance", { params: { startDate: today, endDate: today } });
-      setTodayRecord(data.items?.[0] || null); // Access the first item of the array
+      // Use the specific endpoint for today's attendance records
+      const { data } = await api.get("/attendance/today"); 
+
+      // Find the active session (checkIn exists, checkOut is null)
+      const activeSession = data.items.find(record => record.checkIn && !record.checkOut);
+
+      // If no active session, but there are past records for today, find the very last one for display
+      // The backend /attendance/today endpoint sorts by checkIn: 1, so the last item is the latest.
+      const latestRecord = data.items.length > 0 ? data.items[data.items.length - 1] : null;
+
+      // Set todayRecord to the active session if present, otherwise the latest (if any), otherwise null
+      setTodayRecord(activeSession || latestRecord);
     } catch (err) {
       console.error("Failed to fetch today's attendance", err);
     } finally {
@@ -32,7 +41,7 @@ export default function MyAttendance() {
     setLoading(true); // Indicate loading while checking in
     try {
       await api.post("/attendance/clock-in");
-      await fetchToday();
+      await fetchToday(); // Re-fetch to update the state
     } catch (err) {
       console.error("Check-in failed", err);
       alert(err?.response?.data?.message || "Check-in failed. Please try again.");
@@ -45,7 +54,7 @@ export default function MyAttendance() {
     setLoading(true); // Indicate loading while checking out
     try {
       await api.post("/attendance/clock-out");
-      await fetchToday();
+      await fetchToday(); // Re-fetch to update the state
     } catch (err) {
       console.error("Check-out failed", err);
       alert(err?.response?.data?.message || "Check-out failed. Please try again.");
@@ -80,7 +89,8 @@ export default function MyAttendance() {
               </p>
 
               <div className="pt-4 border-t border-gray-100 space-y-3">
-                {!todayRecord.checkIn && (
+                {/* Enable Check-In if no checkIn exists (or if the last record is fully checked out) */}
+                {(!todayRecord.checkIn || todayRecord.checkOut) && (
                   <Button
                     onClick={handleCheckIn}
                     disabled={loading}
@@ -92,6 +102,7 @@ export default function MyAttendance() {
                     </motion.span>
                   </Button>
                 )}
+                {/* Enable Check-Out if checkIn exists AND checkOut does NOT exist */}
                 {todayRecord.checkIn && !todayRecord.checkOut && (
                   <Button
                     onClick={handleCheckOut}
