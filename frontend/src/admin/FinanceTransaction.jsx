@@ -402,10 +402,17 @@ export default function FinanceTransaction() {
                     </svg>
                   </div>
                   <input
-                    placeholder="Search txn ID, category, description…"
+                    placeholder="Search txn ID, category"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-inner bg-white/80 backdrop-blur-sm transition-all duration-200"
                     value={q}
-                    onChange={(e) => setQ(e.target.value)}
+                    onChange={(e) => {
+                      // Allow only letters (a-z, A-Z), numbers (0-9), and spaces
+                      const value = e.target.value.replace(
+                        /[^a-zA-Z0-9 ]/g,
+                        ""
+                      );
+                      setQ(value);
+                    }}
                   />
                 </div>
               </div>
