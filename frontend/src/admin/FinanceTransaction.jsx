@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useReactToPrint } from "react-to-print";
 import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 function currency(n) {
   if (isNaN(n)) return "—";
@@ -260,12 +262,37 @@ export default function FinanceTransaction() {
     suppressErrors: true,
   });
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (!filtered.length || !pdfOrder) {
       alert("No transactions to export.");
       return;
     }
-    triggerPrint?.();
+
+    // Use invoiceRef to render the InvoiceTemplate
+    const input = invoiceRef.current;
+
+    if (!input) {
+      alert("Invoice not ready.");
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+
+      pdf.save(`${exportFileBase}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to generate PDF");
+    }
   };
 
   const handleExportExcel = () => {
@@ -741,7 +768,7 @@ export default function FinanceTransaction() {
           )}
         </div>
       </div>
-      <div className="hidden">
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
         {pdfOrder && <InvoiceTemplate ref={invoiceRef} order={pdfOrder} />}
       </div>
     </div>

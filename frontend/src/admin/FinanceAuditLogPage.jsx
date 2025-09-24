@@ -14,6 +14,10 @@ import {
   FileText,
 } from "lucide-react";
 
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+
 /* ---------- Helpers ---------- */
 const formatDateTime = (iso) => {
   if (!iso) return "—";
@@ -68,54 +72,49 @@ function downloadCSV(filename, rows) {
 function ChangeBlock({ originalData, newData }) {
   const [expanded, setExpanded] = useState(false);
 
-  return (
-    <div className="text-sm">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="inline-flex items-center gap-2 px-3 py-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 font-medium rounded-md transition-colors"
-      >
-        {expanded ? <ChevronUp size={14} /> : <Eye size={14} />}
-        {expanded ? "Hide Changes" : "View Changes"}
-      </button>
+  // Define the fields you want to show
+  const fields = [
+    { key: "transaction_id", label: "Transaction ID" },
+    { key: "type", label: "Type" },
+    { key: "date", label: "Date" },
+    { key: "category", label: "Category" },
+    { key: "amount", label: "Amount" },
+    { key: "description", label: "Description" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+  ];
 
-      {expanded && (
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-red-50 border-b border-red-100 px-3 py-2">
-              <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                Original Data
-              </div>
-            </div>
-            <div className="p-3">
-              <pre className="text-xs text-gray-600 overflow-auto max-h-48 whitespace-pre-wrap">
-                {JSON.stringify(originalData ?? null, null, 2)}
-              </pre>
-            </div>
-          </div>
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
-              <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                Updated Data
-              </div>
-            </div>
-            <div className="p-3">
-              <pre className="text-xs text-gray-600 overflow-auto max-h-48 whitespace-pre-wrap">
-                {JSON.stringify(newData ?? null, null, 2)}
-              </pre>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const formatValue = (val, key) => {
+    if (!val) return "—";
+    if (key === "date" || key === "createdAt" || key === "updatedAt") {
+      try {
+        return new Date(val).toLocaleString("en-LK", {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+      } catch {
+        return val;
+      }
+    }
+    if (key === "amount") {
+      return Number(val).toLocaleString("en-LK", {
+        style: "currency",
+        currency: "LKR",
+        maximumFractionDigits: 2,
+      });
+    }
+    return String(val);
+  };
 }
 
 /* ---------- Main Page ---------- */
 export default function AuditLogPage() {
   const todayISO = new Date().toISOString().slice(0, 10);
-
+  const tableRef = React.useRef(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -124,6 +123,34 @@ export default function AuditLogPage() {
     transactionId: "",
   });
   const pageSize = 20;
+
+  const handleExportPdf = async () => {
+    if (!filteredLogs.length) {
+      alert("No audit logs to export.");
+      return;
+    }
+    const input = tableRef.current;
+    if (!input) {
+      alert("Table not ready.");
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+      pdf.save(`audit_logs_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to generate PDF");
+    }
+  };
 
   /* Load logs from backend */
   const loadLogs = useCallback(async () => {
@@ -258,14 +285,25 @@ export default function AuditLogPage() {
               <FileText className="w-5 h-5 text-gray-500" />
               Activity Log
             </h3>
-            <button
-              onClick={exportCsv}
-              disabled={!filteredLogs.length}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-            >
-              <FileDown size={16} />
-              Export CSV
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={exportCsv}
+                disabled={!filteredLogs.length}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <FileDown size={16} />
+                Export CSV
+              </button>
+
+              <button
+                onClick={handleExportPdf}
+                disabled={!filteredLogs.length}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <FileDown size={16} />
+                Export PDF
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -288,7 +326,7 @@ export default function AuditLogPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-full" ref={tableRef}>
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
