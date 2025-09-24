@@ -21,6 +21,8 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
 
+import MainDashboard from "./admin/MainDashboard.jsx";
+
 // --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 
@@ -164,7 +166,7 @@ export default function App() {
           </AdminOnly>
         }
       >
-        <Route index element={<FarmDashboard />} />
+        <Route index element={<MainDashboard />} />
 
         {/* Farm management pages */}
         <Route path="livestock" element={<LivestockPage />} />
