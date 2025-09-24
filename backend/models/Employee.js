@@ -1,5 +1,3 @@
-
-
 // models/Employee.js
 import mongoose from "mongoose";
 
@@ -19,11 +17,16 @@ const employeeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    workingHours: {
+    workingHours: { // This field will now represent standard/expected working hours
       type: Number,
       default: 0,
     },
-
+    // NEW FIELD: To accumulate actual hours worked from attendance
+    accumulatedWorkingHours: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
     allowance: {
       // Ensure allowance is defined
@@ -45,4 +48,3 @@ const employeeSchema = new mongoose.Schema(
 const Employee = mongoose.model("Employee", employeeSchema);
 
 export default Employee;
-

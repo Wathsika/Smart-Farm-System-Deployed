@@ -29,7 +29,7 @@ export const clockIn = async (req, res) => {
       user: userId,
       date: today,
       checkIn: new Date(),
-      status: "Present",
+      status: "Present", // Initial status, will be refined by backend logic if fetched later
     });
 
     res.status(201).json({ message: "Clocked in successfully.", attendance: newAttendance });
@@ -55,6 +55,10 @@ export const clockOut = async (req, res) => {
     }
 
     attendance.checkOut = new Date();
+    // After clocking out, we can potentially update status based on check-in time,
+    // though for the purpose of the current request, the listUsers controller handles the `currentAttendanceStatus`
+    // dynamically. The `status` field in the attendance record itself might remain 'Present' or 'Late'
+    // if set on creation/update. Let's keep it simple for now and rely on `listUsers` to derive `currentAttendanceStatus`.
     await attendance.save();
 
     let hoursWorked = 0;
@@ -62,10 +66,10 @@ export const clockOut = async (req, res) => {
       const diffMs = new Date(attendance.checkOut) - new Date(attendance.checkIn);
       hoursWorked = diffMs / (1000 * 60 * 60); // ms -> hrs
 
-      // `$inc` මගින් පැරණි workingHours අගයට නව අගය එකතු කිරීම
+      // Update the NEW accumulatedWorkingHours field
       await Employee.findOneAndUpdate(
         { user: userId },
-        { $inc: { workingHours: hoursWorked } }
+        { $inc: { accumulatedWorkingHours: hoursWorked } } // FIXED: Increment the new field
       );
     }
 
@@ -120,7 +124,7 @@ export const getAttendanceRecords = async (req, res) => {
     }
 
     if (startDate && endDate) {
-      filter.date = { $gte: startOfDay(startDate), $lte: startOfDay(endDate) };
+      filter.date = { $gte: startOfDay(startDate), $lte: startOfDay(endDate) }; //
     }
 
     const pg = Math.max(parseInt(page), 1);
@@ -128,7 +132,7 @@ export const getAttendanceRecords = async (req, res) => {
 
     const [items, total] = await Promise.all([
       Attendance.find(filter)
-        .populate("user", "fullName email jobTitle")
+        .populate("user", "fullName email jobTitle") //
         .sort({ checkIn: 1 })
         .skip((pg - 1) * lm)
         .limit(lm),
