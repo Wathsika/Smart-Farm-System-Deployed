@@ -1,7 +1,7 @@
 // src/admin/TaskManagement.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, isBefore, startOfDay } from 'date-fns'; // Added isBefore, startOfDay
+import { format, parse, startOfWeek, getDay, isBefore, startOfDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { api } from '../lib/api';
@@ -18,18 +18,17 @@ import {
   CheckCircle,
   AlertCircle,
   Target,
-  Sparkles,
   TrendingUp,
   XCircle,
   Loader,
   ListTodo,
-  ClipboardList, // Used for main task list
+  ClipboardList,
 } from 'lucide-react';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-const todayDateString = format(startOfDay(new Date()), 'yyyy-MM-dd'); // Get today's date at start of day
+const todayDateString = format(startOfDay(new Date()), 'yyyy-MM-dd');
 
 // --- Reusable Modal Component (simplified styling) ---
 const Modal = ({ show, onClose, title, children, size = "md" }) => {
@@ -131,7 +130,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     } else if (task.title.trim().length > 200) {
       errors.title = "Task Title cannot exceed 200 characters.";
       isValid = false;
-    } else if (!/^[a-zA-Z\s-]+$/.test(task.title)) { // Allows letters, spaces, and hyphens ONLY. No numbers, no periods, no other symbols
+    } else if (!/^[a-zA-Z\s-]+$/.test(task.title)) {
       errors.title = "Task Title can only contain letters, spaces, and hyphens.";
       isValid = false;
     }
@@ -148,13 +147,11 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
       errors.description = "Description cannot exceed 1000 characters.";
       isValid = false;
     }
-    
-    // Status validation (should always be valid due to select options, but a fallback check is good)
+
     if (!['To Do', 'In Progress', 'Completed'].includes(task.status)) {
         errors.status = "Invalid status selected.";
         isValid = false;
     }
-
 
     setFormErrors(errors);
     return isValid;
@@ -164,31 +161,30 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     const { name, value } = e.target;
     let newValue = value;
 
-    // Apply strict validation for Task Title (letters, spaces, hyphens only)
     if (name === 'title') {
-      newValue = value.replace(/[^a-zA-Z\s-]/g, ''); // Remove all characters except letters, spaces, and hyphens
+      newValue = value.replace(/[^a-zA-Z\s-]/g, '');
     }
 
     setTask(prevTask => ({ ...prevTask, [name]: newValue }));
-    if (formErrors[name]) { // Clear error when user starts typing
+    if (formErrors[name]) {
       setFormErrors(prevErrors => {
         const newErrors = { ...prevErrors };
         delete newErrors[name];
         return newErrors;
       });
     }
-    setFormAlert(""); // Clear general form alert
+    setFormAlert("");
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setFormAlert(""); // Clear previous alerts
+    setFormAlert("");
     if (!validateForm()) {
       setFormAlert("Please correct the errors in the form.");
       return;
     }
     onSave(task, isEditing ? existingTask._id : null);
-    setFormAlert(""); // Clear alert on successful save attempt
+    setFormAlert("");
   };
 
   const handleDeleteClick = () => {
@@ -201,7 +197,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     switch (status) {
       case 'Completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'In Progress': return <Clock className="w-4 h-4 text-yellow-500" />;
-      default: return <AlertCircle className="w-4 h-4 text-blue-500" />; // Default for 'To Do'
+      default: return <AlertCircle className="w-4 h-4 text-blue-500" />;
     }
   };
 
@@ -209,7 +205,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     switch (status) {
       case 'Completed': return 'bg-green-50 text-green-700 border-green-200';
       case 'In Progress': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      default: return 'bg-blue-50 text-blue-700 border-blue-200'; // Default for 'To Do'
+      default: return 'bg-blue-50 text-blue-700 border-blue-200';
     }
   };
 
@@ -254,7 +250,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             value={task.title}
             onChange={handleTaskInputChange}
             className={`w-full p-2.5 border ${formErrors.title ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
-            placeholder="Enter task title (only letters, spaces, hyphens)" // Updated placeholder
+            placeholder="Enter task title (only letters, spaces, hyphens)"
             required
             maxLength={200}
             minLength={5}
@@ -276,12 +272,12 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             onChange={handleTaskInputChange}
             className={`w-full p-2.5 border ${formErrors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
             required
-            min={todayDateString} // Prevent past dates
+            min={todayDateString}
           />
           {formErrors.dueDate && <p className="text-red-500 text-xs mt-1">{formErrors.dueDate}</p>}
         </div>
 
-        {/* Status */}
+        {/* Status - Disabled for admin editing */}
         <div>
           <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             {getStatusIcon(task.status)}
@@ -294,6 +290,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
               value={task.status}
               onChange={handleTaskInputChange}
               className={`w-full p-2.5 border-0 rounded-sm focus:outline-none bg-transparent font-medium ${formErrors.status ? 'border-red-500' : ''}`}
+              disabled={isEditing} // Admin cannot change status when editing an existing task
             >
               <option>To Do</option>
               <option>In Progress</option>
@@ -379,7 +376,7 @@ const ReportModal = ({ show, onClose, onGenerate, month, setMonth, isGenerating 
     if (!month) {
       errors.month = "Month selection is required.";
       isValid = false;
-    } else if (month > currentMonth) { // Prevent future months
+    } else if (month > currentMonth) {
       errors.month = "Cannot generate report for a future month.";
       isValid = false;
     }
@@ -399,18 +396,18 @@ const ReportModal = ({ show, onClose, onGenerate, month, setMonth, isGenerating 
 
   const handleMonthChange = (e) => {
     setMonth(e.target.value);
-    if (formErrors.month) { // Clear error when user changes selection
+    if (formErrors.month) {
       setFormErrors(prevErrors => {
         const newErrors = { ...prevErrors };
-        delete newErrors.month;
+        delete newErrors.month; // Corrected: `delete newErrors[month];` -> `delete newErrors.month;`
         return newErrors;
       });
     }
-    setFormAlert(""); // Clear general form alert
+    setFormAlert("");
   };
 
   return (
-    <Modal show={show} onClose={onClose} title="Generate Task Report">
+    <Modal show={show} onClose={onClose} title="Generate Monthly Task Report"> {/* Updated title */}
       <div className="space-y-4">
         {formAlert && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
@@ -463,7 +460,6 @@ const ReportModal = ({ show, onClose, onGenerate, month, setMonth, isGenerating 
   );
 }
 
-
 // --- Status Badge for Tasks (Fixed and simplified styling) ---
 const TaskStatusBadge = ({ status }) => {
   let backgroundColorClass, textColorClass;
@@ -498,7 +494,6 @@ const TaskStatusBadge = ({ status }) => {
   );
 };
 
-
 // --- Task Calendar Component (Smaller, no view switcher, assign on click) ---
 const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) => {
   const events = tasks.map(task => ({
@@ -522,9 +517,9 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
       style: {
         backgroundColor,
         color: 'white',
-        borderRadius: '4px', // Even smaller radius
-        padding: '2px 4px', // Smaller padding
-        fontSize: '9px', // Smallest font size for clarity
+        borderRadius: '4px',
+        padding: '2px 4px',
+        fontSize: '9px',
         fontWeight: '600',
         lineHeight: '1.2'
       }
@@ -555,27 +550,24 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
     );
   };
 
-  // Custom dayPropGetter to disable past dates
   const dayPropGetter = useCallback((date) => {
     const today = startOfDay(new Date());
     if (isBefore(date, today)) {
       return {
         className: 'past-date',
         style: {
-          backgroundColor: '#f1f8f3', // Lighter background for disabled dates
-          color: '#a0a0a0', // Grayed out text
-          cursor: 'not-allowed', // No cursor change
+          backgroundColor: '#f1f8f3',
+          color: '#a0a0a0',
+          cursor: 'not-allowed',
         },
       };
     }
     return {};
   }, []);
 
-  // Modified onSelectSlot to prevent selection of past dates
   const handleSelectSlot = useCallback((slotInfo) => {
     const today = startOfDay(new Date());
     if (isBefore(slotInfo.start, today)) {
-      // Do nothing if past date is clicked
       return;
     }
     onDateSelect(slotInfo.start);
@@ -586,7 +578,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
     <motion.div
       className="bg-white p-5 rounded-xl shadow-md border border-gray-100 relative"
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
-      style={{ height: '400px' }} // Fixed height for small calendar
+      style={{ height: '400px' }}
     >
       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
         <CalendarIcon className="w-5 h-5 text-green-500" /> Calendar Overview
@@ -599,27 +591,26 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
       <style jsx global>{`
         .rbc-calendar { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .rbc-header {
-          background: #f0fdf4; /* light green */
+          background: #f0fdf4;
           font-weight: 600; color: #14532d; padding: 8px 4px;
           border: none; text-transform: uppercase;
           font-size: 10px; letter-spacing: 0.05em;
         }
         .rbc-date-cell { padding: 4px; font-weight: 500; color: #34473b; font-size: 11px; }
-        .rbc-today { background: #dcfce7 !important; border-radius: 4px; } /* Light green today */
-        .rbc-off-range-bg { background: #f9fafb; } /* very light grey for off range */
+        .rbc-today { background: #dcfce7 !important; border-radius: 4px; }
+        .rbc-off-range-bg { background: #f9fafb; }
         .rbc-month-view { border: 1px solid #d1fae5; border-radius: 8px; overflow: hidden; background: white; }
         .rbc-day-bg { transition: background-color 0.2s; }
-        .rbc-day-bg.rbc-selected-cell { background-color: #bbf7d0 !important; } /* A slightly darker light-green for selection */
+        .rbc-day-bg.rbc-selected-cell { background-color: #bbf7d0 !important; }
         .rbc-row-content .rbc-button-link { font-size: 11px !important; font-weight: 500; }
         .rbc-row-content .rbc-header + .rbc-header { border-left: 1px solid #d1fae5; }
         .rbc-month-row + .rbc-month-row { border-top: 1px solid #d1fae5; }
         .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #d1fae5; }
         .rbc-event { /* already defined by eventPropGetter */ }
 
-        /* Custom style for past dates */
         .rbc-day-bg.past-date {
-          background-color: #f0f0f0 !important; /* Lighter gray */
-          color: #b0b0b0 !important; /* Grayed out text */
+          background-color: #f0f0f0 !important;
+          color: #b0b0b0 !important;
           cursor: not-allowed !important;
           opacity: 0.8;
         }
@@ -631,30 +622,43 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         localizer={localizer}
         events={events}
         onSelectEvent={onSelectEvent}
-        onSelectSlot={handleSelectSlot} // Use modified handler
-        selectable // Make days clickable
-        views={['month']} // Only month view
+        onSelectSlot={handleSelectSlot}
+        selectable
+        views={['month']}
         defaultView="month"
         startAccessor="start"
         endAccessor="end"
-        components={{ toolbar: CustomToolbar }} // Use custom toolbar
-        style={{ height: 'calc(100% - 30px)' }} // Adjust height for toolbar
-        dayPropGetter={dayPropGetter} // Apply custom day properties
+        components={{ toolbar: CustomToolbar }}
+        style={{ height: 'calc(100% - 30px)' }}
+        dayPropGetter={dayPropGetter}
       />
     </motion.div>
   );
 };
 
-
 // --- Main Assigned Tasks (central content) ---
-const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMarkAsComplete }) => {
-  const actionableTasks = tasks
-    .filter(task => task.status !== 'Completed')
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, activeStatusFilter, onFilterChange }) => {
 
-  const completedTasksCount = tasks.filter(task => task.status === 'Completed').length;
-  const inProgressTasksCount = tasks.filter(task => task.status === 'In Progress').length;
-  const todoTasksCount = tasks.filter(task => task.status === 'To Do').length;
+  const taskStats = [
+    { label: "Total Tasks", value: stats.totalTasks, icon: Target, color: "bg-blue-100 text-blue-800 border-blue-200", filterValue: 'All' },
+    { label: "To Do", value: tasks.filter(task => task.status === 'To Do').length, icon: ListTodo, color: "bg-blue-100 text-blue-800 border-blue-200", filterValue: 'To Do' },
+    { label: "In Progress", value: tasks.filter(task => task.status === 'In Progress').length, icon: Clock, color: "bg-yellow-100 text-yellow-800 border-yellow-200", filterValue: 'In Progress' },
+    { label: "Completed", value: tasks.filter(task => task.status === 'Completed').length, icon: CheckCircle, color: "bg-green-100 text-green-800 border-green-200", filterValue: 'Completed' }
+  ];
+
+  const filteredTasksToDisplay = tasks
+    .filter(task => {
+      if (activeStatusFilter === 'All') return true;
+      return task.status === activeStatusFilter;
+    })
+    .sort((a, b) => {
+        // For completed tasks, sort from newest to oldest due date
+        if (activeStatusFilter === 'Completed') {
+            return new Date(b.dueDate) - new Date(a.dueDate);
+        }
+        // For other statuses or all tasks, sort from oldest to newest due date
+        return new Date(a.dueDate) - new Date(b.dueDate);
+    });
 
   return (
     <motion.div
@@ -666,23 +670,19 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
           <ClipboardList className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">My Tasks</h2>
-          <p className="text-gray-600 text-sm">Overview of assigned and pending work</p>
+          <h2 className="text-2xl font-bold text-gray-800">Task Overview</h2> {/* Changed title for admin context */}
+          <p className="text-gray-600 text-sm">Organize and monitor all team activities</p>
         </div>
       </div>
 
       {/* Task Statistics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "Total Tasks", value: stats.totalTasks, icon: Target, color: "bg-blue-100 text-blue-800 border-blue-200" },
-          { label: "To Do", value: todoTasksCount, icon: ListTodo, color: "bg-blue-100 text-blue-800 border-blue-200" },
-          { label: "In Progress", value: inProgressTasksCount, icon: Clock, color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-          { label: "Completed", value: completedTasksCount, icon: CheckCircle, color: "bg-green-100 text-green-800 border-green-200" }
-        ].map((stat) => (
+        {taskStats.map((stat) => (
           <motion.div
             key={stat.label}
-            className={`p-4 rounded-lg shadow-sm border ${stat.color} flex items-center justify-between`}
+            className={`p-4 rounded-lg shadow-sm border ${stat.color} flex items-center justify-between cursor-pointer ${activeStatusFilter === stat.filterValue ? 'ring-2 ring-offset-1 ring-green-500' : ''}`}
             whileHover={{ scale: 1.03 }} transition={{ duration: 0.2 }}
+            onClick={() => onFilterChange(stat.filterValue)}
           >
             <div>
               <p className="text-xl font-bold">{stat.value}</p>
@@ -694,20 +694,22 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
       </div>
 
       <div className="pt-4 border-t border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Actionable Tasks ({actionableTasks.length})</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
+          Current View: {activeStatusFilter} Tasks ({filteredTasksToDisplay.length})
+        </h3>
         {isLoading.tasks ? (
           <div className="flex justify-center items-center p-8">
             <Loader className="w-6 h-6 animate-spin text-green-500" />
             <span className="ml-2 text-gray-600">Loading tasks...</span>
           </div>
-        ) : actionableTasks.length === 0 ? (
+        ) : filteredTasksToDisplay.length === 0 ? (
           <div className="text-center text-gray-500 p-8 bg-gray-50 rounded-lg">
             <CheckCircle className="w-10 h-10 mx-auto text-green-400 mb-3" />
-            <p className="font-medium">All tasks are up-to-date! Great job!</p>
+            <p className="font-medium">No {activeStatusFilter.toLowerCase()} tasks found.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {actionableTasks.map((task) => (
+            {filteredTasksToDisplay.map((task) => (
               <motion.div
                 key={task._id}
                 className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer flex flex-col justify-between"
@@ -728,15 +730,7 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
 
                 <div className="flex justify-between items-center border-t border-gray-100 pt-3">
                   <TaskStatusBadge status={task.status} />
-                  {task.status !== 'Completed' && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      onClick={(e) => { e.stopPropagation(); onMarkAsComplete(task._id); }} // Prevent parent click
-                      className="px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-md hover:bg-green-600 transition-colors shadow-sm flex items-center gap-1"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" /> Complete
-                    </motion.button>
-                  )}
+                  {/* The "Complete" button is removed from the admin's task list view. */}
                 </div>
               </motion.div>
             ))}
@@ -747,7 +741,6 @@ const MainAssignedTasks = ({ tasks, users, stats, isLoading, onSelectTask, onMar
   );
 };
 
-
 // --- Main TaskManagement Component ---
 export default function TaskManagement() {
   const [tasks, setTasks] = useState([]);
@@ -755,16 +748,16 @@ export default function TaskManagement() {
   const [loading, setLoading] = useState({
       tasks: true,
       users: true,
-      saveTask: false, // For TaskModal submission loading
+      saveTask: false,
   });
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [preselectedDate, setPreselectedDate] = useState(null); // New state for preselecting date in modal
+  const [preselectedDate, setPreselectedDate] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportMonth, setReportMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeStatusFilter, setActiveStatusFilter] = useState('All'); // New state for task filtering
 
-  // Animation variants (simplified)
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } };
 
@@ -790,12 +783,16 @@ export default function TaskManagement() {
     setLoading(prev => ({ ...prev, saveTask: true }));
     try {
       if (taskId) {
-        await api.put(`/tasks/${taskId}`, taskData);
+        // When editing an existing task, exclude the status field from the payload
+        // as admins are not allowed to change it. The TaskModal handles disabling
+        // the select input, and this ensures backend doesn't accidentally update.
+        const { status, ...updatePayload } = taskData; // Destructure status out
+        await api.put(`/tasks/${taskId}`, updatePayload);
       } else {
         await api.post('/tasks', taskData);
       }
       setShowTaskModal(false);
-      setPreselectedDate(null); // Clear preselected date
+      setPreselectedDate(null);
       loadData();
     } catch (error) {
       alert(`Failed to save task. ${error?.response?.data?.message || ''}`);
@@ -803,7 +800,7 @@ export default function TaskManagement() {
       setLoading(prev => ({ ...prev, saveTask: false }));
     }
   };
-  handleSaveTask.isLoading = loading.saveTask; // Attach loading state to function
+  handleSaveTask.isLoading = loading.saveTask;
 
   const handleDeleteTask = async (taskId) => {
     try {
@@ -816,24 +813,25 @@ export default function TaskManagement() {
   }
 
   const handleSelectEvent = (event) => {
-    setSelectedTask(event.resource || event); // event might be raw task obj from sidebar or BigCalendar event object
+    setSelectedTask(event.resource || event);
     setShowTaskModal(true);
-    setPreselectedDate(null); // Clear any preselected date if editing
+    setPreselectedDate(null);
   };
 
   const handleAddNewClick = () => {
     setSelectedTask(null);
-    setPreselectedDate(null); // No specific date pre-selected
+    setPreselectedDate(null);
     setShowTaskModal(true);
   };
 
-  // Handler for clicking a date on the small calendar
   const handleDateSelectInCalendar = (date) => {
-    setSelectedTask(null); // Ensure no existing task is being edited
-    setPreselectedDate(date); // Set the clicked date for the new task form
+    setSelectedTask(null);
+    setPreselectedDate(date);
     setShowTaskModal(true);
   };
 
+  // This function `handleMarkTaskAsComplete` is kept for completeness if needed elsewhere
+  // but will not be triggered from MainAssignedTasks in this admin UI anymore.
   const handleMarkTaskAsComplete = async (taskId) => {
     if (window.confirm("Are you sure you want to mark this task as 'Completed'?")) {
       try {
@@ -850,6 +848,7 @@ export default function TaskManagement() {
     const [year, month] = selectedMonth.split('-');
 
     try {
+      // Fetch task data for the selected month
       const { data: reportTasks } = await api.get('/tasks/report', { params: { year, month } });
 
       if (!reportTasks || reportTasks.length === 0) {
@@ -859,16 +858,76 @@ export default function TaskManagement() {
       }
 
       const doc = new jsPDF();
-      doc.setFont('helvetica'); // Ensure a common font
+      doc.setFont('helvetica');
 
+      // --- Header (Top Left - Company Info) ---
       doc.setFontSize(18);
-      doc.setTextColor(52, 58, 64); // Dark gray
-      doc.text("Monthly Task Report", 14, 20);
+      doc.setTextColor("#16a34a"); // GreenLeaf Farm green
+      doc.setFont('helvetica', 'bold');
+      doc.text("GreenLeaf Farm", 14, 20);
 
       doc.setFontSize(10);
-      doc.setTextColor(108, 117, 125); // Medium gray
-      doc.text(`Month: ${format(new Date(year, month-1, 1), 'MMMM yyyy')}`, 14, 28);
-      doc.text(`Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`, 14, 34);
+      doc.setTextColor(50, 50, 50); // Darker gray for details
+      doc.setFont('helvetica', 'normal');
+      doc.text("123 Farm Valley Road, Green County, Sri Lanka", 14, 27);
+      doc.text("contact@greenleaffarm.com | +94 11 234 5678", 14, 32);
+
+      // --- Header (Top Right - Report Title & Generated Date/Time) ---
+      doc.setFontSize(18);
+      doc.setTextColor(52, 58, 64); // Dark gray
+      doc.setFont('helvetica', 'bold');
+      doc.text("TASK REPORTS", 196, 20, { align: 'right' });
+
+      doc.setFontSize(10);
+      doc.setTextColor(108, 117, 125);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${format(new Date(), 'dd/MM/yyyy')}`, 196, 27, { align: 'right' });
+      doc.text(`${format(new Date(), 'HH:mm:ss')}`, 196, 32, { align: 'right' });
+
+      // Green separator line
+      doc.setDrawColor("#16a34a"); // Green color
+      doc.setLineWidth(0.5);
+      doc.line(14, 37, doc.internal.pageSize.getWidth() - 14, 37); // x1, y1, x2, y2
+
+
+      // --- Report Details (Below green line) ---
+      doc.setFontSize(12);
+      doc.setTextColor(50, 50, 50);
+      doc.text("Section:", 14, 45);
+      doc.text("Task Reports", 40, 45); // Adjust x-coordinate as needed
+
+      doc.text("Range:", 14, 52);
+      doc.text(`Monthly Report - ${format(new Date(year, month - 1, 1), 'MMMM yyyy')}`, 40, 52);
+
+      // Duplicating "Generated" for style consistency with the image
+      doc.text("Generated:", 155, 45);
+      doc.text(`${format(new Date(), 'dd/MM/yyyy, HH:mm:ss')}`, 155, 52);
+
+
+      // --- Metric and Value (Green bar) ---
+      const startYForMetric = 60;
+      const rowHeight = 10;
+      const columnWidth = (doc.internal.pageSize.getWidth() - 28) / 2; // Split width for Metric and Value
+
+      doc.setFillColor(34, 139, 34); // Green for the bar
+      doc.rect(14, startYForMetric, doc.internal.pageSize.getWidth() - 28, rowHeight, 'F'); // Draw filled rectangle
+
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255); // White text for metric header
+      doc.setFont('helvetica', 'bold');
+      doc.text("Metric", 18, startYForMetric + rowHeight / 2 + 2, { align: 'left' });
+      doc.text("Value", 14 + columnWidth + 4, startYForMetric + rowHeight / 2 + 2, { align: 'left' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50); // Dark gray for data
+      doc.setFillColor(248, 248, 248); // Light gray background for data row
+      doc.rect(14, startYForMetric + rowHeight, doc.internal.pageSize.getWidth() - 28, rowHeight, 'F');
+
+      doc.text("Total Tasks", 18, startYForMetric + rowHeight * 1.5 + 2);
+      doc.text(`${reportTasks.length}`, 14 + columnWidth + 4, startYForMetric + rowHeight * 1.5 + 2);
+
+      // --- Task Details Table ---
+      const tableStartY = startYForMetric + rowHeight * 2 + 5; // Position below the metric section
 
       const tableHeaders = [['Due Date', 'Assigned To', 'Task Title', 'Status']];
       const tableData = reportTasks.map(task => [
@@ -881,12 +940,13 @@ export default function TaskManagement() {
       autoTable(doc, {
         head: tableHeaders,
         body: tableData,
-        startY: 45, // Start below header text
-        theme: 'striped', // Cleaner table theme
+        startY: tableStartY,
+        theme: 'striped',
         headStyles: {
-          fillColor: [34, 139, 34], // Forest Green
+          fillColor: [34, 139, 34], // Green header
           textColor: 255,
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          halign: 'left'
         },
         alternateRowStyles: {
           fillColor: [248, 248, 248] // Light gray for alternate rows
@@ -895,13 +955,14 @@ export default function TaskManagement() {
           fontSize: 9,
           cellPadding: 2,
           halign: 'left',
-          valign: 'middle'
+          valign: 'middle',
+          overflow: 'linebreak'
         },
-        columnStyles: { // Add some padding or width adjustments
-          0: { cellWidth: 30 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 70 },
-          3: { cellWidth: 25 },
+        columnStyles: {
+          0: { cellWidth: 30 }, // Due Date
+          1: { cellWidth: 40 }, // Assigned To
+          2: { cellWidth: 70 }, // Task Title
+          3: { cellWidth: 25 }, // Status
         }
       });
 
@@ -916,14 +977,11 @@ export default function TaskManagement() {
     }
   };
 
-  // Overall Task Statistics for MainAssignedTasks
   const totalTasksCount = tasks.length;
-  // This stat already exists in MainAssignedTasks, but for overall context, it's fine.
-  // const actionableTasksCount = tasks.filter(task => task.status !== 'Completed').length;
 
   return (
     <motion.div
-      className="p-8 bg-white min-h-full" // Main background white
+      className="p-8 bg-white min-h-full"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -997,11 +1055,12 @@ export default function TaskManagement() {
             users={users}
             stats={{
                 totalTasks: totalTasksCount,
-                // actionableTasks: actionableTasksCount, // Already calculated internally
             }}
             isLoading={loading}
             onSelectTask={handleSelectEvent}
             onMarkAsComplete={handleMarkTaskAsComplete}
+            activeStatusFilter={activeStatusFilter}
+            onFilterChange={setActiveStatusFilter}
           />
         </motion.div>
 
@@ -1010,7 +1069,7 @@ export default function TaskManagement() {
           <SmallTaskCalendar
             tasks={tasks}
             onSelectEvent={handleSelectEvent}
-            onDateSelect={handleDateSelectInCalendar} // Pass handler for date click
+            onDateSelect={handleDateSelectInCalendar}
             isLoading={loading.tasks}
           />
         </motion.div>

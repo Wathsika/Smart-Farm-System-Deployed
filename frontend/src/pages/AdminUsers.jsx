@@ -1,6 +1,24 @@
 // src/pages/AdminUsers.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Edit, Trash2, UserPlus, Eye, EyeOff, XCircle, Search, Filter, Users, DollarSign, Clock, Mail, Briefcase, Plus } from "lucide-react";
+import { 
+  Edit, 
+  Trash2, 
+  UserPlus, 
+  Eye, 
+  EyeOff, 
+  XCircle, 
+  Search, 
+  Filter, 
+  Users, 
+  DollarSign, 
+  Clock, // Keep Clock for general time display if needed elsewhere, not for status
+  Mail, 
+  Briefcase, 
+  Plus,
+  UserCheck, // For Present (Clocked In) status
+  Coffee, // For On Leave status
+  AlertCircle // For Late (Clocked In) and Absent status
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
 
@@ -11,11 +29,11 @@ export default function AdminUsers() {
 
   // search / filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // This statusFilter is for the employee's permanent 'active' or 'inactive' status
+  const [statusFilter, setStatusFilter] = useState("all"); 
 
   // form state
   const [showForm, setShowForm] = useState(false);
-  // මෙම පේළිය නිවැරදි කරන ලදි: useState(null) ලෙස විය යුතුය.
   const [editingEmployee, setEditingEmployee] = useState(null); 
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
@@ -26,7 +44,7 @@ export default function AdminUsers() {
     jobTitle: "",
     status: "active",
     basicSalary: "",
-    workingHours: "",
+    workingHours: "", // This is now for standard/expected working hours
     allowance: "",
     loan: "",
   });
@@ -91,7 +109,8 @@ export default function AdminUsers() {
     setError("");
     try {
       const { data } = await api.get("/admin/users");
-      setEmployees(data.items || []);
+      // Ensure data.items is an array, or default to an empty array
+      setEmployees(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load employees.");
     } finally {
@@ -103,16 +122,23 @@ export default function AdminUsers() {
     loadEmployees();
   }, [loadEmployees]);
 
-  // filter employees (unchanged)
-  const filteredEmployees = employees.filter((emp) => {
+  // filter employees
+  // Add a defensive check to ensure 'employees' is an array before calling filter
+  const filteredEmployees = Array.isArray(employees) ? employees.filter((emp) => {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       emp.fullName?.toLowerCase().includes(q) ||
       emp.email?.toLowerCase().includes(q) ||
       emp.jobTitle?.toLowerCase().includes(q);
-    const matchesStatus = statusFilter === "all" || emp.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+    
+    // This statusFilter is for the employee's permanent 'active' or 'inactive' status
+    const matchesPermanentStatus = statusFilter === "all" || emp.status === statusFilter;
+
+    // AdminUsers.jsx does not have a separate filter for currentAttendanceStatusFilter
+    // The table will display currentAttendanceStatus, but filtering should be based on permanent status.
+    return matchesSearch && matchesPermanentStatus;
+  }) : []; // If employees is not an array, default to an empty array for filtering
+
 
   // --- Client-side validation logic ---
   const validateForm = () => {
@@ -138,7 +164,7 @@ export default function AdminUsers() {
     if (!form.email.trim()) {
       errors.email = "Email Address is required.";
       isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(form.email)) { // Basic regex for email format
+    } else if (!/\S+@\S+\.\S/.test(form.email)) { // Basic regex for email format
       errors.email = "Please enter a valid email address.";
       isValid = false;
     } else if (form.email.length > 255) {
@@ -279,9 +305,14 @@ export default function AdminUsers() {
       if (editingEmployee) {
         const payload = { ...form };
         if (!payload.password) delete payload.password; // Don't send empty password if not changed
+        // Ensure role is "Employee" (it's hardcoded anyway in form, but good for safety)
+        payload.role = "Employee"; 
         await api.patch(`/admin/users/${editingEmployee._id}`, payload);
       } else {
-        await api.post("/admin/users", form);
+        const payload = { ...form };
+        // Ensure role is "Employee" for new users
+        payload.role = "Employee";
+        await api.post("/admin/users", payload);
       }
       resetForm();
       await loadEmployees();
@@ -317,7 +348,7 @@ export default function AdminUsers() {
       jobTitle: emp.jobTitle || "",
       status: emp.status || "active",
       basicSalary: emp.basicSalary !== undefined && emp.basicSalary !== null ? emp.basicSalary.toString() : "", // Convert to string for input
-      workingHours: emp.workingHours !== undefined && emp.workingHours !== null ? emp.workingHours.toString() : "", // Convert to string
+      workingHours: emp.workingHours !== undefined && emp.workingHours !== null ? emp.workingHours.toString() : "", // Convert to string for standard hours
       allowance: emp.allowance !== undefined && emp.allowance !== null ? emp.allowance.toString() : "",
       loan: emp.loan !== undefined && emp.loan !== null ? emp.loan.toString() : "",
     });
@@ -359,9 +390,9 @@ export default function AdminUsers() {
     } 
     // Special handling for number inputs to ensure only valid numbers are typed
     else if (['basicSalary', 'workingHours', 'allowance', 'loan'].includes(name)) {
-        // Allow digits, a single decimal point, and optionally a leading minus sign (though we validate against negatives later)
-        // This regex now strictly allows up to 2 decimal places while typing.
-        if (value === '' || /^-?\d*\.?\d{0,2}$/.test(value)) { 
+        // Allow digits and a single decimal point, strictly up to 2 decimal places.
+        // Do not allow negative sign here, as validation prevents negative values later.
+        if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) { 
             newValue = value;
         } else {
             // If an invalid character is typed, revert to the previous valid value
@@ -381,9 +412,15 @@ export default function AdminUsers() {
     }
   };
 
-  // Stats calculation (unchanged)
-  const activeEmployees = employees.filter(emp => emp.status === 'active').length;
-  const totalSalary = employees.reduce((sum, emp) => sum + (parseFloat(emp.basicSalary) || 0) + (parseFloat(emp.allowance) || 0) - (parseFloat(emp.loan) || 0), 0); // Include allowance and deduct loan
+  // Calculate active employees based on current attendance status (Present or Late) and if they haven't clocked out.
+  // An employee is "currently clocked in" if their currentAttendanceStatus is 'Present' or 'Late' AND their 'todayLastCheckOut' is null.
+  const currentlyClockedInEmployees = Array.isArray(employees) ? employees.filter(
+    emp => (emp.currentAttendanceStatus === 'Present' || emp.currentAttendanceStatus === 'Late') && !emp.todayLastCheckOut
+  ).length : 0;
+
+  // Stats calculation for Total Payroll (unchanged)
+  const totalPayrollAmount = Array.isArray(employees) ? employees.reduce((sum, emp) => 
+    sum + (parseFloat(emp.basicSalary) || 0) + (parseFloat(emp.allowance) || 0) - (parseFloat(emp.loan) || 0), 0) : 0; 
 
   if (loading) {
     return (
@@ -462,6 +499,7 @@ export default function AdminUsers() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           variants={itemVariants}
         >
+          {/* Total Employees (unchanged) */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -474,23 +512,25 @@ export default function AdminUsers() {
             </div>
           </div>
           
+          {/* Currently Clocked In Employees (Updated to reflect current clock-in status) */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Active Employees</p>
-                <p className="text-3xl font-bold text-green-600">{activeEmployees}</p>
+                <p className="text-gray-600 text-sm font-medium">Currently Clocked In</p>
+                <p className="text-3xl font-bold text-green-600">{currentlyClockedInEmployees}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
-                <Users className="w-6 h-6 text-green-600" />
+                <UserCheck className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </div>
           
+          {/* Total Payroll (unchanged) */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Payroll</p>
-                <p className="text-3xl font-bold text-green-600">Rs.{totalSalary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-3xl font-bold text-green-600">Rs.{totalPayrollAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -499,7 +539,7 @@ export default function AdminUsers() {
           </div>
         </motion.div>
 
-        {/* Search and Filter Bar */}
+        {/* Search and Filter Bar (unchanged) */}
         <motion.div 
           className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/50 shadow-lg"
           variants={itemVariants}
@@ -531,7 +571,7 @@ export default function AdminUsers() {
           </div>
         </motion.div>
 
-        {/* Error Message */}
+        {/* Error Message (unchanged) */}
         {error && (
           <motion.div 
             className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl mb-6"
@@ -542,7 +582,7 @@ export default function AdminUsers() {
           </motion.div>
         )}
 
-        {/* Form */}
+        {/* Form (Employment Status text changed to be more explicit) */}
         <AnimatePresence>
           {showForm && (
             <motion.div 
@@ -681,7 +721,7 @@ export default function AdminUsers() {
                   <div className="space-y-2">
                     <label htmlFor="workingHours" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                      Working Hours
+                      Working Hours (Standard)
                     </label>
                     <input 
                       id="workingHours"
@@ -737,11 +777,11 @@ export default function AdminUsers() {
                     {formValidationErrors.loan && <p className="text-red-500 text-xs mt-1">{formValidationErrors.loan}</p>}
                   </div>
 
-                  {/* Status */}
+                  {/* Employment Status (Permanent employment status, not daily attendance) */}
                   <div className="space-y-2">
                     <label htmlFor="status" className="flex items-center text-sm font-medium text-gray-700 mb-2">
                       <Filter className="w-4 h-4 mr-2 text-gray-500" />
-                      Status
+                      Employment Status
                     </label>
                     <select 
                       id="status"
@@ -750,8 +790,8 @@ export default function AdminUsers() {
                       onChange={handleInputChange} 
                       className={`w-full p-4 bg-white border ${formValidationErrors.status ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-200`}
                     >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
+                      <option value="active">Active Employee</option>
+                      <option value="inactive">Inactive Employee</option>
                     </select>
                     {formValidationErrors.status && <p className="text-red-500 text-xs mt-1">{formValidationErrors.status}</p>}
                   </div>
@@ -782,7 +822,7 @@ export default function AdminUsers() {
           )}
         </AnimatePresence>
 
-        {/* Enhanced Table (unchanged) */}
+        {/* Enhanced Table */}
         <motion.div 
           className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 overflow-hidden" 
           variants={itemVariants}
@@ -801,7 +841,8 @@ export default function AdminUsers() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compensation</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  {/* RE-ADDED: Status column header as per the image and latest request clarification */}
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> 
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -843,8 +884,11 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{emp.jobTitle || "—"}</div>
-                        {emp.workingHours && (
-                          <div className="text-sm text-gray-500">{emp.workingHours} hrs/week</div>
+                        {emp.workingHours > 0 && (
+                          <div className="text-sm text-gray-500">{emp.workingHours} hrs/week (Std)</div>
+                        )}
+                        {emp.accumulatedWorkingHours > 0 && ( // Display accumulated hours if available
+                          <div className="text-sm text-gray-500">Accumulated: {parseFloat(emp.accumulatedWorkingHours).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} hrs</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -858,17 +902,39 @@ export default function AdminUsers() {
                           <div className="text-xs text-red-500">Loan: Rs.{parseFloat(emp.loan).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         )}
                       </td>
+                      
+                      {/* NEW/RE-ADDED: Status column content as per the image and latest request */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          emp.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {emp.status}
-                        </span>
+                        {emp.currentAttendanceStatus === "Present" && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                            <UserCheck className="w-3 h-3 mr-1" /> Present (Clocked In)
+                          </span>
+                        )}
+                        {emp.currentAttendanceStatus === "Late" && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                            <AlertCircle className="w-3 h-3 mr-1" /> Late (Clocked In)
+                          </span>
+                        )}
+                        {emp.currentAttendanceStatus === "On Leave" && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            <Coffee className="w-3 h-3 mr-1" /> On Leave
+                          </span>
+                        )}
+                        {emp.currentAttendanceStatus === "Absent" && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                            <XCircle className="w-3 h-3 mr-1" /> Absent
+                          </span>
+                        )}
+                        {/* Fallback for any unexpected/missing status */}
+                        {(!["Present", "Late", "On Leave", "Absent"].includes(emp.currentAttendanceStatus)) && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                            <Zap className="w-3 h-3 mr-1" /> No Data
+                          </span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center space-x-3">
+                      
+                      <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium"> {/* Adjusted text-align if needed */}
+                        <div className="flex items-center gap-2"> {/* Moved Edit/Delete here and adjusted layout */}
                           <motion.button 
                             onClick={() => editEmployee(emp)} 
                             className="text-green-600 hover:text-green-900 p-2 hover:bg-green-100 rounded-lg transition-all duration-200"
@@ -930,10 +996,9 @@ export default function AdminUsers() {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900">{deleteConfirm.fullName}</p>
-                      <p className="text-sm text-gray-500">{deleteConfirm.email}</p>
-                      {deleteConfirm.jobTitle && (
-                        <p className="text-sm text-gray-500">{deleteConfirm.jobTitle}</p>
-                      )}
+                      <p className="text-sm text-gray-500">{deleteConfirm.jobTitle && (
+                        <span>{deleteConfirm.jobTitle} &bull; </span>
+                      )}{deleteConfirm.email}</p>
                     </div>
                   </div>
                 </div>

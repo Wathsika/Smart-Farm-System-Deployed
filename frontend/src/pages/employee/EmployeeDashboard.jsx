@@ -19,8 +19,7 @@ export default function EmployeeDashboard() {
   const loadToday = useCallback(async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
-      const { data } = await api.get("/attendance", { params: { startDate: today, endDate: today } });
+      const { data } = await api.get("/attendance/today"); // Use specific endpoint for today's records
 
       if (data.items && data.items.length > 0) {
         setTodayRecords(data.items);
@@ -28,7 +27,7 @@ export default function EmployeeDashboard() {
         setStatus(hasActiveSession ? "checked-in" : "checked-out");
       } else {
         setTodayRecords([]);
-        setStatus("idle");
+        setStatus("idle"); // FIXED: Set to idle if no records found for today
       }
     } catch (err) {
       console.error("Failed to load attendance", err);
@@ -45,7 +44,7 @@ export default function EmployeeDashboard() {
     setLoading(true);
     try {
       await api.post("/attendance/clock-in");
-      await loadToday();
+      await loadToday(); // Re-fetch to update the state
     } catch (err) {
       console.error("Check-in failed", err);
       alert(err?.response?.data?.message || "Check-in failed. Please try again.");
@@ -58,7 +57,7 @@ export default function EmployeeDashboard() {
     setLoading(true);
     try {
       await api.post("/attendance/clock-out");
-      await loadToday();
+      await loadToday(); // Re-fetch to update the state
     } catch (err) {
       console.error("Check-out failed", err);
       alert(err?.response?.data?.message || "Check-out failed. Please try again.");
@@ -106,7 +105,7 @@ export default function EmployeeDashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-8 flex flex-wrap gap-4">
           <Button
             onClick={handleCheckIn}
-            disabled={loading || status === "checked-in"}
+            disabled={loading || status === "checked-in"} // Disabled if loading or already checked in
             className="flex items-center px-6 py-3 font-medium text-white bg-green-500 rounded-lg shadow-sm hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <motion.span whileHover={{ scale: (loading || status === "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status === "checked-in") ? 1 : 0.95 }} className="flex items-center">
@@ -116,7 +115,7 @@ export default function EmployeeDashboard() {
           </Button>
           <Button
             onClick={handleCheckOut}
-            disabled={loading || status !== "checked-in"}
+            disabled={loading || status !== "checked-in"} // Disabled if loading or NOT checked in
             className="flex items-center px-6 py-3 font-medium text-white bg-red-500 rounded-lg shadow-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <motion.span whileHover={{ scale: (loading || status !== "checked-in") ? 1 : 1.05 }} whileTap={{ scale: (loading || status !== "checked-in") ? 1 : 0.95 }} className="flex items-center">

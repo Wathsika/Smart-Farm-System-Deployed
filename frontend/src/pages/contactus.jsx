@@ -640,7 +640,7 @@ const ContactUs = () => {
 
                   {/* Action Buttons */}
                   <motion.div
-                    className="grid sm:grid-cols-2 gap-4"
+                    className="flex justify-center gap-4 max-w-fit mx-auto" // Changed to flex justify-center
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
@@ -648,16 +648,13 @@ const ContactUs = () => {
                   >
                     <button
                       // Corrected Google Maps URL to directly open directions
-                      onClick={() => window.open('https://www.google.com/maps/dir/?api=1&destination=244/9,+Dines+Place,+Kaduwela+Rd,+Malabe,+Sri+Lanka', '_blank')}
+                      onClick={() => window.open('https://www.google.com/maps/dir/?api=1&destination=Baddegama,Sri lanka', '_blank')}
                       className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md font-semibold transition-all duration-300 hover:shadow-md"
                     >
                       <i className="fas fa-route"></i>
                       Get Directions
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-semibold transition-all duration-300 hover:shadow-md">
-                      <i className="fas fa-calendar-check"></i>
-                      Schedule Visit
-                    </button>
+
                   </motion.div>
                 </div>
               </div>
