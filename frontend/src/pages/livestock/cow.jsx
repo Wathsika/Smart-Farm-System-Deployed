@@ -148,14 +148,26 @@ export default function CowProfilePage() {
     });
     setAddOpen(true);
   }
+  const buildCowPayload = (values) => {
+    const payload = new FormData();
+    if (values.name !== undefined) payload.append("name", values.name);
+    if (values.breed !== undefined) payload.append("breed", values.breed);
+    if (values.gender !== undefined) payload.append("gender", values.gender);
+    if (values.bday !== undefined) payload.append("bday", values.bday);
+    if (values.photoFile) payload.append("photo", values.photoFile);
+    return payload;
+  };
+
   async function submitAdd(values) {
     setSaving(true);
     try {
-      const { data: created } = await api.post("/cows", values);
+      const payload = buildCowPayload(values);
+      const { data: created } = await api.post("/cows", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setCows((prev) => [created, ...prev]);
       setAddOpen(false);
-    } catch (err) {
-      throw err;
+    
     } finally {
       setSaving(false);
     }
@@ -182,7 +194,10 @@ export default function CowProfilePage() {
     setSaving(true);
     setError("");
     try {
-      const { data: updated } = await api.put(`/cows/${editId}`, values);
+      const payload = buildCowPayload(values);
+      const { data: updated } = await api.put('/cows/${editId}', payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setCows((prev) => prev.map((c) => (c._id === editId ? updated : c)));
       setEditOpen(false);
       setEditId(null);

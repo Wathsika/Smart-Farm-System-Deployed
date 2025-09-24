@@ -2,6 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { FaTimes, FaPencilAlt, FaCalendarAlt, FaVenus, FaMars, FaBirthdayCake, FaEye, FaTrash } from 'react-icons/fa';
 
+const API_HOST = "http://localhost:5001";
+
+const resolvePhotoUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  const normalized = url.startsWith("/") ? url : '/${url}';
+  return '${API_HOST}${normalized}';
+};
+
 // Cow SVG Icon Component
 const CowIcon = ({ className = "w-8 h-8" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -15,9 +24,10 @@ const CowIcon = ({ className = "w-8 h-8" }) => (
 
 // ActionsMenuPortal component (original functionality maintained)
 export function ActionsMenuPortal({ openForId, position, onClose, onEdit, onView, onDelete }) {
-  if (!openForId || !position) return null;
+  const shouldRender = Boolean(openForId && position);
 
   useEffect(() => {
+    if (!shouldRender) return undefined;
     const handleClick = (e) => {
       const inside =
         e.target.closest?.('[data-actions-menu="true"]') ||
@@ -38,7 +48,9 @@ export function ActionsMenuPortal({ openForId, position, onClose, onEdit, onView
       window.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("resize", handleResize);
     };
-  }, [onClose]);
+  }, [onClose, shouldRender]);
+
+  if (!shouldRender) return null;
 
   const style = { position: "fixed", top: position.top, left: position.left, zIndex: 9999 };
 
@@ -103,7 +115,7 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
       gender: initial?.gender || "Female",
       bday: initial?.bday ? new Date(initial.bday).toISOString().slice(0, 10) : "",
       photoFile: null,
-      photoPreviewUrl: initial?.photoUrl || "",
+      photoPreviewUrl: resolvePhotoUrl(initial?.photoUrl) || "",
     });
     setErrors({});
     setApiError("");
@@ -326,11 +338,9 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
 export function ViewCowModal({ data, age, onClose, onEdit }) {
   if (!data) return null;
 
-  const API_HOST = "http://localhost:5001";
-
-  const photo = data.photoUrl
-    ? `${API_HOST}${data.photoUrl}`   // build full URL if exists
-    : "https://dummyimage.com/200x200/f7fafc/4a5568.png&text=Cow";
+  const photo =
+    resolvePhotoUrl(data.photoUrl) ||
+    "https://dummyimage.com/200x200/f7fafc/4a5568.png&text=Cow";
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">

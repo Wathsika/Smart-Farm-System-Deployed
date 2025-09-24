@@ -1,10 +1,9 @@
-// backend/middlewares/upload.js
 import multer from "multer";
 
-// Use memory storage so files are kept in RAM, not on disk
+//  Use memory storage for Cloudinary uploads
 const storage = multer.memoryStorage();
 
-// Optional: restrict to images only
+//  Only allow images
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
@@ -13,4 +12,5 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Export middleware
 export const upload = multer({ storage, fileFilter });

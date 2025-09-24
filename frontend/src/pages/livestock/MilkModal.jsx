@@ -63,6 +63,7 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
     if (s === "") e.liters = "Liters is required";
     else if (s.startsWith("-")) e.liters = "Liters cannot be negative";
     else if (!twoDpStrict(s)) e.liters = "Use up to 2 decimal places (e.g., 12.34)";
+    else if (Number(s) > 100) e.liters = "Liters cannot exceed 100";
 
     return e;
   };
@@ -161,28 +162,33 @@ export function AddRecordModal({ open, onClose, cows, onSaved }) {
             <label className="text-sm block">
               <span className="block mb-1 text-gray-600 font-semibold">Liters</span>
               <input
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              min="0"
-              value={form.liters}
-              onChange={(e) => {
-                const v = e.target.value.replace(",", ".");
-                if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, liters: v });
-              }}
-              onBlur={() => {
-                if (form.liters !== "") {
-                  const n = Math.max(0, Number(form.liters));
-                  setForm((f) => ({ ...f, liters: oneDp(n) }));
-                }
-              }}
-              onWheel={(e) => e.currentTarget.blur()}
-              onKeyDown={(e) => {
-                if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
-              }}
-              className={`${base} ${errors.liters ? "border-red-500" : "border-gray-300"}`}
-              placeholder="e.g., 23.5"
-            />
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                value={form.liters}
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".");
+                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) {
+                    // block >100
+                    if (Number(v) <= 100) setForm({ ...form, liters: v });
+                  }
+                }}
+                onBlur={() => {
+                  if (form.liters !== "") {
+                    let n = Math.min(100, Math.max(0, Number(form.liters))); // clamp 0–100
+                    let formatted =
+                      Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+                    setForm((f) => ({ ...f, liters: formatted }));
+                  }
+                }}
+                onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+                }}
+                className={`${base} ${errors.liters ? "border-red-500" : "border-gray-300"}`}
+                placeholder="e.g., 23.5"
+              />
               {errors.liters && <p className="text-red-600 text-xs mt-1">{errors.liters}</p>}            
             </label>
           </div>
@@ -253,7 +259,9 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
       if (s === "") return; // treat empty as 0
       if (s.startsWith("-")) e[key] = "Cannot be negative";
       else if (!twoDpStrict(s)) e[key] = "Use up to 2 decimal places";
+      else if (Number(s) > 100) e[key] = "Liters cannot exceed 100";
     };
+
     check(form.morning, "morning");
     check(form.evening, "evening");
 
@@ -388,12 +396,17 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
                 value={form.morning}
                 onChange={(e) => {
                   const v = e.target.value.replace(",", ".");
-                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, morning: v });
+                  if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) {
+                    // block >100
+                    if (Number(v) <= 100) setForm({ ...form, morning: v });
+                  }
                 }}
                 onBlur={() => {
                   if (form.morning !== "") {
-                    const n = Math.max(0, Number(form.morning));
-                    setForm((f) => ({ ...f, morning: oneDp(n) }));
+                    let n = Math.min(100, Math.max(0, Number(form.morning))); // clamp 0–100
+                    let formatted =
+                      Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+                    setForm((f) => ({ ...f, morning: formatted }));
                   }
                 }}
                 onWheel={(e) => e.currentTarget.blur()}
@@ -406,7 +419,6 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
               {errors.morning && <p className="text-red-600 text-xs mt-1">{errors.morning}</p>}
             </label>
 
-
             <label className="text-sm block">
               <span className="block mb-1 text-gray-600 font-semibold">Evening (PM)</span>
                 <input
@@ -417,12 +429,17 @@ export function EditRecordModal({ open, row, cows, onClose, onSaved }) {
                   value={form.evening}
                   onChange={(e) => {
                     const v = e.target.value.replace(",", ".");
-                    if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) setForm({ ...form, evening: v });
+                    if (v === "" || (allowTwoDp(v) && !v.startsWith("-"))) {
+                      // block >100
+                      if (Number(v) <= 100) setForm({ ...form, evening: v });
+                    }
                   }}
                   onBlur={() => {
                     if (form.evening !== "") {
-                      const n = Math.max(0, Number(form.evening));
-                      setForm((f) => ({ ...f, evening: oneDp(n) }));
+                      let n = Math.min(100, Math.max(0, Number(form.evening))); // clamp 0–100
+                      let formatted =
+                        Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+                      setForm((f) => ({ ...f, evening: formatted }));
                     }
                   }}
                   onWheel={(e) => e.currentTarget.blur()}

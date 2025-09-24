@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
-import Cow from '../models/cow.js';
+import mongoose from "mongoose";
+import Cow from "../models/cow.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 
-//add a new cow
+//  Add a new cow
 export const addCow = async (req, res, next) => {
   try {
-    let { name, breed, bday, gender } = req.body;
+    const { name, breed, bday, gender } = req.body;
 
     if (!name || !breed || !bday || !gender) {
       return res.status(400).json({ message: "Please fill in all required fields" });
@@ -13,7 +13,7 @@ export const addCow = async (req, res, next) => {
 
     let photoUrl = "";
     if (req.file) {
-      // upload to Cloudinary
+      // Upload to Cloudinary
       photoUrl = await uploadToCloudinary(req.file.buffer, "smart_farm_cows");
     }
 
@@ -23,39 +23,43 @@ export const addCow = async (req, res, next) => {
     if (err.name === "ValidationError") {
       return res.status(400).json({ message: err.message });
     }
-    return next(err);
+    next(err);
   }
 };
 
-//
+//  List cows
 export const listCows = async (_req, res, next) => {
   try {
-    const cows = await Cow.find().sort({ cowId: -1 }); 
+    const cows = await Cow.find().sort({ cowId: -1 });
     res.json(cows);
   } catch (err) {
     next(err);
   }
 };
 
-//
+//  Get single cow
 export const getCow = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return res.status(400).json({ message: 'Invalid id' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
 
     const cow = await Cow.findById(id);
-    if (!cow) return res.status(404).json({ message: 'Cow not found' });
+    if (!cow) return res.status(404).json({ message: "Cow not found" });
     res.json(cow);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
-// Update cow details
+//  Update cow
 export const updateCow = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id))
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid id" });
+    }
 
     const { name, breed, bday, gender } = req.body;
     const updates = {};
@@ -72,7 +76,7 @@ export const updateCow = async (req, res, next) => {
     }
 
     if (req.file) {
-      //  Upload new photo to Cloudinary
+      // Upload new photo to Cloudinary
       updates.photoUrl = await uploadToCloudinary(req.file.buffer, "smart_farm_cows");
     }
 
@@ -90,15 +94,18 @@ export const updateCow = async (req, res, next) => {
   }
 };
 
-// Delete a cow
+//  Delete cow
 export const deleteCow = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return res.status(400).json({ message: 'Invalid id' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
 
     const cow = await Cow.findByIdAndDelete(id);
-    if (!cow) return res.status(404).json({ message: 'Cow not found' });
+    if (!cow) return res.status(404).json({ message: "Cow not found" });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };

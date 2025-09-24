@@ -178,20 +178,34 @@ function ActionMenu({ onEdit, onDelete }) {
 
 /*  Milk Records Table  */
 function MilkRecordsTable({
-  records,
-  onEditRow,
-  onDeleteRow,
-  dateFilter,
-  onDateFilterChange,
-  onClearDateFilter,
-  hasMore,
-  onLoadMore,
-  onLoadLess,
-  canLoadLess,
-  tableMonthIdx,
-  onTableMonthChange,
-  onClearMonthFilter,
+    records,
+    onEditRow,
+    onDeleteRow,
+    dateFilter,
+    onDateFilterChange,
+    onClearDateFilter,
+    hasMore,
+    onLoadMore,
+    onLoadLess,
+    canLoadLess,
+    tableMonthIdx,
+    onTableMonthChange,
+    onClearMonthFilter,
+    yearSel,
 }) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0–11
+
+  useEffect(() => {
+    if (
+      yearSel > currentYear ||
+      (yearSel === currentYear && tableMonthIdx !== null && tableMonthIdx > currentMonth)
+    ) {
+      onTableMonthChange?.(null);
+    }
+  }, [yearSel, tableMonthIdx, currentYear, currentMonth, onTableMonthChange]);
+
   const fmtDate = (isoStr) =>
     new Date(isoStr).toLocaleDateString(undefined, {
       month: "short",
@@ -215,6 +229,7 @@ function MilkRecordsTable({
           <input
             type="date"
             value={dateFilter || ""}
+            max={todayKey()}   //  block future dates
             onChange={(e) => onDateFilterChange?.(e.target.value)}
             className="px-3 py-2 text-sm rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-emerald-500"
           />
@@ -238,11 +253,15 @@ function MilkRecordsTable({
             className="px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white shadow-sm focus:ring-2 focus:ring-emerald-500"
           >
             <option value="">All months</option>
-            {labelsYear.map((m, i) => (
-              <option key={i} value={i}>
-                {m}
-              </option>
-            ))}
+            {labelsYear.map((m, i) => {
+              const disableFuture =
+                yearSel > currentYear || (yearSel === currentYear && i > currentMonth);
+              return (
+                <option key={i} value={i} disabled={disableFuture}>
+                  {m}
+                </option>
+              );
+            })}
           </select>
           {tableMonthIdx !== null && (
             <button
@@ -534,7 +553,6 @@ export default function Milk() {
     }
   }
 
-
   const loadMore = () => setVisible((v) => Math.min(v + 10, allRows.length));
   const loadLess = () => setVisible((v) => Math.max(10, v - 10));
 
@@ -607,34 +625,94 @@ export default function Milk() {
   ), [period]);
 
   const searchCowIds = useMemo(() => {
-  if (!search.trim()) return null;
-  const q = search.toLowerCase();
-  return cows
-    .filter(c =>
-      (c.name || "").toLowerCase().includes(q) ||
-      (c.tagId || "").toLowerCase().includes(q)
-    )
-    .map(c => c._id);
-}, [search, cows]);
+    if (!search.trim()) return null;
+    const q = search.toLowerCase();
+    return cows
+      .filter(c =>
+        (c.name || "").toLowerCase().includes(q) ||
+        (c.tagId || "").toLowerCase().includes(q)
+      )
+      .map(c => c._id);
+  }, [search, cows]);
 
-  const ChartControls = () => (
-    <div className="flex items-center gap-2">
-      {period === "week" && (
-        <input type="week" value={weekISO} onChange={(e) => setWeekISO(e.target.value || isoWeekString())} className="px-3 py-2 border rounded-lg text-sm bg-white" title="Select week" />
-      )}
-      {period === "month" && (
-        <>
-          <select value={monthIdx} onChange={(e) => setMonthIdx(Number(e.target.value))} className="px-3 py-2 border rounded-lg text-sm bg-white">
-            {labelsYear.map((m, i) => <option key={i} value={i}>{m}</option>)}
-          </select>
-          <input type="number" min="2000" max="2100" step="1" value={yearSel} onChange={(e) => setYearSel(Number(e.target.value || new Date().getFullYear()))} className="w-28 px-3 py-2 border rounded-lg text-sm bg-white" title="Select year" />
-        </>
-      )}
-      {period === "year" && (
-        <input type="number" min="2000" max="2100" step="1" value={yearSel} onChange={(e) => setYearSel(Number(e.target.value || new Date().getFullYear()))} className="w-28 px-3 py-2 border rounded-lg text-sm bg-white" title="Pick any year" />
-      )}
-    </div>
-  );
+  const ChartControls = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0–11
+
+    return (
+      <div className="flex items-center gap-2">
+        {/* Week filter */}
+        {period === "week" && (
+          <input
+            type="week"
+            value={weekISO}
+            max={isoWeekString(new Date())} //  block future weeks
+            onChange={(e) => setWeekISO(e.target.value || isoWeekString())}
+            className="px-3 py-2 border rounded-lg text-sm bg-white"
+            title="Select week"
+          />
+        )}
+
+        {/* Month filter */}
+        {period === "month" && (
+          <>
+            <select
+              value={monthIdx}
+              onChange={(e) => setMonthIdx(Number(e.target.value))}
+              className="px-3 py-2 border rounded-lg text-sm bg-white"
+            >
+              {labelsYear.map((m, i) => (
+                <option
+                  key={i}
+                  value={i}
+                  disabled={
+                    yearSel > currentYear ||
+                    (yearSel === currentYear && i > currentMonth) //  block future months
+                  }
+                >
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              min="2000"
+              max={currentYear} //  block future years
+              step="1"
+              value={yearSel}
+              onChange={(e) =>
+                setYearSel(
+                  Number(e.target.value || new Date().getFullYear())
+                )
+              }
+              className="w-28 px-3 py-2 border rounded-lg text-sm bg-white"
+              title="Select year"
+            />
+          </>
+        )}
+
+        {/* Year filter */}
+        {period === "year" && (
+          <input
+            type="number"
+            min="2000"
+            max={currentYear} //  block future years
+            step="1"
+            value={yearSel}
+            onChange={(e) =>
+              setYearSel(
+                Number(e.target.value || new Date().getFullYear())
+              )
+            }
+            className="w-28 px-3 py-2 border rounded-lg text-sm bg-white"
+            title="Pick any year"
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
@@ -808,6 +886,7 @@ export default function Milk() {
           tableMonthIdx={tableMonthIdx}
           onTableMonthChange={(m) => { setTableMonthIdx(m); setDateFilter(""); }}
           onClearMonthFilter={() => setTableMonthIdx(null)}
+          yearSel={yearSel}
           onEditRow={(r) => { setEditRow(r); setEditOpen(true); }}
           onDeleteRow={handleDeleteRow}
         />

@@ -104,7 +104,7 @@ function Field({ label, error, children, className = "" }) {
   );
 }
 
-/* ---------- Shared Fields (with typing rules) ---------- */
+/*  Shared Fields  */
 function HealthFields({
   form,
   setForm,
@@ -181,11 +181,29 @@ const blockInvalid = (e) => {
         <input
           type="number"
           inputMode="decimal"
-          step="0.1"            // increment by 0.1
+          step="0.1"              // increment by 0.1
           min="0"
+          max="100"               //  limit to 100
           value={form.temperatureC}
-          onChange={numberOnChange("temperatureC")}
-          onKeyDown={blockInvalid}   // block -, +, e
+          onChange={(e) => {
+            const raw = e.target.value.replace(",", ".");
+            if (raw === "" || (allowTwoDp(raw) && !raw.startsWith("-"))) {
+              if (Number(raw) <= 100) {
+                setForm({ ...form, temperatureC: raw });
+              }
+            }
+          }}
+          onBlur={() => {
+            if (form.temperatureC !== "") {
+              let n = Math.min(100, Math.max(0, Number(form.temperatureC))); // clamp 0–100
+              let formatted =
+                Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+              setForm((f) => ({ ...f, temperatureC: formatted }));
+            }
+          }}
+          onKeyDown={(e) => {
+            if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+          }}
           onWheel={(e) => e.currentTarget.blur()}
           placeholder="e.g., 38.5"
           className={`${INPUT} ${errors.temperatureC ? "border-red-500" : "border-gray-300"}`}
@@ -199,8 +217,24 @@ const blockInvalid = (e) => {
           inputMode="decimal"
           step="0.1"
           min="0"
+          max="1000"   // clamp typing max
           value={form.weightKg}
-          onChange={numberOnChange("weightKg")}
+          onChange={(e) => {
+            const raw = e.target.value.replace(",", ".");
+            if (raw === "" || (allowTwoDp(raw) && !raw.startsWith("-"))) {
+              if (Number(raw) <= 1000) {
+                setForm({ ...form, weightKg: raw });
+              }
+            }
+          }}
+          onBlur={() => {
+            if (form.weightKg !== "") {
+              let n = Math.min(1000, Math.max(0, Number(form.weightKg))); // clamp 0–1000
+              let formatted =
+                Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+              setForm((f) => ({ ...f, weightKg: formatted }));
+            }
+          }}
           onKeyDown={blockInvalid}
           onWheel={(e) => e.currentTarget.blur()}
           placeholder="e.g., 420.5"
@@ -238,9 +272,27 @@ const blockInvalid = (e) => {
             inputMode="decimal"
             step="0.1"
             min="0"
+            max="50"   //  limit to 50 ml
             value={form.dosage}
-            onChange={numberOnChange("dosage")}
-            onKeyDown={blockInvalid}
+            onChange={(e) => {
+              const raw = e.target.value.replace(",", ".");
+              if (raw === "" || (allowTwoDp(raw) && !raw.startsWith("-"))) {
+                if (Number(raw) <= 50) {
+                  setForm({ ...form, dosage: raw });
+                }
+              }
+            }}
+            onBlur={() => {
+              if (form.dosage !== "") {
+                let n = Math.min(50, Math.max(0, Number(form.dosage))); // clamp 0–50
+                let formatted =
+                  Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+                setForm((f) => ({ ...f, dosage: formatted }));
+              }
+            }}
+            onKeyDown={(e) => {
+              if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+            }}
             onWheel={(e) => e.currentTarget.blur()}
             placeholder="e.g., 5.5"
             className={`${INPUT} ${errors.dosage ? "border-red-500" : "border-gray-300"}`}
