@@ -1,6 +1,6 @@
 // frontend/src/admin/PlanList.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 
@@ -9,27 +9,90 @@ const PlanList = () => {
     const [activePlans, setActivePlans] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchPlans = async () => {
-            try {
-                setLoading(true);
-                // Get plans due today
-                const dueTodayRes = await api.get('/plans/due');
-                // Get all active plans
-                const activePlansRes = await api.get('/plans', { params: { active: true } });
-                
-                setDueToday(dueTodayRes.data);
-                setActivePlans(activePlansRes.data);
-            } catch (error) {
-                console.error("Failed to fetch plans:", error);
-                alert("Could not load plans.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPlans();
-    }, []);
+    const loadPlans = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [dueTodayRes, activePlansRes] = await Promise.all([
+                api.get('/plans/due'),
+                api.get('/plans', { params: { active: true } })
+            ]);
 
+            setDueToday(dueTodayRes.data);
+            setActivePlans(activePlansRes.data);
+        } catch (error) {
+            console.error("Failed to fetch plans:", error);
+            alert("Could not load plans.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+      useEffect(() => {
+        loadPlans();
+    }, [loadPlans]);
+
+    const handleMarkApplied = async (plan) => {
+        const productId = plan?.product?._id || plan?.product;
+        const dosageAmount = plan?.dosage?.amount;
+        const dosageUnit = plan?.dosage?.unit;
+
+        if (!productId || dosageAmount == null || !dosageUnit) {
+            alert('Cannot mark as applied because product or dosage details are missing.');
+            return;
+        }
+
+        const amountValue = Number(dosageAmount);
+        if (!Number.isFinite(amountValue)) {
+            alert('Cannot mark as applied because the dosage amount is invalid.');
+            return;
+        }
+
+        try {
+            await api.post('/applications', {
+                date: new Date(),
+                product: productId,
+                crop: plan?.crop?._id || plan?.crop,
+                field: plan?.field?._id || plan?.field,
+                plan: plan?._id,
+                quantityUsed: {
+                    amount: amountValue,
+                    unit: dosageUnit,
+                },
+            });
+            alert('Application recorded successfully.');
+            await loadPlans();
+        } catch (error) {
+            console.error('Failed to mark plan as applied:', error);
+            alert('Could not record the application.');
+        }
+    };
+
+    const handleTogglePlan = async (planId) => {
+        if (!planId) return;
+        if (!window.confirm('Are you sure you want to disable this plan?')) return;
+
+        try {
+            await api.patch(`/plans/${planId}/toggle`);
+            alert('Plan status updated.');
+            await loadPlans();
+        } catch (error) {
+            console.error('Failed to toggle plan:', error);
+            alert('Could not update plan status.');
+        }
+    };
+
+    const handleDeletePlan = async (planId) => {
+        if (!planId) return;
+        if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) return;
+
+        try {
+            await api.delete(`/plans/${planId}`);
+            alert('Plan deleted successfully.');
+            await loadPlans();
+        } catch (error) {
+            console.error('Failed to delete plan:', error);
+            alert('Could not delete plan.');
+        }
+    };
     const renderPlanRow = (plan) => (
         <tr key={plan._id} className="border-b border-gray-200 hover:bg-gray-50">
             <td className="py-4 px-6">
@@ -42,9 +105,24 @@ const PlanList = () => {
                 <div className="text-sm text-gray-500">{`from ${new Date(plan.schedule.startDate).toLocaleDateString()}`}</div>
             </td>
             <td className="py-4 px-6 space-x-4">
-                <button className="text-green-600 font-semibold hover:text-green-800">Mark Applied</button>
-                <button className="text-yellow-600 font-semibold hover:text-yellow-800">Disable</button>
-                <button className="text-red-600 font-semibold hover:text-red-800">Delete</button>
+                 <button
+                    className="text-green-600 font-semibold hover:text-green-800"
+                    onClick={() => handleMarkApplied(plan)}
+                >
+                    Mark Applied
+                </button>
+                <button
+                    className="text-yellow-600 font-semibold hover:text-yellow-800"
+                    onClick={() => handleTogglePlan(plan._id)}
+                >
+                    Disable
+                </button>
+                <button
+                    className="text-red-600 font-semibold hover:text-red-800"
+                    onClick={() => handleDeletePlan(plan._id)}
+                >
+                    Delete
+                </button>
             </td>
         </tr>
     );
@@ -76,9 +154,24 @@ const PlanList = () => {
                                      <span className="text-sm text-gray-500 block">{plan.field?.fieldName} - {plan.crop?.cropName}</span>
                                  </div>
                                  <div className="space-x-4">
-                                     <button className="text-green-600 font-semibold hover:text-green-800">Mark Applied</button>
-                                     <button className="text-yellow-600 font-semibold hover:text-yellow-800">Disable</button>
-                                     <button className="text-red-600 font-semibold hover:text-red-800">Delete</button>
+                                      <button
+                                        className="text-green-600 font-semibold hover:text-green-800"
+                                        onClick={() => handleMarkApplied(plan)}
+                                     >
+                                        Mark Applied
+                                     </button>
+                                     <button
+                                        className="text-yellow-600 font-semibold hover:text-yellow-800"
+                                        onClick={() => handleTogglePlan(plan._id)}
+                                     >
+                                        Disable
+                                     </button>
+                                     <button
+                                        className="text-red-600 font-semibold hover:text-red-800"
+                                        onClick={() => handleDeletePlan(plan._id)}
+                                     >
+                                        Delete
+                                     </button>
                                  </div>
                              </div>
                         ))}
