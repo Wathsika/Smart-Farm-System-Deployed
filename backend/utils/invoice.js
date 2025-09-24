@@ -27,7 +27,7 @@ const brandDetails = () => {
   const name = process.env.INVOICE_BRAND_NAME || "GreenLeaf Farm";
   const address =
     process.env.INVOICE_BRAND_ADDRESS ||
-    "123 Farm Valley Road, Green County, Sri Lanka";
+    "10/F, Ginimellagaha, Baddegama, Sri Lanka";
   const email =
     process.env.INVOICE_BRAND_EMAIL || process.env.SMTP_FROM_EMAIL || "";
   const phone = process.env.INVOICE_BRAND_PHONE || "";
@@ -44,15 +44,19 @@ const resolveInvoiceMeta = (order) => {
   return { createdAt, invoiceId };
 };
 
+const TABLE_LEFT = 50;
+const TABLE_RIGHT = 550;
+const TABLE_WIDTH = TABLE_RIGHT - TABLE_LEFT;
+const TABLE_COLUMN_WIDTHS = [260, 80, 80, 80];
+const TABLE_COLUMN_ALIGNMENTS = ["left", "center", "right", "right"];
+
 const drawTableRow = (doc, y, columns) => {
-  const columnWidth = [250, 80, 100, 100];
-  const alignments = ["left", "center", "right", "right"];
-  let currentX = 50;
+let currentX = TABLE_LEFT;
   columns.forEach((text, index) => {
-    const width = columnWidth[index] || 100;
+    const width = TABLE_COLUMN_WIDTHS[index] || 100;
     doc.text(String(text ?? "—"), currentX, y, {
       width,
-      align: alignments[index] || "left",
+      align: TABLE_COLUMN_ALIGNMENTS[index] || "left",
     });
     currentX += width;
   });
@@ -113,16 +117,26 @@ export const generateInvoicePdf = async (rawOrder) => {
 
     // Table header
     const tableTop = doc.y + 10;
-    doc.strokeColor("#16a34a").lineWidth(1).moveTo(50, tableTop - 6).lineTo(550, tableTop - 6).stroke();
+   doc
+      .strokeColor("#16a34a")
+      .lineWidth(1)
+      .moveTo(TABLE_LEFT, tableTop - 6)
+      .lineTo(TABLE_RIGHT, tableTop - 6)
+      .stroke();
     doc.font("Helvetica-Bold").fontSize(10).fillColor("#000000");
     drawTableRow(doc, tableTop, ["Item Description", "Quantity", "Unit Price", "Total"]);
-    doc.strokeColor("#d1d5db").lineWidth(0.5).moveTo(50, tableTop + 14).lineTo(550, tableTop + 14).stroke();
+    doc
+      .strokeColor("#d1d5db")
+      .lineWidth(0.5)
+      .moveTo(TABLE_LEFT, tableTop + 14)
+      .lineTo(TABLE_RIGHT, tableTop + 14)
+      .stroke();
 
     // Rows
     doc.font("Helvetica").fontSize(10).fillColor("#000000");
     let rowY = tableTop + 22;
     if (items.length === 0) {
-      doc.text("No items found", 50, rowY, { width: 500, align: "center" });
+      doc.text("No items found", TABLE_LEFT, rowY, { width: TABLE_WIDTH, align: "center" });
       rowY += 18;
     } else {
       items.forEach((item, i) => {
@@ -135,7 +149,11 @@ export const generateInvoicePdf = async (rawOrder) => {
           formatCurrency(price * qty),
         ]);
         rowY += 18;
-        doc.strokeColor("#f3f4f6").moveTo(50, rowY - 4).lineTo(550, rowY - 4).stroke();
+       doc
+          .strokeColor("#f3f4f6")
+          .moveTo(TABLE_LEFT, rowY - 4)
+          .lineTo(TABLE_RIGHT, rowY - 4)
+          .stroke();
       });
     }
 
@@ -163,13 +181,23 @@ export const generateInvoicePdf = async (rawOrder) => {
     totalsY += 24;
 
     doc.y = totalsY + 10;
-    doc.strokeColor("#d1d5db").moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.strokeColor("#d1d5db").moveTo(TABLE_LEFT, doc.y).lineTo(TABLE_RIGHT, doc.y).stroke();
     doc.y += 20;
 
     // Footer
-    doc.font("Helvetica").fontSize(10).fillColor("#6b7280")
-      .text("Thank you for your business!", { align: "center" })
-      .text("If you have any questions about this invoice, please contact us.", { align: "center" });
+   doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor("#6b7280");
+    const footerY = doc.y;
+    doc.text("Thank you for your business!", TABLE_LEFT, footerY, {
+      width: TABLE_WIDTH,
+      align: "center",
+    });
+    doc.text("If you have any questions about this invoice, please contact us.", TABLE_LEFT, doc.y + 4, {
+      width: TABLE_WIDTH,
+      align: "center",
+    });
 
     doc.end();
   });

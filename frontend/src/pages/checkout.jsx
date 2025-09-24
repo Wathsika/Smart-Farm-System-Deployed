@@ -99,9 +99,10 @@ export default function CheckoutPage() {
         return null;
 
       case 'addressLine1':
-        if (!v) return 'Street Address is required.';
-        if (!/^[A-Za-z0-9\s]+$/.test(v)) return 'Address can contain only letters, numbers, and spaces.';
-        return null;
+  if (!v) return 'Street Address is required.';
+  if (!/^[A-Za-z0-9\s/,]+$/.test(v))
+    return 'Address can contain only letters, numbers, spaces, "/", and ",".';
+  return null;
 
       case 'city':
         if (!v) return 'City is required.';
@@ -134,7 +135,7 @@ export default function CheckoutPage() {
       }
 
       case 'addressLine1':
-        return value.replace(/[^A-Za-z0-9\s]/g, '');
+  return value.replace(/[^A-Za-z0-9\s/,]/g, '');
 
       case 'city':
         return value.replace(/[^A-Za-z\s]/g, '');

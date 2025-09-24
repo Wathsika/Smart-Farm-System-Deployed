@@ -610,25 +610,52 @@ export default function ProductModal({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <FormField label="Price (Rs)" name="price" error={errors.price} required>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                          Rs
-                        </span>
-                        <StyledInput
-                          id="price"
-                          name="price"
-                          type="text"
-                          inputMode="decimal"
-                          pattern={TWO_DECIMAL_PATTERN.source}
-                          value={form.price}
-                          onChange={handleChange}
-                          placeholder="0.00"
-                          className="pl-10"
-                          error={errors.price}
-                        />
-                      </div>
-                    </FormField>
+                  <FormField label="Price (Rs)" name="price" error={errors.price} required>
+  <div className="relative">
+    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+      Rs
+    </span>
+    <StyledInput
+      id="price"
+      name="price"
+      type="number"
+      step="0.01"
+      min="0"
+      value={form.price}
+      onKeyDown={(e) => {
+        // ❌ Block minus, 'e', '+'
+        if (e.key === "-" || e.key === "e" || e.key === "+") {
+          e.preventDefault();
+        }
+      }}
+      onChange={(e) => {
+        let val = e.target.value;
+
+        // ✅ Trim to 2 decimals
+        if (val.includes(".")) {
+          const [intPart, decPart] = val.split(".");
+          val = intPart + "." + decPart.slice(0, 2);
+        }
+
+        // ✅ Clamp between 0 and 100000
+        let num = Number(val);
+        if (isNaN(num) || num < 0) num = 0;
+        if (num > 100000) num = 100000;
+
+        setForm((p) => ({
+          ...p,
+          price: num.toFixed(
+            val.includes(".") ? Math.min(2, val.split(".")[1]?.length || 0) : 0
+          ),
+        }));
+      }}
+      placeholder="0.00"
+      className="pl-10"
+      error={errors.price}
+    />
+  </div>
+</FormField>
+
                     <FormField label="Stock Quantity" name="qty" error={errors.qty} required>
                       <StyledInput
                         id="qty"

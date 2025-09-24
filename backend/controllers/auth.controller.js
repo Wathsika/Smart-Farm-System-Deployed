@@ -80,6 +80,98 @@ export const login = async (req, res) => {
   }
 };
 
+// Update profile details (requires current password confirmation)
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { currentPassword, fullName, email, jobTitle } = req.body;
+
+    if (!currentPassword || typeof currentPassword !== "string") {
+      return res.status(400).json({ message: "Current password is required" });
+    }
+
+    const userDoc = await User.findById(userId);
+    if (!userDoc) return res.status(404).json({ message: "User not found" });
+
+    const matches = await bcrypt.compare(currentPassword, userDoc.password);
+    if (!matches) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const updates = {};
+    if (typeof fullName === "string") updates.fullName = fullName;
+    if (typeof email === "string") updates.email = email.toLowerCase();
+    if (jobTitle !== undefined) updates.jobTitle = jobTitle;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No profile fields provided" });
+    }
+
+    const updatedDoc = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!updatedDoc) return res.status(404).json({ message: "User not found" });
+
+    const updatedUser = updatedDoc.toObject();
+    delete updatedUser.password;
+
+    res.json({ message: "Profile updated successfully", user: updatedUser });
+  } catch (e) {
+    res.status(500).json({ message: "Server Error", error: e.message });
+  }
+};
+
+// Change password (requires current password confirmation)
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "currentPassword and newPassword are required" });
+    }
+
+    if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
+      return res.status(400).json({ message: "Passwords must be strings" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+    }
+
+    const userDoc = await User.findById(userId);
+    if (!userDoc) return res.status(404).json({ message: "User not found" });
+
+    const matches = await bcrypt.compare(currentPassword, userDoc.password);
+    if (!matches) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    const updatedDoc = await User.findByIdAndUpdate(
+      userId,
+      { password: hashed },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedDoc) return res.status(404).json({ message: "User not found" });
+
+    const updatedUser = updatedDoc.toObject();
+    delete updatedUser.password;
+
+    res.json({ message: "Password updated successfully", user: updatedUser });
+  } catch (e) {
+    res.status(500).json({ message: "Server Error", error: e.message });
+  }
+};
+
+
 export const googleLogin = async (req, res) => {
   try {
     if (!GOOGLE_CLIENT_ID) {
@@ -190,3 +282,4 @@ export const googleLogin = async (req, res) => {
       .json({ message: "Google authentication failed", error: e.message });
   }
 };
+

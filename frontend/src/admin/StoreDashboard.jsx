@@ -82,7 +82,17 @@ const StatCard = ({ to, icon, label, value, hint, rightHint, tone = "green", ind
           </motion.div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
-             <p className="text-3xl font-bold text-gray-900 mb-1">{displayValue}</p>
+             <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 flex items-baseline gap-1">
+  {typeof value === "string" && value.startsWith("Rs") ? (
+    <>
+      <span className="text-lg text-gray-600">Rs</span>
+      <span>{value.replace("Rs", "").trim()}</span>
+    </>
+  ) : (
+    <span>{displayValue}</span>
+  )}
+</p>
+
             {hint && <p className="text-xs text-gray-400">{hint}</p>}
           </div>
         </div>
@@ -394,7 +404,8 @@ const topSellerMaxQty = useMemo(
         </AnimatePresence>
 
         {/* Enhanced metrics grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
           {loading ? (
             Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} index={i} />)
           ) : (

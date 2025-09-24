@@ -344,6 +344,12 @@ export default function ProductsPage() {
     return { totalProducts, outOfStock, lowStock, totalValue };
   }, [items]);
 
+  const formatCurrency = (n) =>
+  `Rs ${Number(n || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
   const statStyle = {
     green: { box: "bg-green-50", icon: "text-green-600" },
     yellow: { box: "bg-yellow-50", icon: "text-yellow-600" },
@@ -355,7 +361,8 @@ export default function ProductsPage() {
     { title: "Total Products", value: stats.totalProducts, icon: "fas fa-box", s: statStyle.green },
     { title: "Low Stock", value: stats.lowStock, icon: "fas fa-exclamation-triangle", s: statStyle.yellow },
     { title: "Out of Stock", value: stats.outOfStock, icon: "fas fa-times-circle", s: statStyle.red },
-    { title: "Total Value", value: `Rs ${stats.totalValue.toFixed(2)}`, icon: "fas fa-dollar-sign", s: statStyle.blue },
+    { title: "Total Value", value: formatCurrency(stats.totalValue), icon: "fas fa-dollar-sign", s: statStyle.blue },
+
   ];
 
   return (
