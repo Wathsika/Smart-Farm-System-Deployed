@@ -1,6 +1,6 @@
 // src/pages/employee/MyTasks.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { api } from "../../lib/api";
+import { api } from "../../lib/api"; // Make sure this path is correct for your 'api' instance
 import { motion } from "framer-motion";
 import { CheckSquare, Clock, CheckCircle, ListTodo, Loader, Calendar as CalendarIcon, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +94,7 @@ export default function MyTasks() {
       fetchTasks(); // Fetch fresh data to ensure consistency after update
     } catch (error) {
       alert("Failed to update task status.");
+      console.error("Error updating task status:", error); // Debugging log
       fetchTasks(); // Revert to server state on error
     }
   };

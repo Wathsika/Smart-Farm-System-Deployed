@@ -148,6 +148,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
       isValid = false;
     }
 
+    // Status validation is still useful if the field is manipulated outside the disabled state or through API
     if (!['To Do', 'In Progress', 'Completed'].includes(task.status)) {
         errors.status = "Invalid status selected.";
         isValid = false;
@@ -208,6 +209,9 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
       default: return 'bg-blue-50 text-blue-700 border-blue-200';
     }
   };
+
+  // Determine if the delete button should be disabled based on status
+  const isDeleteDisabled = readOnly || existingTask?.status === 'In Progress' || existingTask?.status === 'Completed';
 
   return (
     <Modal show={show} onClose={onClose} title={isEditing && readOnly ? 'Task Details' : (isEditing ? 'Update Task' : 'Create New Task')}> {/* Adjusted title */}
@@ -293,7 +297,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
               value={task.status}
               onChange={handleTaskInputChange}
               className={`w-full p-2.5 border-0 rounded-sm focus:outline-none bg-transparent font-medium ${formErrors.status ? 'border-red-500' : ''}`}
-              disabled={isEditing || readOnly} // Admin cannot change status when editing an existing task AND disabled if in readOnly mode
+              disabled={true} // ALWAYS DISABLED: Admin cannot change status (for new or existing tasks)
             >
               <option>To Do</option>
               <option>In Progress</option>
@@ -324,13 +328,13 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-          {isEditing && ( // Delete button still visible if it's an existing task, but disabled if readOnly
+          {isEditing && (
             <motion.button
               type="button"
               onClick={handleDeleteClick}
-              className={`flex items-center px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600 transition-colors shadow-sm ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-              whileHover={{ scale: readOnly ? 1 : 1.05 }} whileTap={{ scale: readOnly ? 1 : 0.95 }}
-              disabled={readOnly}
+              className={`flex items-center px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600 transition-colors shadow-sm ${isDeleteDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              whileHover={{ scale: isDeleteDisabled ? 1 : 1.05 }} whileTap={{ scale: isDeleteDisabled ? 1 : 0.95 }}
+              disabled={isDeleteDisabled} // Disabled based on readOnly or task status
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
               Delete
