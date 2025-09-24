@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { STATUS_OPTIONS as addStatusOptions, validateStatus } from '../AddFieldPage.jsx';
 import { STATUS_OPTIONS as editStatusOptions } from '../EditFieldPage.jsx';
 
-const EXPECTED_STATUSES = ['In Use', 'Available', 'Planted', 'Fallow'];
+const EXPECTED_STATUSES = ['In Use', 'Available', 'Planted', 'Under Preparation'];
 
 describe('Field status configuration', () => {
   it('AddFieldPage exposes the expected status options', () => {
@@ -21,7 +21,7 @@ describe('Field status configuration', () => {
   });
 
   it('AddFieldPage validation rejects disallowed statuses', () => {
-    expect(validateStatus('Under Preparation')).toBe('Invalid value');
+    expect(validateStatus('In Use')).toBe('Invalid value');
     expect(validateStatus('')).toBe('Invalid value');
   });
 });

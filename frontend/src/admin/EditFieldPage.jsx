@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../lib/api.js'; 
-export const STATUS_OPTIONS = ['In Use', 'Available', 'Planted', 'Fallow'];
+export const STATUS_OPTIONS = ['In Use', 'Available', 'Planted', 'Under Preparation'];
 
 const EditFieldPage = () => {
   const { id } = useParams();
