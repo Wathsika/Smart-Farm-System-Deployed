@@ -109,6 +109,70 @@ function ChangeBlock({ originalData, newData }) {
     }
     return String(val);
   };
+
+  return (
+    <div className="text-sm">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="inline-flex items-center gap-2 px-3 py-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 font-medium rounded-md transition-colors"
+      >
+        {expanded ? <ChevronUp size={14} /> : <Eye size={14} />}
+        {expanded ? "Hide Changes" : "View Changes"}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Original Data */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-red-50 border-b border-red-100 px-3 py-2">
+              <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                Original Data
+              </div>
+            </div>
+            <div className="p-3">
+              <dl className="divide-y divide-gray-100">
+                {fields.map(({ key, label }) => (
+                  <div key={key} className="py-2 grid grid-cols-3 gap-2">
+                    <dt className="text-xs font-medium text-gray-600 col-span-1">
+                      {label}
+                    </dt>
+                    <dd className="text-xs text-gray-800 col-span-2">
+                      {formatValue(originalData?.[key], key)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+
+          {/* Updated Data */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
+              <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
+                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                Updated Data
+              </div>
+            </div>
+            <div className="p-3">
+              <dl className="divide-y divide-gray-100">
+                {fields.map(({ key, label }) => (
+                  <div key={key} className="py-2 grid grid-cols-3 gap-2">
+                    <dt className="text-xs font-medium text-gray-600 col-span-1">
+                      {label}
+                    </dt>
+                    <dd className="text-xs text-gray-800 col-span-2">
+                      {formatValue(newData?.[key], key)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ---------- Main Page ---------- */
