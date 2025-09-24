@@ -6,7 +6,10 @@ import {
   BRAND_DOCUMENT_TITLES,
 } from "../../constants/branding";
 
-export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, ref) {
+export const InvoiceTemplate = forwardRef(function InvoiceTemplate(
+  { order },
+  ref
+) {
   if (!order) return null;
 
   const formatCurrency = (amount) => `Rs ${Number(amount || 0).toFixed(2)}`;
@@ -19,7 +22,9 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
   const invoiceId =
     order?.orderNumber ||
     order?.stripeSessionId?.slice(-10)?.toUpperCase() ||
-    String(order?._id || "").slice(-8).toUpperCase();
+    String(order?._id || "")
+      .slice(-8)
+      .toUpperCase();
 
   // Safe getters (avoid crashes if fields missing)
   const customer = order?.customer || {};
@@ -34,7 +39,9 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
     : [];
 
   const showBillingDetails =
-    templateOptions.showBillingDetails ?? templateOptions.showCustomerSection ?? true;
+    templateOptions.showBillingDetails ??
+    templateOptions.showCustomerSection ??
+    true;
   const showOrderSummary =
     templateOptions.showOrderSummary ?? templateOptions.showMetaSummary ?? true;
   const showFooter = templateOptions.showFooter ?? true;
@@ -46,59 +53,63 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
         "If you have any questions about this invoice, please contact us.",
       ];
 
-  const billingSection =
-    showBillingDetails && (
-      <div>
-        <h3 className="font-semibold mb-1">Bill To:</h3>
-        <p>{customer.name || "—"}</p>
-        <p>{shipping.addressLine1 || "—"}</p>
-        <p>
-          {shipping.city || "—"}
-          {shipping.postalCode ? `, ${shipping.postalCode}` : ""}
-        </p>
-        <p>{customer.email || "—"}</p>
-      </div>
-    );
+  const billingSection = showBillingDetails && (
+    <div>
+      <h3 className="font-semibold mb-1">Bill To:</h3>
+      <p>{customer.name || "—"}</p>
+      <p>{shipping.addressLine1 || "—"}</p>
+      <p>
+        {shipping.city || "—"}
+        {shipping.postalCode ? `, ${shipping.postalCode}` : ""}
+      </p>
+      <p>{customer.email || "—"}</p>
+    </div>
+  );
 
-  const summarySection =
-    showOrderSummary && (
-      <div
-        className={`text-right ${
-          billingSection ? "" : "col-span-2 md:col-span-1"
-        }`}
-      >
-        {summaryLines ? (
-          summaryLines.map((line, idx) => (
-            <p key={idx} className="text-sm text-gray-700">
-              {line?.label ? (
-                <>
-                  <span className="font-semibold">{line.label}: </span>
-                  <span className="font-normal">{line.value ?? "—"}</span>
-                </>
-              ) : (
-                <span className="font-normal">{line?.value ?? "—"}</span>
-              )}
-            </p>
-          ))
-        ) : (
-          <>
-            <p className="font-semibold">
-              Order Status: <span className="font-normal">{order?.status || "—"}</span>
-            </p>
-            <p className="font-semibold">
-              Payment Method: <span className="font-normal">{order?.paymentMethod || "Stripe (Card)"}</span>
-            </p>
-          </>
-        )}
-      </div>
-    );
+  const summarySection = showOrderSummary && (
+    <div
+      className={`text-right ${
+        billingSection ? "" : "col-span-2 md:col-span-1"
+      }`}
+    >
+      {summaryLines ? (
+        summaryLines.map((line, idx) => (
+          <p key={idx} className="text-sm text-gray-700">
+            {line?.label ? (
+              <>
+                <span className="font-semibold">{line.label}: </span>
+                <span className="font-normal">{line.value ?? "—"}</span>
+              </>
+            ) : (
+              <span className="font-normal">{line?.value ?? "—"}</span>
+            )}
+          </p>
+        ))
+      ) : (
+        <>
+          <p className="font-semibold">
+            Order Status:{" "}
+            <span className="font-normal">{order?.status || "—"}</span>
+          </p>
+          <p className="font-semibold">
+            Payment Method:{" "}
+            <span className="font-normal">
+              {order?.paymentMethod || "Stripe (Card)"}
+            </span>
+          </p>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div ref={ref} className="p-8 bg-white text-gray-800">
       {/* Header */}
       <header className="flex justify-between items-start pb-4 border-b-2 border-green-600">
         <div>
-          <h1 className="text-3xl font-bold text-green-700">{BRAND_DETAILS.name}</h1>
+          <h1 className="text-3xl font-bold text-green-700">
+            {BRAND_DETAILS.name}
+          </h1>
           <p className="text-sm">{BRAND_DETAILS.address}</p>
           <p className="text-sm">{BRAND_CONTACT_LINE}</p>
         </div>
@@ -129,7 +140,9 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3 text-left font-semibold">Item Description</th>
+                <th className="p-3 text-left font-semibold">
+                  Item Description
+                </th>
                 <th className="p-3 text-center font-semibold">Quantity</th>
                 <th className="p-3 text-right font-semibold">Unit Price</th>
                 <th className="p-3 text-right font-semibold">Total</th>
