@@ -26,12 +26,19 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
   const shipping = order?.shippingAddress || {};
   const items = Array.isArray(order?.orderItems) ? order.orderItems : [];
   const templateOptions = order?.templateOptions || {};
+  const summaryLines = Array.isArray(order?.summaryLines)
+    ? order.summaryLines
+    : null;
+  const customSections = Array.isArray(order?.customSections)
+    ? order.customSections.filter(Boolean)
+    : [];
 
   const showBillingDetails =
     templateOptions.showBillingDetails ?? templateOptions.showCustomerSection ?? true;
   const showOrderSummary =
     templateOptions.showOrderSummary ?? templateOptions.showMetaSummary ?? true;
   const showFooter = templateOptions.showFooter ?? true;
+  const showItemsTable = templateOptions.showItemsTable ?? true;
   const footerLines = Array.isArray(templateOptions.footerLines)
     ? templateOptions.footerLines
     : [
@@ -60,12 +67,29 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
           billingSection ? "" : "col-span-2 md:col-span-1"
         }`}
       >
-        <p className="font-semibold">
-          Order Status: <span className="font-normal">{order?.status || "—"}</span>
-        </p>
-        <p className="font-semibold">
-          Payment Method: <span className="font-normal">{order?.paymentMethod || "Stripe (Card)"}</span>
-        </p>
+        {summaryLines ? (
+          summaryLines.map((line, idx) => (
+            <p key={idx} className="text-sm text-gray-700">
+              {line?.label ? (
+                <>
+                  <span className="font-semibold">{line.label}: </span>
+                  <span className="font-normal">{line.value ?? "—"}</span>
+                </>
+              ) : (
+                <span className="font-normal">{line?.value ?? "—"}</span>
+              )}
+            </p>
+          ))
+        ) : (
+          <>
+            <p className="font-semibold">
+              Order Status: <span className="font-normal">{order?.status || "—"}</span>
+            </p>
+            <p className="font-semibold">
+              Payment Method: <span className="font-normal">{order?.paymentMethod || "Stripe (Card)"}</span>
+            </p>
+          </>
+        )}
       </div>
     );
 
@@ -74,7 +98,7 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
       {/* Header */}
       <header className="flex justify-between items-start pb-4 border-b-2 border-green-600">
         <div>
-         <h1 className="text-3xl font-bold text-green-700">{BRAND_DETAILS.name}</h1>
+          <h1 className="text-3xl font-bold text-green-700">{BRAND_DETAILS.name}</h1>
           <p className="text-sm">{BRAND_DETAILS.address}</p>
           <p className="text-sm">{BRAND_CONTACT_LINE}</p>
         </div>
@@ -100,67 +124,83 @@ export const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order }, re
       )}
 
       {/* Items */}
-      <section>
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 text-left font-semibold">Item Description</th>
-              <th className="p-3 text-center font-semibold">Quantity</th>
-              <th className="p-3 text-right font-semibold">Unit Price</th>
-              <th className="p-3 text-right font-semibold">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {items.length === 0 && (
+      {showItemsTable && (
+        <section>
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-100">
               <tr>
-                <td colSpan={4} className="p-4 text-center text-gray-500">
-                  No items found
-                </td>
+                <th className="p-3 text-left font-semibold">Item Description</th>
+                <th className="p-3 text-center font-semibold">Quantity</th>
+                <th className="p-3 text-right font-semibold">Unit Price</th>
+                <th className="p-3 text-right font-semibold">Total</th>
               </tr>
-            )}
-            {items.map((item, idx) => {
-              const qty = Number(item?.qty || 0);
-              const price = Number(item?.price || 0);
-              return (
-                <tr key={idx}>
-                  <td className="p-3">{item?.name || "—"}</td>
-                  <td className="p-3 text-center">{qty}</td>
-                  <td className="p-3 text-right">{formatCurrency(price)}</td>
-                  <td className="p-3 text-right font-medium">
-                    {formatCurrency(price * qty)}
+            </thead>
+            <tbody className="divide-y">
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-gray-500">
+                    No items found
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-          <tfoot className="border-t-2 border-gray-300">
-            <tr>
-              <td colSpan={3} className="p-3 text-right font-semibold">
-                Subtotal
-              </td>
-              <td className="p-3 text-right">{formatCurrency(subTotal)}</td>
-            </tr>
-            {discountAmount > 0 && (
+              )}
+              {items.map((item, idx) => {
+                const qty = Number(item?.qty || 0);
+                const price = Number(item?.price || 0);
+                return (
+                  <tr key={idx}>
+                    <td className="p-3">{item?.name || "—"}</td>
+                    <td className="p-3 text-center">{qty}</td>
+                    <td className="p-3 text-right">{formatCurrency(price)}</td>
+                    <td className="p-3 text-right font-medium">
+                      {formatCurrency(price * qty)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="border-t-2 border-gray-300">
               <tr>
                 <td colSpan={3} className="p-3 text-right font-semibold">
-                  Discount
+                  Subtotal
                 </td>
-                <td className="p-3 text-right text-red-600">
-                  - {formatCurrency(discountAmount)}
+                <td className="p-3 text-right">{formatCurrency(subTotal)}</td>
+              </tr>
+              {discountAmount > 0 && (
+                <tr>
+                  <td colSpan={3} className="p-3 text-right font-semibold">
+                    Discount
+                  </td>
+                  <td className="p-3 text-right text-red-600">
+                    - {formatCurrency(discountAmount)}
+                  </td>
+                </tr>
+              )}
+              <tr className="bg-gray-100">
+                <td colSpan={3} className="p-3 text-right text-xl font-bold">
+                  Total
+                </td>
+                <td className="p-3 text-right text-xl font-bold">
+                  {formatCurrency(order?.totalPrice)}
                 </td>
               </tr>
-            )}
-            <tr className="bg-gray-100">
-              <td colSpan={3} className="p-3 text-right text-xl font-bold">
-                Total
-              </td>
-              <td className="p-3 text-right text-xl font-bold">
-                {formatCurrency(order?.totalPrice)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </section>
+            </tfoot>
+          </table>
+        </section>
+      )}
+
+      {customSections.map((section, idx) => (
+        <section key={idx} className="mt-8 text-sm text-gray-700">
+          {section?.title && (
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {section.title}
+            </h3>
+          )}
+          {section?.description && (
+            <p className="text-gray-600 mb-4">{section.description}</p>
+          )}
+          <div>{section?.content}</div>
+        </section>
+      ))}
 
       {/* Footer */}
       {showFooter && (
