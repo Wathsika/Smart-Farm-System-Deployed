@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { useReactToPrint } from "react-to-print";
+import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
 
 function currency(n) {
   if (isNaN(n)) return "—";
@@ -15,41 +17,58 @@ function monthKey(iso) {
   return (iso || "").slice(0, 7);
 }
 
-function resolveRowId(row) {
-  return (
-    row?.mongoId ||
-    row?._id ||
-    row?.id ||
-    row?.transaction_id ||
-    row?.transactionId ||
-    row?.tid ||
-    row?.txnId ||
-    row?.txn_id ||
-    ""
-  );
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function downloadCSV(filename, rows) {
+function downloadExcel(filename, rows) {
+
   const headers = [
-    "transaction_id",
-    "type",
-    "date",
-    "category",
-    "amount",
-    "description",
+    "Transaction Id",
+    "Date",
+    "Type",
+    "Category",
+    "Description",
+    "Amount",
   ];
-  const body = rows.map((r) =>
-    headers
-      .map((h) => String(r[h] ?? "").replace(/"/g, '""'))
-      .map((v) => `"${v}"`)
-      .join(",")
-  );
-  const csv = [headers.join(","), ...body].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+
+  const headerRow = `<tr>${headers
+    .map((label) => `<th style="text-align:left;padding:8px;">${escapeHtml(label)}</th>`)
+    .join("")}</tr>`;
+
+  const bodyRows = rows
+    .map((row) => {
+      const amountRaw = Number(row.amount) || 0;
+      const normalizedAmount =
+        row.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+      const cells = [
+        row.transaction_id,
+        shortDate(row.date),
+        row.type,
+        row.category,
+        row.description,
+        normalizedAmount,
+      ];
+      return `<tr>${cells
+        .map((value) => `<td style="padding:6px;">${escapeHtml(value)}</td>`)
+        .join("")}</tr>`;
+    })
+    .join("");
+
+  const tableHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body><table border="1" cellspacing="0" cellpadding="0">${headerRow}${bodyRows}</table></body></html>`;
+  const blob = new Blob(["\ufeff" + tableHtml], {
+    type: "application/vnd.ms-excel;charset=utf-8;",
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = `${filename}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -75,6 +94,7 @@ export default function FinanceTransaction() {
   const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
+  const invoiceRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -134,6 +154,86 @@ export default function FinanceTransaction() {
   }, [transactions]);
 
   const filtered = transactions;
+
+  const exportDate = useMemo(() => {
+    if (monthFilter && monthFilter !== "all") {
+      const [year, month] = monthFilter.split("-");
+      const y = Number(year);
+      const m = Number(month) - 1;
+      if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 0 && m < 12) {
+        const d = new Date(y, m, 1);
+        if (!Number.isNaN(d.getTime())) return d;
+      }
+    }
+    return new Date();
+  }, [monthFilter]);
+
+  const exportFileBase = useMemo(() => {
+    const year = exportDate.getFullYear();
+    const month = String(exportDate.getMonth() + 1).padStart(2, "0");
+    return `Transaction-${year}-${month}`;
+  }, [exportDate]);
+
+  const pdfOrder = useMemo(() => {
+    if (!filtered.length) return null;
+
+    const items = filtered.map((txn) => {
+      const amountRaw = Number(txn.amount) || 0;
+      const amount = txn.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+      return {
+        name: `${shortDate(txn.date)} • ${txn.type || "Transaction"} • ${txn.category || "General"}`,
+        qty: 1,
+        price: amount,
+      };
+    });
+
+    const totalPrice = items.reduce(
+      (sum, item) => sum + item.price * (item.qty || 1),
+      0
+    );
+
+    return {
+      orderNumber: exportFileBase,
+      createdAt: exportDate,
+      status: "Approved",
+      paymentMethod: "Transactions",
+      customer: {
+        name: "Smart Farm Finance",
+        email: "finance@smartfarm.local",
+      },
+      shippingAddress: {
+        addressLine1: "Transaction Summary Report",
+        city: "",
+        postalCode: "",
+      },
+      orderItems: items,
+      totalPrice,
+      discount: { amount: 0 },
+    };
+  }, [filtered, exportDate, exportFileBase]);
+
+  const triggerPrint = useReactToPrint({
+    contentRef: invoiceRef,
+    documentTitle: exportFileBase,
+    removeAfterPrint: true,
+    suppressErrors: true,
+  });
+
+  const handleExportPdf = () => {
+    if (!filtered.length || !pdfOrder) {
+      alert("No transactions to export.");
+      return;
+    }
+    triggerPrint?.();
+  };
+
+  const handleExportExcel = () => {
+    if (!filtered.length) {
+      alert("No transactions to export.");
+      return;
+    }
+    downloadExcel(exportFileBase, filtered);
+  };
 
   const handleDelete = async (rowKey) => {
     try {
@@ -333,7 +433,7 @@ export default function FinanceTransaction() {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => downloadCSV("finance-report.csv", filtered)}
+                  onClick={handleExportPdf}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                 >
                   <svg
@@ -349,7 +449,26 @@ export default function FinanceTransaction() {
                       d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Export CSV
+                  Export PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Export Excel
                 </button>
                 <button
                   onClick={handleAddNew}
@@ -575,6 +694,9 @@ export default function FinanceTransaction() {
             </div>
           )}
         </div>
+      </div>
+      <div className="hidden">
+        {pdfOrder && <InvoiceTemplate ref={invoiceRef} order={pdfOrder} />}
       </div>
     </div>
   );
