@@ -13,10 +13,20 @@ const FieldPage = () => {
   const [sortDirection, setSortDirection] = useState("asc");
   const [deletingId, setDeletingId] = useState(null);
 
- const statusOptions = ["Available", "In Use", "Planted", "Fallow"];
+  const statusOptions = [
+    "Available",
+    "In Use",
+    "Planted",
+    "Fallow",
+    "Under Preparation",
+  ];
 
   const normalizeStatus = (value) =>
     typeof value === "string" ? value.trim().toLowerCase() : "";
+  const countByStatus = (status) =>
+    fields.filter(
+      (field) => normalizeStatus(field.status) === normalizeStatus(status)
+    ).length;
   // --- API Calls ---
   const getFieldsAPI = async () => {
     const response = await api.get("/fields");
@@ -525,7 +535,7 @@ const FieldPage = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">In Use</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {fields.filter((f) => f.status !== "Available").length}
+                {countByStatus("In Use")}
                 </p>
               </div>
             </div>

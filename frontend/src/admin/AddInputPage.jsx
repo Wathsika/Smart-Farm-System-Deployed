@@ -1,5 +1,3 @@
-// ✅ අවසාන සහ නිවැරදි file එක: frontend/src/admin/pages/AddInputPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api'; 
@@ -21,6 +19,7 @@ const AddInputPage = () => {
     });
 
     const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // handleChange function - කිසිදු වෙනසක් කර නැත
     const handleChange = (e) => {
@@ -31,10 +30,11 @@ const AddInputPage = () => {
         }));
     };
 
-    // handleSubmit function - කිසිදු වෙනසක් කර නැත
+    // handleSubmit function - enhanced with loading state
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        setIsSubmitting(true);
         try {
             await api.post('/inputs', formData);
             alert('New farm input added successfully!');
@@ -43,120 +43,274 @@ const AddInputPage = () => {
             const serverError = err.response?.data?.message || 'Failed to add the input.';
             setError(serverError);
             console.error(serverError);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="p-8 bg-gray-100 min-h-screen">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8">Add New Farm Input</h1>
-            
-            <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg space-y-6 max-w-4xl mx-auto">
-                
-                {/* --- Section 1: Basic Information --- */}
-                <fieldset className="border p-6 rounded-lg">
-                    <legend className="text-xl font-semibold px-2">Basic Information</legend>
-                    <div className="grid md:grid-cols-3 gap-6 mt-4">
-                        {/* Product Name */}
+        <div className="min-h-screen bg-gray-50">
+            {/* Header - 10% accent color */}
+            <div className="bg-white border-b-4 border-green-600">
+                <div className="max-w-6xl mx-auto px-8 py-6">
+                    <div className="flex items-center justify-between">
                         <div>
-                            <label className="label-style">Product Name</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} required className="input-style" placeholder="e.g., Urea Fertilizer" />
+                            <h1 className="text-2xl font-bold text-gray-800 mb-1">Add New Farm Input</h1>
+                            <p className="text-gray-600 text-sm">Enter product details and safety information</p>
                         </div>
-                        {/* Category Dropdown */}
-                        <div>
-                            <label className="label-style">Category</label>
-                            <select name="category" value={formData.category} onChange={handleChange} className="input-style" required>
-                                <option value="fertilizer">Fertilizer</option>
-                                <option value="pesticide">Pesticide</option>
-                                <option value="herbicide">Herbicide</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        {/* Stock Quantity */}
-                        <div>
-                            <label className="label-style">Initial Stock Quantity</label>
-                            <input type="number" name="stockQty" min="0" value={formData.stockQty} onChange={handleChange} required className="input-style" placeholder="e.g., 500" />
-                        </div>
+                        <button 
+                            onClick={() => navigate('/admin/crop/inputs')}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                        >
+                            ← Back to Inputs
+                        </button>
                     </div>
-                </fieldset>
-
-                {/* --- Section 2: Professional Details --- */}
-                <fieldset className="border p-6 rounded-lg">
-                    <legend className="text-xl font-semibold px-2">Usage & Safety Details</legend>
-                     <div className="grid md:grid-cols-2 gap-6 mt-4">
-                        {/* Active Ingredient */}
-                        <div>
-                            <label className="label-style">Active Ingredient</label>
-                            <input type="text" name="activeIngredient" value={formData.activeIngredient} onChange={handleChange} className="input-style" placeholder="e.g., Imidacloprid" />
-                        </div>
-
-                        {/* ======================= එකම වෙනස මෙතනයි ======================= */}
-                        <div>
-                            <label className="label-style">Application Method</label>
-                            <select 
-                                name="method" 
-                                value={formData.method} 
-                                onChange={handleChange} 
-                                className="input-style"
-                                required
-                            >
-                                <option value="" disabled>-- Select a Method --</option>
-                                <option value="soil">Soil Application</option>
-                                <option value="foliar">Foliar Spray</option>
-                                <option value="drip">Drip Irrigation</option>
-                                <option value="spray">General Spray</option>
-                                <option value="seed">Seed Treatment</option>
-                            </select>
-                        </div>
-                        {/* ================================================================= */}
-
-                         {/* Dilution Rate */}
-                        <div>
-                            <label className="label-style">Dilution Rate</label>
-                            <input type="text" name="dilutionRate" value={formData.dilutionRate} onChange={handleChange} className="input-style" placeholder="e.g., 0.3 ml/L" />
-                        </div>
-                         <div></div>
-
-                        {/* Pre-Harvest Interval */}
-                        <div className="flex items-end gap-2">
-                             <div className="flex-grow">
-                                <label className="label-style">Pre-Harvest Interval</label>
-                                <input type="number" name="preHarvestIntervalDays" min="0" value={formData.preHarvestIntervalDays} onChange={handleChange} className="input-style" />
-                             </div>
-                             <span className="pb-3 text-gray-600">Days</span>
-                        </div>
-                        {/* Re-Entry Hours */}
-                        <div className="flex items-end gap-2">
-                            <div className="flex-grow">
-                                <label className="label-style">Re-Entry Period</label>
-                                <input type="number" name="reEntryHours" min="0" value={formData.reEntryHours} onChange={handleChange} className="input-style" />
-                            </div>
-                            <span className="pb-3 text-gray-600">Hours</span>
-                        </div>
-                     </div>
-                </fieldset>
-
-                {/* Notes */}
-                <fieldset className="border p-6 rounded-lg">
-                    <legend className="text-xl font-semibold px-2">Notes</legend>
-                     <textarea name="notes" value={formData.notes} onChange={handleChange} className="input-style mt-4" rows="4" placeholder="Add any supplier details or safety notes here..."></textarea>
-                </fieldset>
-
-                {/* Error Display */}
-                {error && <p className="text-red-600 text-center">{error}</p>}
-                
-                {/* --- Submit Button - SYNTAX ERROR එක මෙතනයි හදලා තියෙන්නේ --- */}
-                <div className="flex justify-end pt-4">
-                    <button type="submit" className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-700">
-                        Save Input
-                    </button>
                 </div>
-            </form>
-             {/* Local CSS styles */}
-            <style>{`
-                .label-style { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
-                .input-style { width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; }
-                .input-style:focus { border-color: #2563EB; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); outline: none; }
-            `}</style>
+            </div>
+
+            {/* Main Content - 60% white background */}
+            <div className="max-w-6xl mx-auto px-8 py-8">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <form onSubmit={handleSubmit} className="p-8">
+                        
+                        {/* Section 1: Basic Information */}
+                        <div className="mb-12">
+                            <div className="flex items-center mb-6">
+                                <div className="w-1 h-6 bg-green-600 mr-3"></div>
+                                <h2 className="text-xl font-semibold text-gray-800">Basic Information</h2>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Product Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        name="name" 
+                                        value={formData.name} 
+                                        onChange={handleChange} 
+                                        required 
+                                        className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                        placeholder="e.g., Urea Fertilizer" 
+                                    />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Category <span className="text-red-500">*</span>
+                                    </label>
+                                    <select 
+                                        name="category" 
+                                        value={formData.category} 
+                                        onChange={handleChange} 
+                                        className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                        required
+                                    >
+                                        <option value="fertilizer">Fertilizer</option>
+                                        <option value="pesticide">Pesticide</option>
+                                        <option value="herbicide">Herbicide</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Initial Stock Quantity <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            name="stockQty" 
+                                            min="0" 
+                                            value={formData.stockQty} 
+                                            onChange={handleChange} 
+                                            required 
+                                            className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                            placeholder="500" 
+                                        />
+                                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
+                                            units
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-gray-200 mb-12"></div>
+
+                        {/* Section 2: Usage & Safety - 30% green accent */}
+                        <div className="mb-12">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                                <div className="flex items-center mb-6">
+                                    <div className="w-1 h-6 bg-green-600 mr-3"></div>
+                                    <h2 className="text-xl font-semibold text-gray-800">Usage & Safety Details</h2>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">Active Ingredient</label>
+                                        <input 
+                                            type="text" 
+                                            name="activeIngredient" 
+                                            value={formData.activeIngredient} 
+                                            onChange={handleChange} 
+                                            className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                            placeholder="e.g., Imidacloprid" 
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Application Method <span className="text-red-500">*</span>
+                                        </label>
+                                        <select 
+                                            name="method" 
+                                            value={formData.method} 
+                                            onChange={handleChange} 
+                                            className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                            required
+                                        >
+                                            <option value="" disabled>-- Select a Method --</option>
+                                            <option value="soil">Soil Application</option>
+                                            <option value="foliar">Foliar Spray</option>
+                                            <option value="drip">Drip Irrigation</option>
+                                            <option value="spray">General Spray</option>
+                                            <option value="seed">Seed Treatment</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">Dilution Rate</label>
+                                        <input 
+                                            type="text" 
+                                            name="dilutionRate" 
+                                            value={formData.dilutionRate} 
+                                            onChange={handleChange} 
+                                            className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                            placeholder="e.g., 0.3 ml/L" 
+                                        />
+                                    </div>
+
+                                    <div></div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">Pre-Harvest Interval</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="number" 
+                                                name="preHarvestIntervalDays" 
+                                                min="0" 
+                                                value={formData.preHarvestIntervalDays} 
+                                                onChange={handleChange} 
+                                                className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                                placeholder="7"
+                                            />
+                                            <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
+                                                days
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700">Re-Entry Period</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="number" 
+                                                name="reEntryHours" 
+                                                min="0" 
+                                                value={formData.reEntryHours} 
+                                                onChange={handleChange} 
+                                                className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                                placeholder="24"
+                                            />
+                                            <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
+                                                hours
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 3: Notes */}
+                        <div className="mb-12">
+                            <div className="flex items-center mb-6">
+                                <div className="w-1 h-6 bg-green-600 mr-3"></div>
+                                <h2 className="text-xl font-semibold text-gray-800">Additional Notes</h2>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">Notes & Instructions</label>
+                                <textarea 
+                                    name="notes" 
+                                    value={formData.notes} 
+                                    onChange={handleChange} 
+                                    className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none"
+                                    rows="4" 
+                                    placeholder="Add any supplier details, safety notes, or special instructions here..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Error Display */}
+                        {error && (
+                            <div className="mb-8">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-start">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-red-800">{error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Divider */}
+                        <div className="border-t border-gray-200 mb-8"></div>
+
+                        {/* Submit Section */}
+                        <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-500">
+                                <span className="text-red-500">*</span> Required fields
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <button 
+                                    type="button"
+                                    onClick={() => navigate('/admin/crop/inputs')}
+                                    className="px-6 py-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                                    disabled={isSubmitting}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isSubmitting}
+                                    className="inline-flex items-center px-8 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Saving Input...
+                                        </>
+                                    ) : (
+                                        'Save Input'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     );
 };
