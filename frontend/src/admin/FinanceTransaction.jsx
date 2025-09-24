@@ -83,6 +83,32 @@ function shortDate(d) {
   }
 }
 
+function resolveRowId(row) {
+  if (!row) return undefined;
+
+  const candidates = [
+    row.mongoId,
+    row._id,
+    row.id,
+    row.transaction_id,
+    row.transactionId,
+    row.tid,
+    row.txnId,
+    row.txn_id,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+    if (typeof candidate === "number") {
+      return String(candidate);
+    }
+  }
+
+  return undefined;
+}
+
 export default function FinanceTransaction() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +235,11 @@ export default function FinanceTransaction() {
       orderItems: items,
       totalPrice,
       discount: { amount: 0 },
+      templateOptions: {
+        showBillingDetails: false,
+        showOrderSummary: false,
+        showFooter: false,
+      },
     };
   }, [filtered, exportDate, exportFileBase]);
 
