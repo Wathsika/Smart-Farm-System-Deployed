@@ -133,10 +133,10 @@ export const getMyTasks = async (req, res) => {
 
     if (today === 'true') {
       const startOfDay = new Date();
-      startOfDay.setUTCHours(0, 0, 0, 0); // Start of today in UTC
+      startOfDay.setHours(0, 0, 0, 0); // Start of today in UTC
 
       const endOfDay = new Date();
-      endOfDay.setUTCHours(23, 59, 59, 999); // End of today in UTC
+      endOfDay.setHours(23, 59, 59, 999); // End of today in UTC
 
       query.dueDate = {
         $gte: startOfDay,
