@@ -15,7 +15,7 @@ import {
 import {
   FaArrowTrendUp,
   FaMoneyBillWave,
-  FaShoppingBag,
+  FaBagShopping,
 } from "react-icons/fa6";
 import { api } from "../lib/api";
 
@@ -248,7 +248,7 @@ export default function MainDashboard() {
           value={`${formatNumber(milkTotal)} L`}
         />
         <StatTile
-          icon={FaShoppingBag}
+          icon={FaBagShopping}
           label="Top Product"
           value={topPerformer?.name || "Awaiting sales"}
           trend={topPerformer ? 0 : undefined}
