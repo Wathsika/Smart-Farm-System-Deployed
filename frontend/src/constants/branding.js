@@ -1,6 +1,8 @@
 export const BRAND_DETAILS = Object.freeze({
   name: "GreenLeaf Farm",
-  address: "244/9, Dines Place, Kaduwela Rd, Malabe, Sri Lanka",
+
+  address: "10/F, Ginimellagaha, Baddegama, Sri Lanka",
+
   email: "contact@greenleaffarm.com",
   phone: "+94 77 123 4567",
 });

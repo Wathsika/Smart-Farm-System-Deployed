@@ -53,10 +53,6 @@ export const list = async (req, res) => {
 
 
 /**
- * ==========================================================
- * === START: This is the new function that was missing    ===
- * ==========================================================
- *
  * @desc    Get all application records for a specific field ID
  * @route   GET /api/applications/field/:fieldId
  */
@@ -79,12 +75,6 @@ export const listByField = async (req, res) => {
     return res.status(500).json({ message: 'Failed to fetch application records for this field' });
   }
 };
-/**
- * ==========================================================
- * === END: End of the new function                         ===
- * ==========================================================
- */
-
 
 // --- IMPORTANT: The default export is updated to include the new function ---
 export default { create, list, listByField };

@@ -1,7 +1,7 @@
-// src/admin/Sidebar.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import FocusLock from "react-focus-lock";
 import { useAuth } from "../context/AuthContext";
 
 /** Reusable link */
@@ -40,6 +40,7 @@ const drawerVariants = {
   exit: { x: -320, opacity: 0, transition: { duration: 0.2 } },
 };
 
+
 const SidebarInner = ({ location, navigate, closeMobile }) => {
   const { logout } = useAuth();
 
@@ -61,8 +62,6 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
     [location.pathname]
   );
 
-  // I will update the logic for isOnCrop to correctly auto-open the accordion
-
   const isOnCrop = useMemo(
     () =>
       location.pathname.startsWith("/admin/crop") ||
@@ -81,6 +80,12 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   const [isStaffOpen, setStaffOpen] = useState(isOnStaff || false);
   const [isCropOpen, setCropOpen] = useState(isOnCrop || false);
   const [isLivestockOpen, setLivestockOpen] = useState(isOnLivestock || false);
+
+  useEffect(() => {
+    if (isOnLivestock) {
+      setLivestockOpen(true);
+    }
+  }, [isOnLivestock]);
 
   const handleStoreClick = () => {
     setStoreOpen((v) => !v);
@@ -101,6 +106,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   const handleLivestockClick = () => {
     setLivestockOpen((v) => !v);
     navigate("/admin/livestock");
+     closeMobile?.();
   };
 
   return (
@@ -114,9 +120,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
       </div>
 
       {/* Navigation */}
-
       <nav className="flex flex-1 flex-col space-y-1">
-
         <SectionLabel>Overview</SectionLabel>
         <SidebarLink
           to="/admin"
@@ -152,7 +156,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
               className="overflow-hidden pl-6 space-y-1"
             >
               <SidebarLink
-                to="/admin/livestock/profile"
+                to="/admin/livestock"
                 icon="fas fa-id-card"
                 onNavigate={onNavigate}
               >
@@ -183,9 +187,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
           )}
         </AnimatePresence>
 
-
         {/* Crop accordion */}
-
         <button
           type="button"
           onClick={handleCropClick}
@@ -202,48 +204,46 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
         </button>
         <AnimatePresence>
           {isCropOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
-            >
-              <SidebarLink
-                to="/admin/crop"
-                icon="fas fa-tractor"
-                onNavigate={onNavigate}
-              >
-                Crop List
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/fields"
-                icon="fas fa-map-marked-alt"
-                onNavigate={onNavigate}
-              >
-                Farm Fields
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/plans"
-                icon="fas fa-clipboard-list"
-                onNavigate={onNavigate}
-              >
-                Plans
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/plan/new"
-                icon="fas fa-plus-circle"
-                onNavigate={onNavigate}
-              >
-                Add Plan
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/crop/inputs"
-                icon="fas fa-vial"
-                onNavigate={onNavigate}
-              >
-                Inputs Inventory
-              </SidebarLink>
-            </motion.div>
+
+<motion.div
+  initial={{ height: 0, opacity: 0 }}
+  animate={{ height: "auto", opacity: 1 }}
+  exit={{ height: 0, opacity: 0 }}
+  className="overflow-hidden pl-6 space-y-1"
+>
+  <SidebarLink
+    to="/admin/crop"
+    icon="fas fa-tractor"
+    onNavigate={onNavigate}
+  >
+    Crop List
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/fields"
+    icon="fas fa-map-marked-alt"
+    onNavigate={onNavigate}
+  >
+    Farm Fields
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/crop/plans"
+    icon="fas fa-clipboard-list"
+    onNavigate={onNavigate}
+  >
+    Plans
+  </SidebarLink>
+  <SidebarLink
+    to="/admin/crop/inputs"
+    icon="fas fa-plus-circle"
+    onNavigate={onNavigate}
+  > 
+ 
+    Inputs Inventory
+  </SidebarLink>
+</motion.div>    
+
+            
+
           )}
         </AnimatePresence>
 
@@ -420,8 +420,6 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
               >
                 Payroll Management
               </SidebarLink>
-
-
               <SidebarLink
                 to="/admin/finance/audit_log"
                 icon="fas fa-file-invoice-dollar"
@@ -429,7 +427,6 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
               >
                 Audit Log
               </SidebarLink>
-
             </motion.div>
           )}
         </AnimatePresence>
@@ -437,17 +434,16 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
 
       {/* Logout */}
       <div className="mt-auto pt-4">
-  <button
-    type="button"
-    onClick={handleLogout}
-    className="flex w-full items-center gap-3 px-3 py-2 rounded-lg 
-               text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
-  >
-    <i className="fas fa-sign-out-alt w-5 text-center" />
-    <span>Logout</span>
-  </button>
-</div>
-
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 px-3 py-2 rounded-lg 
+                     text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+        >
+          <i className="fas fa-sign-out-alt w-5 text-center" />
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   );
 };
@@ -455,16 +451,24 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeMobile = () => setMobileOpen(false);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") closeMobile();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, []);
 
   return (
     <>
       {/* Mobile: floating hamburger */}
       <button
         type="button"
-        aria-label="Open menu"
+        aria-label="Open sidebar"
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-40 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-600 text-white shadow-md focus:outline-none focus:ring-2 focus:ring-green-500"
       >
@@ -482,6 +486,7 @@ const Sidebar = () => {
           <>
             {/* Backdrop */}
             <motion.div
+              role="presentation"
               className="fixed inset-0 bg-black/40 z-40"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -491,38 +496,40 @@ const Sidebar = () => {
 
             {/* Drawer */}
             <motion.aside
-              className="fixed z-50 inset-y-0 left-0 w-72 bg-white border-r border-gray-200 shadow-xl"
+              className="fixed z-50 inset-y-0 left-0 w-72 bg-white border-r border-gray-200 shadow-xl overflow-y-auto"
               variants={drawerVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               aria-label="Sidebar"
             >
-              {/* Drawer header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
-                    <i className="fas fa-leaf text-white" />
+              <FocusLock returnFocus>
+                {/* Drawer header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
+                      <i className="fas fa-leaf text-white" />
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                      Admin Panel
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-800">
-                    Admin Panel
-                  </span>
+                  <button
+                    type="button"
+                    aria-label="Close sidebar"
+                    onClick={closeMobile}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <i className="fas fa-times" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  aria-label="Close menu"
-                  onClick={closeMobile}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600"
-                >
-                  <i className="fas fa-times" />
-                </button>
-              </div>
 
-              <SidebarInner
-                location={location}
-                navigate={navigate}
-                closeMobile={closeMobile}
-              />
+                <SidebarInner
+                  location={location}
+                  navigate={navigate}
+                  closeMobile={closeMobile}
+                />
+              </FocusLock>
             </motion.aside>
           </>
         )}

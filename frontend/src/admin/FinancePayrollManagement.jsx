@@ -477,9 +477,6 @@ export default function PayrollRunPage() {
                   >
                     <td className="px-4 py-3">
                       <div className="font-medium">{row.employee.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {row.employee.empId}
-                      </div>
                     </td>
 
                     <td className="px-4 py-3 text-right">

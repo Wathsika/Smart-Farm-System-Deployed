@@ -1,8 +1,10 @@
 export const farmInfo = {
-  name: "GreenLeaf Farm",
+
+  name: "Smart Farm",
   address: "10/F, Ginimellagaha, Baddegama, Sri Lanka",
-  phone: "+94 91 227 6246",
-  email: "info@greenleaffarm.com",
+  phone: "+94 11 234 5678",
+  email: "info@smartfarm.com"
+
 };
 
 export default farmInfo;

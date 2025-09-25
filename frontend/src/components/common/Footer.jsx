@@ -92,7 +92,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <i className="fas fa-map-marker-alt text-green-500"></i>
-                123 Farm Valley, Green County
+                10/F, Ginimellagaha, Baddegama, Sri Lanka
               </li>
               <li className="flex items-center gap-2">
                 <i className="fas fa-phone text-green-500"></i>

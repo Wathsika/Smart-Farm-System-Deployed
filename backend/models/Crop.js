@@ -1,4 +1,3 @@
-// backend/models/Crop.js
 
 import mongoose from 'mongoose';
 

@@ -45,6 +45,7 @@ import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
+import EditPlanPage from "./admin/EditPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
 import InputListPage from "./admin/InputListPage.jsx";
 import AddInputPage from "./admin/AddInputPage.jsx";
@@ -73,9 +74,7 @@ const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 const FarmDashboard = () => (
   <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
 );
-const LivestockPage = () => (
-  <div className="p-6 text-2xl font-bold">Livestock Management</div>
-);
+
 const StaffPage = () => (
   <div className="p-6 text-2xl font-bold">Staff Management</div>
 );
@@ -168,9 +167,7 @@ export default function App() {
       >
         <Route index element={<MainDashboard />} />
 
-        {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} />
-        {/* Livestock sub-pages */}
+        <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
@@ -187,6 +184,9 @@ export default function App() {
         {/* Plan management */}
         <Route path="crop/plans" element={<PlanList />} />
         <Route path="crop/plan/new" element={<AddPlan />} />
+
+        <Route path="crop/plan/edit/:id" element={<EditPlanPage />} />
+        
 
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />

@@ -13,6 +13,13 @@ export const auth = {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
   },
+  updateUser(user) {
+    if (user === null || user === undefined) {
+      localStorage.removeItem("user");
+      return;
+    }
+    localStorage.setItem("user", JSON.stringify(user));
+  },
   logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");

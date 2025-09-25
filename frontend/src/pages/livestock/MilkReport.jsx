@@ -157,7 +157,7 @@ export const MilkReportPDF = ({ records = [], monthName, year, cowName }) => {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.farmTitle}>GreenLeaf Farm</Text>
-            <Text style={styles.farmDetails}>123 Farm Valley Road, Green County, Sri Lanka</Text>
+            <Text style={styles.farmDetails}>10/F, Ginimellagaha, Baddegama, Sri Lanka</Text>
             <Text style={styles.farmDetails}>contact@greenleaffarm.com | +94 11 234 5678</Text>
           </View>
           <View style={styles.headerRight}>

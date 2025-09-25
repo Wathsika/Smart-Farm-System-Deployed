@@ -1,6 +1,5 @@
 // models/Transaction.js
 import mongoose from "mongoose";
-
 const transactionSchema = new mongoose.Schema(
   {
     transaction_id: {
@@ -22,5 +21,4 @@ const transactionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 export default mongoose.model("Transaction", transactionSchema);

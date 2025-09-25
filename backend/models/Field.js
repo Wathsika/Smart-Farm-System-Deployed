@@ -1,4 +1,4 @@
-// backend/models/Field.js
+
 import mongoose from 'mongoose';
 
 const fieldSchema = new mongoose.Schema({
@@ -18,7 +18,7 @@ const fieldSchema = new mongoose.Schema({
     },
     currentCrop: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Crop' // 'Crop' model එකට සම්බන්ධ කරනවා
+        ref: 'Crop' 
     },
     irrigationSystem: { type: String, default: 'None' },
     notes: { type: String }
