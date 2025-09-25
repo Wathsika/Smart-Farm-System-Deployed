@@ -202,21 +202,30 @@ export default function Health() {
     try {
       const params = { limit: "400", page: "1" };
       if (cowId !== "all") params.cow = cowId;
-      // API call එකට date filter එක යවනවා
-      if (dateFilter) {       
-        params.from = dateFilter;
-        params.to = dateFilter;
+      if (dateFilter) {
+        params.to = dateFilter;  
       }
       const r = await api.get("/health", { params });
       let rows = Array.isArray(r.data?.items) ? r.data.items : [];
       rows = rows
         .filter(x => (x.type || "").toUpperCase() === "VACCINATION" && x.nextDueDate)
         .sort((a,b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-      
-      // CHANGE 2: Date filter එකක් නැත්නම් විතරක් දවස් 180 ක window එක පෙන්නනවා
-      if (!dateFilter) {
-        const end = new Date(); end.setDate(end.getDate() + DAYS_WINDOW);
-        rows = rows.filter(x => { const d = new Date(x.nextDueDate); return !isNaN(d) && d <= end; });
+
+      if (dateFilter) {
+        // Only show vaccinations exactly on that date
+        rows = rows.filter(x => {
+          const d = new Date(x.nextDueDate);
+          const target = new Date(dateFilter);
+          return !isNaN(d) && d.toDateString() === target.toDateString();
+        });
+      } else {
+        // default → next 180 days
+        const end = new Date();
+        end.setDate(end.getDate() + DAYS_WINDOW);
+        rows = rows.filter(x => {
+          const d = new Date(x.nextDueDate);
+          return !isNaN(d) && d <= end;
+        });
       }
 
       const q = search.trim().toLowerCase();

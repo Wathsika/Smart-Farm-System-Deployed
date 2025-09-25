@@ -553,7 +553,7 @@ function Breeding() {
             onClick={() => setAddOpen(true)}
             className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2"
           >
-            <FaPlus /> Add Breeding
+            <FaPlus /> Add Breeding Records
           </button>
         </div>
       </header>
