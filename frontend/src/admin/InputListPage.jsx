@@ -1,7 +1,7 @@
 // ✅ FINAL AND CORRECTED file with PDF feature working: frontend/src/admin/pages/InputListPage.jsx
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -15,20 +15,72 @@ const InputListPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchInputs = async () => {
-            try {
-                setLoading(true);
-                const response = await api.get('/inputs');
-                setInputs(Array.isArray(response.data) ? response.data : []);
-            } catch (err) {
-                setError("Could not load farm inputs.");
-            } finally {
-                setLoading(false);
-            }
+     const location = useLocation();
+    const navigate = useNavigate();
+
+    const normalizeInput = useCallback((input) => {
+        if (!input) return null;
+
+        const stockQty = Number(input?.stockQty ?? 0);
+        const reorderLevel = Number(input?.reorderLevel ?? 0);
+        let status = 'in-stock';
+
+        if (stockQty <= 0) {
+            status = 'out-of-stock';
+        } else if (reorderLevel > 0 && stockQty <= reorderLevel) {
+            status = 'low-stock';
+        }
+
+        return {
+            ...input,
+            stockQty,
+            reorderLevel,
+            status,
         };
-        fetchInputs();
+        
     }, []);
+    const fetchInputs = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/inputs');
+            const normalized = Array.isArray(response.data)
+                ? response.data.map(normalizeInput).filter(Boolean)
+                : [];
+            setInputs(normalized);
+        } catch (err) {
+            setError("Could not load farm inputs.");
+        } finally {
+            setLoading(false);
+        }
+    }, [normalizeInput]);
+
+    useEffect(() => {
+        fetchInputs();
+    }, [fetchInputs]);
+
+    useEffect(() => {
+        if (location.state?.updatedInput) {
+            const normalized = normalizeInput(location.state.updatedInput);
+
+            if (normalized) {
+                setInputs((currentInputs) => {
+                    const exists = currentInputs.some((item) => item._id === normalized._id);
+
+                    if (exists) {
+                        return currentInputs.map((item) =>
+                            item._id === normalized._id ? normalized : item
+                        );
+                    }
+
+                    return [normalized, ...currentInputs];
+                });
+            }
+
+            navigate(location.pathname, { replace: true });
+        }
+    }, [location, navigate, normalizeInput]);
+
+
 
     // --- Delete Logic (No Change) ---
     const handleDelete = async (inputId, inputName) => {
@@ -54,13 +106,10 @@ const InputListPage = () => {
         }
 
         const totalProducts = inputs.length;
-        const totalStockQty = inputs.reduce((sum, item) => sum + Number(item?.stockQty || 0), 0);
-        const lowStock = inputs.filter((item) => {
-            const reorderLevel = Number(item?.reorderLevel || 0);
-            const qty = Number(item?.stockQty || 0);
-            return reorderLevel > 0 && qty <= reorderLevel;
-        }).length;
-        const outOfStock = inputs.filter((item) => Number(item?.stockQty || 0) <= 0).length;
+        const totalStockQty = inputs.reduce((sum, item) => sum + (item.stockQty || 0), 0);
+        const lowStock = inputs.filter((item) => item.status === 'low-stock').length;
+        const outOfStock = inputs.filter((item) => item.status === 'out-of-stock').length;
+        
 
         const categoryMap = inputs.reduce((acc, item) => {
             const key = item?.category || 'other';
@@ -134,7 +183,10 @@ const InputListPage = () => {
         </div>
     );
 
-    const chartData = inputs.slice().sort((a, b) => (b.stockQty || 0) - (a.stockQty || 0)).slice(0, 10);
+    const chartData = inputs
+        .slice()
+        .sort((a, b) => (b.stockQty || 0) - (a.stockQty || 0))
+        .slice(0, 10);
         
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -175,7 +227,7 @@ const InputListPage = () => {
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow duration-200">
                         <div className="flex items-center justify-between">
                             <div>
@@ -199,34 +251,6 @@ const InputListPage = () => {
                             <div className="p-3 bg-emerald-100 rounded-xl">
                                 <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow duration-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-slate-600 mb-1">Low Stock</p>
-                                <p className="text-3xl font-bold text-amber-600">{summary.lowStock}</p>
-                            </div>
-                            <div className="p-3 bg-amber-100 rounded-xl">
-                                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-shadow duration-200">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-slate-600 mb-1">Out of Stock</p>
-                                <p className="text-3xl font-bold text-red-600">{summary.outOfStock}</p>
-                            </div>
-                            <div className="p-3 bg-red-100 rounded-xl">
-                                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </div>
                         </div>
@@ -284,19 +308,23 @@ const InputListPage = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    <span className={`text-sm font-semibold ${
-                                                        (input.stockQty || 0) <= 0 ? 'text-red-600' :
-                                                        (input.reorderLevel && (input.stockQty || 0) <= input.reorderLevel) ? 'text-amber-600' :
-                                                        'text-slate-900'
-                                                    }`}>
+                                                 <span
+                                                        className={`text-sm font-semibold ${
+                                                            input.status === 'out-of-stock'
+                                                                ? 'text-red-600'
+                                                                : input.status === 'low-stock'
+                                                                    ? 'text-amber-600'
+                                                                    : 'text-slate-900'
+                                                        }`}
+                                                    >   
                                                         {input.stockQty || 0}
                                                     </span>
-                                                    {(input.stockQty || 0) <= 0 && (
+                                                    {input.status === 'out-of-stock' && (
                                                         <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                                             Out of Stock
                                                         </span>
                                                     )}
-                                                    {input.reorderLevel && (input.stockQty || 0) <= input.reorderLevel && (input.stockQty || 0) > 0 && (
+                                                    {input.status === 'low-stock' && (
                                                         <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                                                             Low Stock
                                                         </span>
