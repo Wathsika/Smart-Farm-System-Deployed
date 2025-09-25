@@ -164,6 +164,11 @@ const PlanList = () => {
   );
 
   const renderActions = (plan, { compact = false } = {}) => {
+      if (!plan) {
+      return null;
+    }
+
+    const planId = plan?._id;
     const containerClass = compact
       ? 'flex items-center gap-1 justify-end min-w-0'
       : 'flex items-center gap-2 justify-end';
