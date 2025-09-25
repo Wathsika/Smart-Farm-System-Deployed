@@ -777,24 +777,65 @@ export default function FinanceTransaction() {
       </div>
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
         {pdfOrder && (
-          <div ref={invoiceRef}>
-            {/* override title */}
-            <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-              <h1
-                style={{
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                  color: "#4B5563",
-                }}
-              >
-                REPORT
-              </h1>
-              <p style={{ marginTop: "4px", color: "#6B7280" }}>
-                Report #: {exportFileBase}
-              </p>
+          <div
+            ref={invoiceRef}
+            style={{
+              fontFamily: "sans-serif",
+              fontSize: "12px",
+              color: "#374151",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                borderBottom: "2px solid #059669",
+                paddingBottom: "12px",
+                marginBottom: "16px",
+              }}
+            >
+              {/* Left Side - Farm Info */}
+              <div>
+                <h1
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#059669",
+                    margin: 0,
+                  }}
+                >
+                  GreenLeaf Farm
+                </h1>
+                <p style={{ margin: "2px 0" }}>
+                  10/F, Ginimellagaha, Baddegama, Sri Lanka
+                </p>
+                <p style={{ margin: "2px 0" }}>
+                  contact@greenleaffarm.com | +94 11 234 5678
+                </p>
+              </div>
+
+              {/* Right Side - Report Info */}
+              <div style={{ textAlign: "right" }}>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    color: "#4B5563",
+                    margin: 0,
+                  }}
+                >
+                  REPORT
+                </h2>
+                <p style={{ margin: "2px 0" }}>Report #: {exportFileBase}</p>
+                <p style={{ margin: "2px 0" }}>
+                  Date: {new Date(exportDate).toLocaleDateString()}
+                </p>
+              </div>
             </div>
 
-            {/* reuse invoice template content except header */}
+            {/* Reuse invoice template without its own header */}
             <InvoiceTemplate order={pdfOrder} hideHeader />
           </div>
         )}
