@@ -1,6 +1,6 @@
 // /backend/routes/plan.routes.js
 import { Router } from 'express';
-import { create, list, due, toggle, remove } from '../controllers/plan.controller.js';
+import { create, list, show, due, toggle, remove } from '../controllers/plan.controller.js';
 // The auth middleware is kept imported but is commented out in the routes below.
 import { auth } from '../middlewares/auth.js';
 
