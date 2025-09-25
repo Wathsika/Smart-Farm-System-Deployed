@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { useReactToPrint } from "react-to-print";
-import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+import { TransactionPdfTemplate } from "../components/reports/TransactionPdfTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -17,6 +16,31 @@ function currency(n) {
 
 function monthKey(iso) {
   return (iso || "").slice(0, 7);
+}
+
+function formatMonthLabel(monthValue) {
+  if (!monthValue || monthValue === "all") return "All Months";
+  const [year, month] = monthValue.split("-");
+  const y = Number(year);
+  const m = Number(month) - 1;
+  if (!Number.isNaN(y) && !Number.isNaN(m)) {
+    const date = new Date(y, m, 1);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString("en-LK", { month: "long", year: "numeric" });
+    }
+  }
+  return monthValue;
+}
+
+function formatTypeLabel(typeValue) {
+  switch (typeValue) {
+    case "INCOME":
+      return "Income Only";
+    case "EXPENSE":
+      return "Expenses Only";
+    default:
+      return "All Types";
+  }
 }
 
 function escapeHtml(text) {
@@ -124,7 +148,7 @@ export default function FinanceTransaction() {
   const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
-  const invoiceRef = useRef(null);
+  const pdfRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -209,70 +233,65 @@ export default function FinanceTransaction() {
     return `Transaction-${year}-${month}`;
   }, [exportDate]);
 
-  const pdfOrder = useMemo(() => {
+  const pdfReportData = useMemo(() => {
     if (!filtered.length) return null;
 
-    const items = filtered.map((txn) => {
-      const amountRaw = Number(txn.amount) || 0;
-      const amount =
-        txn.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+    let incomeTotal = 0;
+    let expenseTotal = 0;
+
+    const transactionsForReport = filtered.map((txn, index) => {
+      const rawAmount = Number(txn.amount) || 0;
+      if (txn.type === "INCOME") {
+        incomeTotal += Math.abs(rawAmount);
+      } else if (txn.type === "EXPENSE") {
+        expenseTotal += Math.abs(rawAmount);
+      }
+
+      const signedAmount =
+        txn.type === "EXPENSE" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
       return {
-        name: `${shortDate(txn.date)} • ${txn.type || "Transaction"} • ${
-          txn.category || "General"
-        }`,
-        qty: 1,
-        price: amount,
+        id:
+          resolveRowId(txn) ||
+          txn.transaction_id ||
+          `txn-${index}-${shortDate(txn.date)}`,
+        date: shortDate(txn.date),
+        type: txn.type || "—",
+        category: txn.category || "—",
+        description: txn.description || "—",
+        signedAmount,
       };
     });
 
-    const totalPrice = items.reduce(
-      (sum, item) => sum + item.price * (item.qty || 1),
-      0
-    );
+    const netTotal = incomeTotal - expenseTotal;
+    const trimmedSearch = q.trim();
 
     return {
-      orderNumber: exportFileBase,
-      createdAt: exportDate,
-      status: "Approved",
-      paymentMethod: "Transactions",
-      customer: {
-        name: "Smart Farm Finance",
-        email: "finance@smartfarm.local",
+      reportNumber: exportFileBase,
+      generatedAt: new Date(),
+      reportingPeriod: formatMonthLabel(monthFilter),
+      typeFilterLabel: formatTypeLabel(typeFilter),
+      searchQuery: trimmedSearch,
+      totalRecords: transactionsForReport.length,
+      totals: {
+        income: incomeTotal,
+        expense: expenseTotal,
+        net: netTotal,
       },
-      shippingAddress: {
-        addressLine1: "Transaction Summary Report",
-        city: "",
-        postalCode: "",
-      },
-      orderItems: items,
-      totalPrice,
-      discount: { amount: 0 },
-      templateOptions: {
-        showBillingDetails: false,
-        showOrderSummary: false,
-        showFooter: false,
-      },
+      transactions: transactionsForReport,
     };
-  }, [filtered, exportDate, exportFileBase]);
-
-  const triggerPrint = useReactToPrint({
-    contentRef: invoiceRef,
-    documentTitle: exportFileBase,
-    removeAfterPrint: true,
-    suppressErrors: true,
-  });
+  }, [filtered, exportFileBase, monthFilter, typeFilter, q]);
 
   const handleExportPdf = async () => {
-    if (!filtered.length || !pdfOrder) {
+    if (!filtered.length || !pdfReportData) {
       alert("No transactions to export.");
       return;
     }
 
-    // Use invoiceRef to render the InvoiceTemplate
-    const input = invoiceRef.current;
+    const input = pdfRef.current;
 
     if (!input) {
-      alert("Invoice not ready.");
+      alert("Report not ready.");
       return;
     }
 
@@ -282,7 +301,6 @@ export default function FinanceTransaction() {
       const pdf = new jsPDF("p", "mm", "a4");
 
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
 
@@ -776,28 +794,9 @@ export default function FinanceTransaction() {
         </div>
       </div>
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        {pdfOrder && (
-          <div ref={invoiceRef}>
-            {/* override title */}
-            <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-              <h1
-                style={{
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                  color: "#4B5563",
-                }}
-              >
-                REPORT
-              </h1>
-              <p style={{ marginTop: "4px", color: "#6B7280" }}>
-                Report #: {exportFileBase}
-              </p>
-            </div>
-
-            {/* reuse invoice template content except header */}
-            <InvoiceTemplate order={pdfOrder} hideHeader />
-          </div>
-        )}
+        {pdfReportData ? (
+          <TransactionPdfTemplate ref={pdfRef} data={pdfReportData} />
+        ) : null}
       </div>
     </div>
   );
