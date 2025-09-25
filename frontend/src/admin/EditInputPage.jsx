@@ -181,7 +181,7 @@ const EditInputPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">
-                                        Stock Quantity <span className="text-red-500">*</span>
+                                        Stock Quantity(kg) <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <input 
