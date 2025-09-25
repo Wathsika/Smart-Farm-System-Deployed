@@ -21,6 +21,8 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
 
+import MainDashboard from "./admin/MainDashboard.jsx";
+
 // --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 
@@ -72,9 +74,7 @@ const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 const FarmDashboard = () => (
   <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
 );
-const LivestockPage = () => (
-  <div className="p-6 text-2xl font-bold">Livestock Management</div>
-);
+
 const StaffPage = () => (
   <div className="p-6 text-2xl font-bold">Staff Management</div>
 );
@@ -165,11 +165,9 @@ export default function App() {
           </AdminOnly>
         }
       >
-        <Route index element={<FarmDashboard />} />
+        <Route index element={<MainDashboard />} />
 
-        {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} />
-        {/* Livestock sub-pages */}
+        <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />

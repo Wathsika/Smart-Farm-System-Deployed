@@ -1,7 +1,7 @@
 // src/admin/TaskManagement.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Added useMemo
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, isBefore, startOfDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, isBefore, startOfDay, isSameMonth } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { api } from '../lib/api';
@@ -81,7 +81,7 @@ const Modal = ({ show, onClose, title, children, size = "md" }) => {
 };
 
 // --- Task Modal with Validation ---
-const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, preselectedDate }) => {
+const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, preselectedDate, readOnly }) => { // Added readOnly prop
   const isEditing = !!existingTask;
   const initialFormState = {
     user: '',
@@ -148,6 +148,7 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
       isValid = false;
     }
 
+    // Status validation is still useful if the field is manipulated outside the disabled state or through API
     if (!['To Do', 'In Progress', 'Completed'].includes(task.status)) {
         errors.status = "Invalid status selected.";
         isValid = false;
@@ -209,10 +210,13 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
     }
   };
 
+  // Determine if the delete button should be disabled based on status
+  const isDeleteDisabled = readOnly || existingTask?.status === 'In Progress' || existingTask?.status === 'Completed';
+
   return (
-    <Modal show={show} onClose={onClose} title={isEditing ? 'Update Task' : 'Create New Task'}>
+    <Modal show={show} onClose={onClose} title={isEditing && readOnly ? 'Task Details' : (isEditing ? 'Update Task' : 'Create New Task')}> {/* Adjusted title */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {formAlert && (
+        {formAlert && !readOnly && ( // Only show form alert if not in readOnly mode
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
             {formAlert}
           </div>
@@ -230,11 +234,12 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             onChange={handleTaskInputChange}
             className={`w-full p-2.5 border ${formErrors.user ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
             required
+            disabled={readOnly} // Disabled if in readOnly mode
           >
             <option value="">Select Team Member</option>
             {users.map(u => <option key={u._id} value={u._id}>{u.fullName}</option>)}
           </select>
-          {formErrors.user && <p className="text-red-500 text-xs mt-1">{formErrors.user}</p>}
+          {formErrors.user && !readOnly && <p className="text-red-500 text-xs mt-1">{formErrors.user}</p>} {/* Show errors only if not readOnly */}
         </div>
 
         {/* Task Title */}
@@ -254,8 +259,9 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             required
             maxLength={200}
             minLength={5}
+            disabled={readOnly} // Disabled if in readOnly mode
           />
-          {formErrors.title && <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>}
+          {formErrors.title && !readOnly && <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>} {/* Show errors only if not readOnly */}
         </div>
 
         {/* Due Date */}
@@ -273,11 +279,12 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             className={`w-full p-2.5 border ${formErrors.dueDate ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors bg-white text-gray-800`}
             required
             min={todayDateString}
+            disabled={readOnly} // Disabled if in readOnly mode
           />
-          {formErrors.dueDate && <p className="text-red-500 text-xs mt-1">{formErrors.dueDate}</p>}
+          {formErrors.dueDate && !readOnly && <p className="text-red-500 text-xs mt-1">{formErrors.dueDate}</p>} {/* Show errors only if not readOnly */}
         </div>
 
-        {/* Status - Disabled for admin editing */}
+        {/* Status */}
         <div>
           <label htmlFor="status" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
             {getStatusIcon(task.status)}
@@ -290,14 +297,14 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
               value={task.status}
               onChange={handleTaskInputChange}
               className={`w-full p-2.5 border-0 rounded-sm focus:outline-none bg-transparent font-medium ${formErrors.status ? 'border-red-500' : ''}`}
-              disabled={isEditing} // Admin cannot change status when editing an existing task
+              disabled={true} // ALWAYS DISABLED: Admin cannot change status (for new or existing tasks)
             >
               <option>To Do</option>
               <option>In Progress</option>
               <option>Completed</option>
             </select>
           </div>
-          {formErrors.status && <p className="text-red-500 text-xs mt-1">{formErrors.status}</p>}
+          {formErrors.status && !readOnly && <p className="text-red-500 text-xs mt-1">{formErrors.status}</p>} {/* Show errors only if not readOnly */}
         </div>
 
         {/* Description */}
@@ -315,8 +322,9 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             className={`w-full p-2.5 border ${formErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors resize-none bg-white text-gray-800`}
             placeholder="Add task description or notes..."
             maxLength={1000}
+            disabled={readOnly} // Disabled if in readOnly mode
           />
-          {formErrors.description && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>}
+          {formErrors.description && !readOnly && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>} {/* Show errors only if not readOnly */}
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -324,8 +332,9 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             <motion.button
               type="button"
               onClick={handleDeleteClick}
-              className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600 transition-colors shadow-sm"
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              className={`flex items-center px-4 py-2 bg-red-500 text-white rounded-md font-medium hover:bg-red-600 transition-colors shadow-sm ${isDeleteDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              whileHover={{ scale: isDeleteDisabled ? 1 : 1.05 }} whileTap={{ scale: isDeleteDisabled ? 1 : 0.95 }}
+              disabled={isDeleteDisabled} // Disabled based on readOnly or task status
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
               Delete
@@ -336,20 +345,23 @@ const TaskModal = ({ show, onClose, onSave, onDelete, users, existingTask, prese
             type="button"
             onClick={onClose}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300 transition-colors shadow-sm"
-            disabled={onSave.isLoading}
+            disabled={onSave.isLoading && !readOnly} // Allow cancel even if saving, unless it's read-only
           >
             Cancel
           </button>
-          <motion.button
-            type="submit"
-            className={`px-4 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-colors shadow-sm ${onSave.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            whileHover={{ scale: onSave.isLoading ? 1 : 1.05 }}
-            whileTap={{ scale: onSave.isLoading ? 1 : 0.95 }}
-            disabled={onSave.isLoading}
-          >
-            {onSave.isLoading ? <Loader className="w-4 h-4 animate-spin mr-1.5" /> : null}
-            {isEditing ? 'Save Changes' : 'Create Task'}
-          </motion.button>
+          {/* Only show Save/Create button if not in readOnly mode */}
+          {!readOnly && (
+            <motion.button
+              type="submit"
+              className={`px-4 py-2 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-colors shadow-sm ${onSave.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              whileHover={{ scale: onSave.isLoading ? 1 : 1.05 }}
+              whileTap={{ scale: onSave.isLoading ? 1 : 0.95 }}
+              disabled={onSave.isLoading}
+            >
+              {onSave.isLoading ? <Loader className="w-4 h-4 animate-spin mr-1.5" /> : null}
+              {isEditing ? 'Save Changes' : 'Create Task'}
+            </motion.button>
+          )}
         </div>
       </form>
     </Modal>
@@ -496,44 +508,64 @@ const TaskStatusBadge = ({ status }) => {
 
 // --- Task Calendar Component (Smaller, no view switcher, assign on click) ---
 const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) => {
-  const events = tasks.map(task => ({
-    id: task._id,
-    title: `${task.user?.fullName || 'N/A'}: ${task.title}`,
-    start: new Date(task.dueDate),
-    end: new Date(task.dueDate),
-    allDay: true,
-    resource: task,
-  }));
+  const [calendarDate, setCalendarDate] = useState(new Date()); // State to manage calendar's current date
+
+  // Use useMemo to optimize event creation for one dot per day
+  const calendarEvents = useMemo(() => {
+    const datesWithTasks = new Set();
+    // Collect all unique due dates that have tasks
+    tasks.forEach(task => {
+      if (task.dueDate) {
+        datesWithTasks.add(format(new Date(task.dueDate), 'yyyy-MM-dd'));
+      }
+    });
+
+    // Create one event for each unique date that has tasks
+    return Array.from(datesWithTasks).map(dateString => {
+      // Find one task for this date to serve as the 'resource' for onSelectEvent.
+      // This ensures that clicking the dot still opens a modal with a task's details.
+      const taskForResource = tasks.find(task => task.dueDate && format(new Date(task.dueDate), 'yyyy-MM-dd') === dateString);
+
+      return {
+        id: dateString, // A unique ID for the day event
+        title: "•", // Display a simple dot
+        start: new Date(dateString),
+        end: new Date(dateString),
+        allDay: true,
+        resource: taskForResource, // Pass one task object as resource
+      };
+    });
+  }, [tasks]);
 
   const eventStyleGetter = (event) => {
-    let backgroundColor;
-    switch (event.resource.status) {
-      case 'Completed': backgroundColor = '#16a34a'; break; // Green
-      case 'In Progress': backgroundColor = '#059669'; break; // Emerald
-      default: backgroundColor = '#65a30d'; // Lime (To Do)
-    }
+    let backgroundColor = '#4299e1'; // Blue color for the dot
 
     return {
       style: {
         backgroundColor,
         color: 'white',
-        borderRadius: '4px',
-        padding: '2px 4px',
-        fontSize: '9px',
-        fontWeight: '600',
-        lineHeight: '1.2'
+        borderRadius: '50%', // Make it a small circle/dot
+        width: '8px', // Size of the dot
+        height: '8px',
+        padding: '0px',
+        fontSize: '0px', // Hide any text
+        margin: '2px auto', // Center the dot
+        display: 'block', // Ensure it takes up space and can be centered
+        lineHeight: '1',
       }
     };
   };
 
-  const CustomToolbar = ({ label, onNavigate }) => {
+  const CustomToolbar = ({ label, onNavigate, date }) => { // date prop is available here
+    // Removed `isCurrentMonth` check for previous button's disabled state
     return (
       <div className="rbc-toolbar mb-3 flex items-center justify-between p-2">
         <span className="rbc-btn-group">
           <motion.button
             onClick={() => onNavigate('PREV')}
-            className="px-2 py-1 bg-green-500 text-white rounded-l-md hover:bg-green-600 text-sm"
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className={`px-2 py-1 bg-green-500 text-white rounded-l-md hover:bg-green-600 text-sm`} // Removed conditional styling for disabled
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} // Always allow hover/tap
+            // disabled={isCurrentMonth} // Removed disabled prop based on current month
           >
             &lt;
           </motion.button>
@@ -558,7 +590,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         style: {
           backgroundColor: '#f1f8f3',
           color: '#a0a0a0',
-          cursor: 'not-allowed',
+          cursor: 'not-allowed', // Make it clear past dates are not selectable for new tasks
         },
       };
     }
@@ -568,11 +600,16 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
   const handleSelectSlot = useCallback((slotInfo) => {
     const today = startOfDay(new Date());
     if (isBefore(slotInfo.start, today)) {
+      // Prevent creating tasks on past dates
       return;
     }
+    // Allow creating tasks on current/future dates
     onDateSelect(slotInfo.start);
   }, [onDateSelect]);
 
+  const handleNavigate = useCallback((newDate) => {
+    setCalendarDate(newDate);
+  }, []);
 
   return (
     <motion.div
@@ -606,7 +643,7 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         .rbc-row-content .rbc-header + .rbc-header { border-left: 1px solid #d1fae5; }
         .rbc-month-row + .rbc-month-row { border-top: 1px solid #d1fae5; }
         .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #d1fae5; }
-        .rbc-event { /* already defined by eventPropGetter */ }
+        .rbc-event { /* customized in eventStyleGetter for dot */ }
 
         .rbc-day-bg.past-date {
           background-color: #f0f0f0 !important;
@@ -617,20 +654,34 @@ const SmallTaskCalendar = ({ tasks, onSelectEvent, onDateSelect, isLoading }) =>
         .rbc-day-bg.past-date .rbc-button-link {
           color: #b0b0b0 !important;
         }
+        /* Specific styles to handle dot appearance */
+        .rbc-event-content {
+          font-size: 0 !important; /* hide event title text */
+          width: 8px !important;
+          height: 8px !important;
+          border-radius: 50% !important;
+          background-color: #4299e1 !important; /* default blue dot */
+          display: block;
+          margin: 2px auto;
+          overflow: hidden; /* hide overflow text */
+        }
       `}</style>
       <Calendar
         localizer={localizer}
-        events={events}
+        events={calendarEvents} // <--- Now uses calendarEvents which only has one event per day
         onSelectEvent={onSelectEvent}
         onSelectSlot={handleSelectSlot}
         selectable
         views={['month']}
         defaultView="month"
+        date={calendarDate} // Use calendarDate state here
+        onNavigate={handleNavigate} // Pass the custom navigation handler
         startAccessor="start"
         endAccessor="end"
         components={{ toolbar: CustomToolbar }}
         style={{ height: 'calc(100% - 30px)' }}
         dayPropGetter={dayPropGetter}
+        eventPropGetter={eventStyleGetter} // Apply custom style for events
       />
     </motion.div>
   );
@@ -757,6 +808,7 @@ export default function TaskManagement() {
   const [reportMonth, setReportMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeStatusFilter, setActiveStatusFilter] = useState('All'); // New state for task filtering
+  const [isCalendarModalReadOnly, setIsCalendarModalReadOnly] = useState(false); // New state for readOnly modal from calendar
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } };
@@ -813,22 +865,43 @@ export default function TaskManagement() {
   }
 
   const handleSelectEvent = (event) => {
+    const eventDueDate = new Date(event.resource.dueDate);
+    const today = startOfDay(new Date());
+
+    if (isBefore(eventDueDate, today)) {
+      setIsCalendarModalReadOnly(true); // Past tasks are read-only
+    } else {
+      setIsCalendarModalReadOnly(false); // Current/future tasks are editable
+    }
     setSelectedTask(event.resource || event);
     setShowTaskModal(true);
-    setPreselectedDate(null);
+    setPreselectedDate(null); // Clear preselected date for event selection
   };
 
   const handleAddNewClick = () => {
     setSelectedTask(null);
+    setIsCalendarModalReadOnly(false); // Not readOnly when creating new task
     setPreselectedDate(null);
     setShowTaskModal(true);
   };
 
   const handleDateSelectInCalendar = (date) => {
+    const today = startOfDay(new Date());
+    if (isBefore(date, today)) {
+      // If a past date is clicked, do nothing (no modal for creating/assigning tasks)
+      return;
+    }
+    // If current or future date, open modal for new task assignment
     setSelectedTask(null);
     setPreselectedDate(date);
+    setIsCalendarModalReadOnly(false); // It's a new task, so not read-only
     setShowTaskModal(true);
   };
+
+  const handleCloseTaskModal = () => {
+    setShowTaskModal(false);
+    setIsCalendarModalReadOnly(false); // Reset readOnly state when modal closes
+  }
 
   // This function `handleMarkTaskAsComplete` is kept for completeness if needed elsewhere
   // but will not be triggered from MainAssignedTasks in this admin UI anymore.
@@ -869,8 +942,8 @@ export default function TaskManagement() {
       doc.setFontSize(10);
       doc.setTextColor(50, 50, 50); // Darker gray for details
       doc.setFont('helvetica', 'normal');
-      doc.text("123 Farm Valley Road, Green County, Sri Lanka", 14, 27);
-      doc.text("contact@greenleaffarm.com | +94 11 234 5678", 14, 32);
+      doc.text("10/F, Ginimellagaha, Baddegama, Sri Lanka", 14, 27);
+      doc.text("contact@greenleaffarm.com | +94 91 227 6246", 14, 32);
 
       // --- Header (Top Right - Report Title & Generated Date/Time) ---
       doc.setFontSize(18);
@@ -989,12 +1062,13 @@ export default function TaskManagement() {
       {/* Task Creation/Edit Modal */}
       <TaskModal
         show={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
+        onClose={handleCloseTaskModal} // Use custom close handler to reset readOnly
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
         users={users}
         existingTask={selectedTask}
         preselectedDate={preselectedDate}
+        readOnly={isCalendarModalReadOnly} // Pass the readOnly state
       />
 
       {/* Report Generation Modal */}
@@ -1069,7 +1143,7 @@ export default function TaskManagement() {
           <SmallTaskCalendar
             tasks={tasks}
             onSelectEvent={handleSelectEvent}
-            onDateSelect={handleDateSelectInCalendar}
+            onDateSelect={handleDateSelectInCalendar} // Now handles enabling new task creation for current/future dates
             isLoading={loading.tasks}
           />
         </motion.div>

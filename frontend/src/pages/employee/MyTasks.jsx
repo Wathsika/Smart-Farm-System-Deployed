@@ -1,6 +1,5 @@
-// src/pages/employee/MyTasks.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { api } from "../../lib/api";
+import { api } from "../../lib/api"; // Make sure this path is correct for your 'api' instance
 import { motion } from "framer-motion";
 import { CheckSquare, Clock, CheckCircle, ListTodo, Loader, Calendar as CalendarIcon, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,9 +90,11 @@ export default function MyTasks() {
         )
       ); // Optimistic update for immediate feedback
       await api.patch(`/tasks/${taskId}/status`, { status: newStatus });
-      fetchTasks(); // Fetch fresh data to ensure consistency after update
+      // No need to fetch fresh data immediately if optimistic update is reliable and backend just confirms.
+      // If full re-fetch is desired for strong consistency, uncomment: fetchTasks();
     } catch (error) {
       alert("Failed to update task status.");
+      console.error("Error updating task status:", error); // Debugging log
       fetchTasks(); // Revert to server state on error
     }
   };
@@ -116,8 +117,8 @@ export default function MyTasks() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center items-center p-4">
-              <Loader className="w-5 h-5 animate-spin text-green-500" />
+            <div className="flex justify-center items-center p-8 bg-gray-50 rounded-lg">
+              <Loader className="w-6 h-6 animate-spin text-green-500" />
               <span className="ml-2 text-gray-600">Loading tasks...</span>
             </div>
           ) : (
@@ -125,9 +126,9 @@ export default function MyTasks() {
               {/* Task Statistics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {[
-                  { label: "Total Tasks", value: totalTasksCount, icon: Target, color: "bg-blue-100 text-blue-800 border-blue-200" },
-                  { label: "To Do", value: todoCount, icon: ListTodo, color: "bg-blue-100 text-blue-800 border-blue-200" },
-                  { label: "In Progress", value: inProgressCount, icon: Clock, color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+                  { label: "Total Tasks", value: totalTasksCount, icon: Target, color: "bg-blue-50 text-blue-800 border-blue-200" },
+                  { label: "To Do", value: todoCount, icon: ListTodo, color: "bg-blue-50 text-blue-800 border-blue-200" },
+                  { label: "In Progress", value: inProgressCount, icon: Clock, color: "bg-yellow-50 text-yellow-800 border-yellow-200" },
                 ].map((stat, index) => (
                   <motion.div
                     key={stat.label}
@@ -165,7 +166,7 @@ export default function MyTasks() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center items-center p-8">
+            <div className="flex justify-center items-center p-8 bg-gray-50 rounded-lg">
               <Loader className="w-6 h-6 animate-spin text-green-500" />
               <span className="ml-2 text-gray-600">Loading tasks...</span>
             </div>

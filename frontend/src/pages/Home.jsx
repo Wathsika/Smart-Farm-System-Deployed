@@ -72,12 +72,12 @@ const contactDetails = [
   {
     icon: "fas fa-location-dot",
     title: "Visit our farm",
-    details: ["244/9, Dines Place, Kaduwela Rd", "Malabe, Sri Lanka"]
+    details: ["10/F, Ginimellagaha, Baddegama, Sri Lanka"]
   },
   {
     icon: "fas fa-phone",
     title: "Call us any day",
-    details: ["(555) 123-4567", "Open daily 7AM – 6PM"]
+    details: ["+94 227 6246", "Open daily 7AM – 6PM"]
   },
   {
     icon: "fas fa-envelope-open-text",

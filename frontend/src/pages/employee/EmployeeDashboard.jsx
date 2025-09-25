@@ -1,7 +1,7 @@
 // src/pages/employee/EmployeeDashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CheckSquare, FileText, TrendingUp, Bell, User, Clock, Loader, LayoutDashboard, LogOut } from "lucide-react";
+import { Calendar, CheckSquare, FileText, TrendingUp, User, Clock, Loader, LayoutDashboard, LogOut } from "lucide-react"; // Removed Bell
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MyTasks from "./MyTasks";
@@ -9,8 +9,8 @@ import MyLeaveRequests from "./MyLeaveRequests";
 import PerformanceTab from "./Performance";
 import TaskCalendar from "./TaskCalendar";
 import { api } from "../../lib/api";
-import { useNavigate } from "react-router-dom";
-import { auth } from "../../lib/auth"; // Import your auth utility here
+import { useNavigate, Link } from "react-router-dom"; // Import Link
+import { auth } from "../../lib/auth";
 
 export default function EmployeeDashboard() {
   const [status, setStatus] = useState("idle");
@@ -34,15 +34,14 @@ export default function EmployeeDashboard() {
       }
     } catch (err) {
       console.error("Failed to load attendance", err);
-      // If loading attendance fails due to auth issue, consider logging out
-      if (err?.response?.status === 401) { // Example: if server returns 401 Unauthorized
+      if (err?.response?.status === 401) {
         auth.logout();
         navigate("/login");
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate]); // Add navigate to dependency array for useCallback
+  }, [navigate]);
 
   useEffect(() => {
     loadToday();
@@ -84,18 +83,11 @@ export default function EmployeeDashboard() {
 
   const handleLogout = async () => {
     try {
-      // OPTIONAL: If you have a backend logout endpoint for JWT blacklisting
-      // (less common but possible with JWTs for immediate invalidation)
-      // await api.post("/auth/logout");
-      
-      // Client-side logout: clear token and user data from local storage
       auth.logout();
-      navigate("/login"); // Redirect to the login page
+      navigate("/login");
     } catch (err) {
       console.error("Logout failed", err);
-      // Even if API call fails (e.g., if there's no backend /logout endpoint),
-      // we should still clear client-side auth and redirect.
-      auth.logout(); // Ensure client-side logout happens
+      auth.logout();
       navigate("/login");
       alert(err?.response?.data?.message || "Logout failed. Please try again.");
     }
@@ -122,16 +114,16 @@ export default function EmployeeDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center"
-            >
-              <Bell className="h-5 w-5 text-gray-600" />
-            </motion.button>
-            <div className="flex items-center gap-2 bg-white rounded-full pl-4 pr-3 py-2 shadow-sm border border-gray-200">
-              <User className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-800 font-medium">{auth.user ? auth.user.username : 'Employee'}</span> {/* Display username from auth.user */}
-            </div>
+            {/* Bell icon removed */}
+            <Link to="/profile"> {/* Wrapped the user profile div with Link */}
+              <motion.div
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 bg-white rounded-full pl-4 pr-3 py-2 shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer" // Added hover and cursor styles
+              >
+                <User className="h-4 w-4 text-gray-600" />
+                <span className="text-gray-800 font-medium">{auth.user ? auth.user.username : 'Employee'}</span>
+              </motion.div>
+            </Link>
             <Button
               onClick={handleLogout}
               variant="ghost"

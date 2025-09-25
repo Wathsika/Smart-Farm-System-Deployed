@@ -218,7 +218,6 @@ function MilkRecordsTable({
       {/* Title */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Milk Records</h2>
-        <p className="text-sm text-gray-500">{records.length} records</p>
       </div>
 
       {/* Filters */}
@@ -341,6 +340,27 @@ function MilkRecordsTable({
             })}
           </tbody>
         </table>
+        {/* Pagination buttons */}
+        {(hasMore || canLoadLess) && (
+          <div className="flex justify-center gap-3 mt-4">
+            {hasMore && (
+              <button
+                onClick={onLoadMore}
+                className="px-4 py-2 rounded-lg border text-sm font-semibold hover:bg-gray-70"
+              >
+                Show More
+              </button>
+            )}
+            {canLoadLess && (
+              <button
+                onClick={onLoadLess}
+                className="px-4 py-2 rounded-lg border text-sm font-semibold hover:bg-gray-70"
+              >
+                Show Less
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -875,8 +895,8 @@ export default function Milk() {
                 (r.cowName || "").toLowerCase().includes(q) ||
                 (r.tagId || "").toLowerCase().includes(q)
               );
-            }).slice(0, visible)}
-          hasMore={hasMore}
+            }).slice(0, visible)}  
+           hasMore={hasMore}
           onLoadMore={loadMore}
           onLoadLess={loadLess}
           canLoadLess={visible > 10}

@@ -1,7 +1,6 @@
 // src/pages/livestock/cow.jsx
 import React, { useEffect, useState } from "react";
 import {
-  FaPlus,
   FaSearch,
   FaEllipsisV,
   FaVenus,
@@ -104,16 +103,18 @@ export default function CowProfilePage() {
   }, []);
 
   /*  filters  */
-  const filteredCows = cows.filter((c) => {
-    const matchesSearch = Object.values(c).some((v) =>
-      String(v).toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    const matchesGender =
-      genderFilter === "All"
-        ? true
-        : String(c.gender).toLowerCase() === genderFilter.toLowerCase();
-    return matchesSearch && matchesGender;
-  });
+  const filteredCows = React.useMemo(() => {
+    return cows.filter((c) => {
+      const matchesSearch = Object.values(c).some((v) =>
+        String(v).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      const matchesGender =
+        genderFilter === "All"
+          ? true
+          : String(c.gender).toLowerCase() === genderFilter.toLowerCase();
+      return matchesSearch && matchesGender;
+    });
+  }, [cows, searchQuery, genderFilter]);
 
   /*  actions menu  */
   function openMenu(e, id) {
@@ -155,19 +156,22 @@ export default function CowProfilePage() {
     if (values.gender !== undefined) payload.append("gender", values.gender);
     if (values.bday !== undefined) payload.append("bday", values.bday);
     if (values.photoFile) payload.append("photo", values.photoFile);
-    return payload;
-  };
+    return payload;
+};
 
   async function submitAdd(values) {
     setSaving(true);
+    setError("");
     try {
       const payload = buildCowPayload(values);
       const { data: created } = await api.post("/cows", payload, {
         headers: { "Content-Type": "multipart/form-data" },
-      });
-      setCows((prev) => [created, ...prev]);
+      });
+      setCows((prev) => sortByCowIdAsc([created, ...prev]));
       setAddOpen(false);
-    
+    } catch (err) {
+      setError(err.message || "Could not add the new cow.");
+      console.error("Failed to add cow:", err);  
     } finally {
       setSaving(false);
     }
@@ -195,9 +199,9 @@ export default function CowProfilePage() {
     setError("");
     try {
       const payload = buildCowPayload(values);
-      const { data: updated } = await api.put('/cows/${editId}', payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data: updated } = await api.put(`/cows/${editId}`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setCows((prev) => prev.map((c) => (c._id === editId ? updated : c)));
       setEditOpen(false);
       setEditId(null);
