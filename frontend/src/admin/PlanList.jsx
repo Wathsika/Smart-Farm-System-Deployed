@@ -164,21 +164,28 @@ const PlanList = () => {
   );
 
   const renderActions = (plan, { compact = false } = {}) => {
+      if (!plan) {
+      return null;
+    }
+
+    const planId = plan?._id;
     const containerClass = compact
       ? 'flex items-center gap-1 justify-end min-w-0'
       : 'flex items-center gap-2 justify-end';
-      
+
     const buttonBaseClass = compact
-      ? 'inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 whitespace-nowrap'
-      : 'inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 whitespace-nowrap min-w-[68px]';
-    const planId = plan?._id;
+      ? 'inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'
+      : 'inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 whitespace-nowrap min-w-[68px] disabled:opacity-50 disabled:cursor-not-allowed';
+
     const editDisabled = !planId;
     const editDestination = planId
-      ? `/admin/crop/plan/${planId}/edit`
+      ? `/admin/crop/plan/edit/${planId}`
       : '/admin/crop/plans';
+
     const editButtonClass = `${buttonBaseClass} text-slate-700 bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-200${
       editDisabled ? ' opacity-50 cursor-not-allowed pointer-events-none' : ''
     }`;
+
     const editButtonContent = compact ? (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -194,12 +201,12 @@ const PlanList = () => {
 
     return (
       <div className={containerClass}>
-         {editDisabled ? (
+        {editDisabled ? (
           <span
             className={editButtonClass}
             role="button"
             aria-disabled="true"
-            title="Cannot edit plan because its associated input is unavailable."
+            title="Cannot edit plan because it is missing an identifier."
           >
             {editButtonContent}
           </span>
@@ -229,7 +236,8 @@ const PlanList = () => {
         
         <button
           type="button"
-          onClick={() => handleTogglePlan(plan._id)}
+          onClick={() => planId && handleTogglePlan(planId)}
+          disabled={!planId}
           className={`${buttonBaseClass} text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100 hover:border-amber-400 focus:ring-amber-200`}
         >
           {compact ? (
@@ -249,7 +257,8 @@ const PlanList = () => {
         
         <button
           type="button"
-          onClick={() => handleDeletePlan(plan._id)}
+          onClick={() => planId && handleDeletePlan(planId)}
+          disabled={!planId}
           className={`${buttonBaseClass} text-rose-700 bg-rose-50 border-rose-300 hover:bg-rose-100 hover:border-rose-400 focus:ring-rose-200`}
         >
           {compact ? (
@@ -509,4 +518,4 @@ const PlanList = () => {
   );
 };
 
-export default PlanList; 
+export default PlanList;

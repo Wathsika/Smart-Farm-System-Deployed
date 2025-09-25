@@ -38,8 +38,7 @@ const EditInputPage = () => {
         const { name, value, type } = e.target;
         setFormData(prevState => ({
             ...prevState,
-            [name]: type === 'number' ? Number(value) : value
-        }));
+         [name]: type === 'number' && value !== '' ? Number(value) : value}));
     };
 
     // Form submit function
@@ -47,9 +46,14 @@ const EditInputPage = () => {
         e.preventDefault();
         setError(null);
         try {
-            await api.put(`/inputs/${id}`, formData);
-            alert('Farm input updated successfully!');
-            navigate('/admin/crop/inputs');
+            const response = await api.put(`/inputs/${id}`, formData);
+            alert('Farm input updated successfully!'); //new
+            navigate('/admin/crop/inputs', {
+                replace: true,
+                state: {
+                    updatedInput: response.data,
+                },
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update input.');
         }
@@ -181,7 +185,7 @@ const EditInputPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">
-                                        Stock Quantity <span className="text-red-500">*</span>
+                                        Stock Quantity(kg) <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <input 
