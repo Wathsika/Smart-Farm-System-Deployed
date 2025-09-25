@@ -12,6 +12,7 @@ const todayISO = () => {
 
 const decimalDraftPattern = /^\d+(?:\.\d{0,2})?$/;
 
+
 const rules = {
   required: (msg = 'Required') => v =>
     v === undefined || v === null || String(v).trim() === '' ? msg : null,
