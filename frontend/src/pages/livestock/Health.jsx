@@ -1,3 +1,5 @@
+// src/pages/Health.jsx
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FaPlus, FaSearch, FaCalendarAlt, FaEllipsisV } from "react-icons/fa";
@@ -47,7 +49,6 @@ const vaccToHealthEditable = (r) => {
   };
 };
 
-/*  Kebab (portal + safe buttons)  */
 function KebabMenu({ items }) {
   const [open, setOpen] = React.useState(false);
   const [pos, setPos] = React.useState({ top: 0, left: 0, width: 240 });
@@ -56,20 +57,24 @@ function KebabMenu({ items }) {
 
   React.useEffect(() => {
     const onDocClick = (e) => {
-      // If the click is on the button or inside the menu, do nothing
+      if (!open) return;
       if (btnRef.current?.contains(e.target)) return;
       if (menuRef.current?.contains(e.target)) return;
       setOpen(false);
     };
     const onEsc = (e) => e.key === "Escape" && setOpen(false);
+    const onScroll = () => setOpen(false);  // auto close on scroll
 
-    document.addEventListener("click", onDocClick);     // <-- use click, not mousedown
+    document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onEsc);
+    window.addEventListener("scroll", onScroll, true);
+
     return () => {
-      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("scroll", onScroll, true);
     };
-  }, []);
+  }, [open]);
 
   const openMenu = () => {
     const b = btnRef.current?.getBoundingClientRect();
@@ -88,18 +93,27 @@ function KebabMenu({ items }) {
   const Menu = (
     <div
       ref={menuRef}
-      style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 10000 }}
+      style={{
+        position: "fixed",
+        top: pos.top,
+        left: pos.left,
+        width: pos.width,
+        zIndex: 10000,
+      }}
       className="rounded-2xl bg-white shadow-xl border overflow-hidden"
-      onClick={(e) => e.stopPropagation()}   
+      onClick={(e) => e.stopPropagation()}
     >
       {items.map((it, i) => (
         <button
           key={i}
           type="button"
-          onClick={() => { setOpen(false); it.onClick?.(); }}
+          onClick={() => {
+            setOpen(false);
+            it.onClick?.();
+          }}
           className={[
             "w-full px-4 py-3 text-left hover:bg-gray-50",
-            it.danger ? "text-red-600 hover:bg-red-50" : ""
+            it.danger ? "text-red-600 hover:bg-red-50" : "",
           ].join(" ")}
         >
           {it.label}
@@ -123,7 +137,6 @@ function KebabMenu({ items }) {
     </div>
   );
 }
-
 
 /*  Page  */
 export default function Health() {
@@ -189,18 +202,39 @@ export default function Health() {
     try {
       const params = { limit: "400", page: "1" };
       if (cowId !== "all") params.cow = cowId;
+      if (dateFilter) {
+        params.to = dateFilter;  
+      }
       const r = await api.get("/health", { params });
       let rows = Array.isArray(r.data?.items) ? r.data.items : [];
       rows = rows
         .filter(x => (x.type || "").toUpperCase() === "VACCINATION" && x.nextDueDate)
         .sort((a,b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-      const end = new Date(); end.setDate(end.getDate()+DAYS_WINDOW);
-      rows = rows.filter(x => { const d = new Date(x.nextDueDate); return !isNaN(d) && d <= end; });
+
+      if (dateFilter) {
+        // Only show vaccinations exactly on that date
+        rows = rows.filter(x => {
+          const d = new Date(x.nextDueDate);
+          const target = new Date(dateFilter);
+          return !isNaN(d) && d.toDateString() === target.toDateString();
+        });
+      } else {
+        // default → next 180 days
+        const end = new Date();
+        end.setDate(end.getDate() + DAYS_WINDOW);
+        rows = rows.filter(x => {
+          const d = new Date(x.nextDueDate);
+          return !isNaN(d) && d <= end;
+        });
+      }
 
       const q = search.trim().toLowerCase();
       if (q) {
         rows = rows.filter(x =>
-          [x.medication, x.diagnosis, x.notes, x.vet, x.cow?.name, x.cow?.tagId].join(" ").toLowerCase().includes(q)
+          [x.medication, x.diagnosis, x.notes, x.vet, x.cow?.name, x.cow?.tagId]
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
         );
       }
       setVaccs(rows);
@@ -208,6 +242,7 @@ export default function Health() {
       setVaccs([]);
     }
   }
+
   useEffect(() => { loadVaccs(); }, [cowId, dateFilter]);
   useEffect(() => { const t = setTimeout(loadVaccs, 250); return () => clearTimeout(t); }, [search]);
 
@@ -222,108 +257,95 @@ export default function Health() {
     }
   };
 
-  const soonestVacc = useMemo(() => {
-    if (!vaccs.length) return null;
-    const v = vaccs[0];
-    return { title:`VACCINATION due for ${v.cow?.name || v.cow?.tagId || "Cow"}`, when:fmtDate(v.nextDueDate) };
-  }, [vaccs]);
-
   return (
     <div className="p-6 md:p-8 bg-gray-50 min-h-screen">
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Health Records</h1>
         <p className="text-gray-500">Add records, manage vaccinations, and review visits</p>
 
-        {soonestVacc && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
-            <FaCalendarAlt className="text-yellow-600" />
-            <div className="text-sm">
-              <span className="font-semibold">{soonestVacc.title}</span>
-              <span className="text-gray-700"> • {soonestVacc.when}</span>
-            </div>
-            <span className="ml-auto text-xs px-2 py-1 rounded-full bg-white border border-yellow-200 text-yellow-800">
-              {vaccs.length} due
-            </span>
-          </div>
-        )}
-
-        {/* Controls Bar */}
-        <div className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          {/* Search + Filters */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Search Input */}
-            <div className="relative w-full md:w-72">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search records..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 
-                          focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-
-            {/* Cow Filter */}
-            <div className="relative">
-              <select
-                value={cowId}
-                onChange={(e) => setCowId(e.target.value)}
-                className="appearance-none pr-8 pl-3 py-2 bg-white border border-gray-300 
-                          rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="all">All Cows</option>
-                {cows.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
-            </div>
-
-            {/* Date Filter */}
-            <input
-              type="date"
-              value={dateFilter || ""}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm"
-            />
-            {dateFilter && (
-              <button
-                onClick={() => setDateFilter("")}
-                className="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Add Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setAddVaccOpen(true)}
-              className="bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-700 transition flex items-center gap-2"
-            >
-              <FaPlus /> Add Vaccination
-            </button>
-            <button
-              onClick={() => setAddHealthOpen(true)}
-              className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
-            >
-              <FaPlus /> Add Health Record
-            </button>
-          </div>
-        </div>
       </header>
+      
+      {/* Controls Bar  */}
+      <div className="w-full bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        {/* Search + Filters */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Search Input */}
+          <div className="relative w-full md:w-72">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search records..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 
+                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"/>
+          </div>
+
+          {/* Cow Filter */}
+          <div className="relative">
+            <select
+              value={cowId}
+              onChange={(e) => setCowId(e.target.value)}
+              className="appearance-none pr-8 pl-3 py-2 bg-white border border-gray-300 
+                        rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="all">All Cows</option>
+              {cows.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name || "Cow"} {c.tagId ? `(${c.tagId})` : ""}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
+          </div>
+
+          {/* Date Filter */}
+          <input
+            type="date"
+            value={dateFilter || ""}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm"
+          />
+          {dateFilter && (
+            <button
+              onClick={() => setDateFilter("")}
+              className="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Add Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAddVaccOpen(true)}
+            className="bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-700 transition flex items-center gap-2"
+          >
+            <FaPlus /> Add Vaccination
+          </button>
+          <button
+            onClick={() => setAddHealthOpen(true)}
+            className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+          >
+            <FaPlus /> Add Health Record
+          </button>
+        </div>
+      </div>
+
 
       {/* Vaccinations */}
       <section className="mb-6 bg-white rounded-lg shadow-md p-6">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-800">Upcoming Vaccinations</h2>
-            <p className="text-sm text-gray-500">{vaccs.length} due (next {DAYS_WINDOW} days)</p>
+            <p className="text-sm text-gray-500">
+              {dateFilter 
+                ? `Vaccinations due on ${fmtDate(dateFilter)}`
+                : `${vaccs.length} due (next ${DAYS_WINDOW} days)`
+              }
+            </p>
           </div>
         </div>
 
@@ -372,7 +394,7 @@ export default function Health() {
         </div>
       </section>
 
-      {/* Health Records */}
+      {/* Health Records and Modals */}
       <section className="bg-white rounded-lg shadow-md p-6">
         <div className="mb-3">
           <h2 className="text-xl font-bold text-gray-800">Health Records</h2>

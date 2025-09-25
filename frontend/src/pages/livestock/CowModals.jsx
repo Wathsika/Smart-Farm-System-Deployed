@@ -7,8 +7,8 @@ const API_HOST = "http://localhost:5001";
 const resolvePhotoUrl = (url) => {
   if (!url) return "";
   if (/^https?:\/\//i.test(url)) return url;
-  const normalized = url.startsWith("/") ? url : '/${url}';
-  return '${API_HOST}${normalized}';
+  const normalized = url.startsWith("/") ? url : `/${url}`;
+  return `${API_HOST}${normalized}`;
 };
 
 // Cow SVG Icon Component
@@ -115,7 +115,7 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
       gender: initial?.gender || "Female",
       bday: initial?.bday ? new Date(initial.bday).toISOString().slice(0, 10) : "",
       photoFile: null,
-      photoPreviewUrl: resolvePhotoUrl(initial?.photoUrl) || "",
+      photoPreviewUrl: resolvePhotoUrl(initial?.photoUrl) || "",
     });
     setErrors({});
     setApiError("");
@@ -168,6 +168,7 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
       gender: form.gender,
       bday: form.bday,
       photoFile: form.photoFile,
+      photoUrl: !form.photoFile ? initial?.photoUrl : undefined
     };
     const v = validate(draft);
     setErrors(v);
@@ -182,6 +183,15 @@ export function CowFormModal({ title, initial, saving, onClose, onSubmit }) {
         "Failed to save. Please try again.";
       setApiError(msg);
     }
+  };
+
+  const draft = {
+    name: form.name.trim(),
+    breed: form.breed.trim(),
+    gender: form.gender,
+    bday: form.bday,
+    photoFile: form.photoFile,
+    photoUrl: !form.photoFile ? initial?.photoUrl : undefined
   };
 
   return (
