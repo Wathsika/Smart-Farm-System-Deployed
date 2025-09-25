@@ -323,21 +323,22 @@ export default function CheckoutPage() {
                     error={fieldErrors.email}
                   />
 
-                  <InputField
-                    id="addressLine1"
-                    label="Street Address"
-                    value={customerInfo.addressLine1}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="123 Main Street"
-                    required
-                    icon="fas fa-home"
-                    inputMode="text"
-                    pattern="^[A-Za-z0-9\s]+$"
-                    title="Address can contain only letters, numbers, and spaces."
-                    maxLength={100}
-                    error={fieldErrors.addressLine1}
-                  />
+                 <InputField
+  id="addressLine1"
+  label="Street Address"
+  value={customerInfo.addressLine1}
+  onChange={handleInputChange}
+  onBlur={handleBlur}
+  placeholder="123 Main Street"
+  required
+  icon="fas fa-home"
+  inputMode="text"
+  pattern="^[A-Za-z0-9\s/,]+$"
+  title='Address can contain only letters, numbers, spaces, "/", and ",".'
+  maxLength={100}
+  error={fieldErrors.addressLine1}
+/>
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InputField
