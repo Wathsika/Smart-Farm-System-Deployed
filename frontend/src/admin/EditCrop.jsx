@@ -21,8 +21,9 @@ const rules = {
     v == null || re.test(String(v)) ? null : msg,
   dateOnOrAfter: (field, msg) => (v, all) =>
     !v || !all[field] || v >= all[field] ? null : (msg || `Must be on/after ${field}`),
-  dateNotPast: (msg = 'Date cannot be in the past') => v =>
-    !v || v >= todayISO() ? null : msg, // ✅ prevent selecting past dates
+  // New validation rule: dateOnOrAfterToday
+  dateOnOrAfterToday: (msg = 'Date must be on or after today') => v =>
+    !v || v >= todayISO() ? null : msg, // Compares the value to today's date
   oneOf: (arr, msg = 'Invalid value') => v => (arr.includes(v) ? null : msg),
 };
 
@@ -39,7 +40,7 @@ const validate = (schema, data) => {
   return { valid: Object.keys(errors).length === 0, errors };
 };
 
-// ---------- Icons ----------
+// Premium Icons
 const EditIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -48,7 +49,7 @@ const EditIcon = ({ className = "w-5 h-5" }) => (
 
 const CalendarIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
@@ -88,7 +89,7 @@ const ExclamationTriangleIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-// ---------- Loading ----------
+// Premium Loading Component
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
     <div className="bg-white rounded-3xl shadow-xl border border-slate-200/60 p-16 text-center max-w-md w-full backdrop-blur-sm">
@@ -152,7 +153,7 @@ const EditCrop = () => {
       ],
       expectedHarvestDate: [
         rules.dateOnOrAfter('plantingDate', 'Harvest must be after planting'),
-        rules.dateNotPast('Expected harvest date cannot be in the past') // ✅ added
+        rules.dateOnOrAfterToday('Expected Harvest Date cannot be in the past'), // Added validation for today or later
       ],
       status: [
         rules.required(),
@@ -334,7 +335,7 @@ const EditCrop = () => {
                       value={formData.expectedHarvestDate}
                       onChange={handleChange}
                       onBlur={() => runValidation()}
-                      min={formData.plantingDate || todayISO()} // ✅ prevent past in UI
+                      min={formData.plantingDate || todayISO()} // Ensures calendar allows selection from today or planting date
                       className={`w-full pl-12 pr-5 py-4 bg-slate-50 border-2 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 focus:bg-white hover:bg-white text-slate-900 ${
                         errors['expectedHarvestDate'] ? 'border-red-300 bg-red-50 focus:ring-red-100 focus:border-red-400' : 'border-slate-200'
                       }`}

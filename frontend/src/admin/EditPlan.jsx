@@ -1,4 +1,4 @@
-// ✅ FINAL FIXED: frontend/src/admin/EditPlanPage.jsx
+// ✅ FINAL VALIDATED FILE: frontend/src/admin/EditPlanPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
@@ -8,6 +8,11 @@ const emptyDropdowns = {
   pesticides: [],
   crops: [],
   fields: [],
+};
+
+const todayISO = () => {
+  const off = new Date().getTimezoneOffset() * 60000;
+  return new Date(Date.now() - off).toISOString().slice(0, 10);
 };
 
 const formatDate = (value) => {
@@ -48,13 +53,14 @@ export default function EditPlanPage() {
       try {
         setLoading(true);
         setError("");
-        const [planRes, fertilizers, pesticides, crops, fields] = await Promise.all([
-          api.get(`/plans/${id}`),
-          api.get("/inputs", { params: { category: "fertilizer" } }),
-          api.get("/inputs", { params: { category: "pesticide" } }),
-          api.get("/crops"),
-          api.get("/fields"),
-        ]);
+        const [planRes, fertilizers, pesticides, crops, fields] =
+          await Promise.all([
+            api.get(`/plans/${id}`),
+            api.get("/inputs", { params: { category: "fertilizer" } }),
+            api.get("/inputs", { params: { category: "pesticide" } }),
+            api.get("/crops"),
+            api.get("/fields"),
+          ]);
 
         if (!mounted) return;
 
@@ -73,7 +79,7 @@ export default function EditPlanPage() {
           },
           schedule: {
             type: plan.schedule?.type || "weekly",
-            startDate: formatDate(plan.schedule?.startDate),
+            startDate: formatDate(plan.schedule?.startDate) || todayISO(),
             repeatEvery:
               typeof plan.schedule?.repeatEvery === "number"
                 ? Math.max(1, plan.schedule.repeatEvery)
@@ -132,10 +138,28 @@ export default function EditPlanPage() {
     return "Application Plan";
   }, [dropdownData, form]);
 
+  const validateForm = () => {
+    if (!form?.crop) return "Crop is required.";
+    if (!form?.field) return "Field is required.";
+    if (!form?.product) return "Product is required.";
+    if (form.schedule.startDate < todayISO())
+      return "Start date cannot be in the past.";
+
+    // 🔒 Occurrences validation
+    const occ = Number(form.schedule.occurrences);
+    if (isNaN(occ) || !Number.isInteger(occ))
+      return "Occurrences must be a whole number.";
+    if (occ < 1) return "Occurrences must be at least 1.";
+    if (occ > 15) return "Occurrences cannot exceed 15.";
+
+    return null;
+  };
+
   const submit = async (event) => {
     event.preventDefault();
-    if (!form?.crop || !form?.field || !form?.product) {
-      window.alert("Please select a Crop, Field, and Product before saving.");
+    const validationError = validateForm();
+    if (validationError) {
+      window.alert(validationError);
       return;
     }
 
@@ -148,8 +172,7 @@ export default function EditPlanPage() {
       schedule: {
         ...form.schedule,
         repeatEvery: Number(form.schedule.repeatEvery) || 1,
-        occurrences:
-          form.schedule.occurrences === "" ? undefined : Number(form.schedule.occurrences),
+        occurrences: Number(form.schedule.occurrences),
       },
     };
 
@@ -174,7 +197,9 @@ export default function EditPlanPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-emerald-50 to-slate-100 px-4">
         <div className="animate-spin h-6 w-6 rounded-full border-2 border-slate-200 border-t-emerald-500" />
-        <span className="ml-3 text-slate-700 text-sm font-medium">Loading plan details...</span>
+        <span className="ml-3 text-slate-700 text-sm font-medium">
+          Loading plan details...
+        </span>
       </div>
     );
   }
@@ -217,14 +242,6 @@ export default function EditPlanPage() {
             onClick={() => navigate("/admin/crop/plans")}
             className="inline-flex items-center px-4 py-2 sm:px-5 sm:py-3 border border-slate-300 rounded-lg bg-white text-slate-700 text-sm sm:text-base font-medium shadow-sm hover:bg-slate-50"
           >
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
             Back to Plans
           </button>
         </header>
@@ -235,40 +252,58 @@ export default function EditPlanPage() {
             {/* Step 1 */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">1</div>
+                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">
+                  1
+                </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">Define Target</h2>
-                  <p className="text-xs sm:text-sm text-slate-500">Select the crop and field</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
+                    Define Target
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    Select the crop and field
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:pl-11">
                 {/* Crop */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Select Crop *</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Select Crop *
+                  </label>
                   <select
                     value={form.crop}
                     onChange={(e) => handleFormChange(e, "crop")}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     required
                   >
-                    <option value="" disabled>-- Choose a Crop --</option>
+                    <option value="" disabled>
+                      -- Choose a Crop --
+                    </option>
                     {dropdownData.crops.map((c) => (
-                      <option key={c._id} value={c._id}>{c.cropName}</option>
+                      <option key={c._id} value={c._id}>
+                        {c.cropName}
+                      </option>
                     ))}
                   </select>
                 </div>
                 {/* Field */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Select Field *</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Select Field *
+                  </label>
                   <select
                     value={form.field}
                     onChange={(e) => handleFormChange(e, "field")}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     required
                   >
-                    <option value="" disabled>-- Choose a Field --</option>
+                    <option value="" disabled>
+                      -- Choose a Field --
+                    </option>
                     {dropdownData.fields.map((f) => (
-                      <option key={f._id} value={f._id}>{f.fieldName} ({f.fieldCode})</option>
+                      <option key={f._id} value={f._id}>
+                        {f.fieldName} ({f.fieldCode})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -280,49 +315,69 @@ export default function EditPlanPage() {
             {/* Step 2 */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">2</div>
+                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">
+                  2
+                </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">Define Input</h2>
-                  <p className="text-xs sm:text-sm text-slate-500">Choose the product & dosage</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
+                    Define Input
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    Choose the product & dosage
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:pl-11">
                 {/* Product */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Select Product *</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Select Product *
+                  </label>
                   <select
                     value={form.product}
                     onChange={(e) => handleFormChange(e, "product")}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     required
                   >
-                    <option value="" disabled>-- Choose a Product --</option>
+                    <option value="" disabled>
+                      -- Choose a Product --
+                    </option>
                     <optgroup label="Fertilizers">
                       {fertilizerOptions.map((p) => (
-                        <option key={p._id} value={p._id}>{p.name}</option>
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
                       ))}
                     </optgroup>
                     <optgroup label="Pesticides">
                       {pesticideOptions.map((p) => (
-                        <option key={p._id} value={p._id}>{p.name}</option>
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
                       ))}
                     </optgroup>
                   </select>
                 </div>
                 {/* Dosage */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Dosage Amount</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Dosage Amount
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={form.dosage.amount}
-                    onChange={(e) => handleFormChange(e, "dosage.amount", parseNumberOrEmpty)}
+                    onChange={(e) =>
+                      handleFormChange(e, "dosage.amount", parseNumberOrEmpty)
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     placeholder="Enter amount"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Unit</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Unit
+                  </label>
                   <input
                     value={form.dosage.unit}
                     onChange={(e) => handleFormChange(e, "dosage.unit")}
@@ -338,15 +393,23 @@ export default function EditPlanPage() {
             {/* Step 3 */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">3</div>
+                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">
+                  3
+                </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">Define Schedule</h2>
-                  <p className="text-xs sm:text-sm text-slate-500">Frequency & timing</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
+                    Define Schedule
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    Frequency & timing
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 md:pl-11">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Frequency</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Frequency
+                  </label>
                   <select
                     value={form.schedule.type}
                     onChange={(e) => handleFormChange(e, "schedule.type")}
@@ -359,16 +422,24 @@ export default function EditPlanPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Start Date</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Start Date
+                  </label>
                   <input
                     type="date"
+                    min={todayISO()}
                     value={form.schedule.startDate}
-                    onChange={(e) => handleFormChange(e, "schedule.startDate")}
+                    onChange={(e) =>
+                      handleFormChange(e, "schedule.startDate")
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Repeat Every</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Repeat Every
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -383,19 +454,29 @@ export default function EditPlanPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Total Occurrences</label>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Total Occurrences
+                  </label>
                   <input
                     type="number"
                     min="1"
+                    max="15"
+                    step="1"
                     value={form.schedule.occurrences}
                     onChange={(e) =>
                       handleFormChange(e, "schedule.occurrences", (val) => {
                         const parsed = parseNumberOrEmpty(val);
-                        return parsed === "" ? "" : Math.max(1, parsed);
+                        return parsed === ""
+                          ? ""
+                          : Math.max(1, Math.min(15, parsed));
                       })
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    required
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Enter a whole number (1 – 15)
+                  </p>
                 </div>
               </div>
             </section>
@@ -405,10 +486,16 @@ export default function EditPlanPage() {
             {/* Step 4 */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">4</div>
+                <div className="w-8 h-8 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-full font-semibold text-sm">
+                  4
+                </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">Additional Notes</h2>
-                  <p className="text-xs sm:text-sm text-slate-500">Optional instructions</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
+                    Additional Notes
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500">
+                    Optional instructions
+                  </p>
                 </div>
               </div>
               <div className="md:pl-11">

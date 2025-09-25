@@ -247,11 +247,11 @@ export const InputInventoryReport = ({
           <View style={styles.headerLeft}>
             <Text style={styles.farmName}>GreenLeaf Farm</Text>
             <Text style={styles.farmDetails}>
-              123 Farm Valley Road, Green County, Sri Lanka
+              10/F, Ginimellagaha, Baddegama, Sri Lanka
             </Text>
             <Text style={styles.farmDetails}>
-              contact@greenleaffarm.com | +94 11 234 5678
-            </Text>
+              info@greenleaffarm.com | +94 91 227 6246
+            </Text>    
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.reportTitle}>INPUTS INVENTORY</Text>

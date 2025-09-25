@@ -1,3 +1,5 @@
+// ✅ Corrected and Complete File: backend/controllers/plan.controller.js
+
 import Plan from '../models/ApplicationPlan.js';
 import { isDue } from '../utils/schedule.js';
 
@@ -29,13 +31,18 @@ export const list = async (req, res) => {
 };
 
 // --- Show single plan by ID ---
+// This is the function that your Edit Page needs.
 export const show = async (req, res) => {
   try {
     const plan = await Plan.findById(req.params.id).populate('product crop field');
-    if (!plan) return res.sendStatus(404);
+    if (!plan) {
+      // Send a clear 404 status if not found
+      return res.status(404).json({ message: 'Plan not found.' });
+    }
     res.json(plan);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // Catch potential errors like invalid ID format
+    res.status(500).json({ error: 'Server error while fetching plan.' });
   }
 };
 
@@ -75,5 +82,5 @@ export const remove = async (req, res) => {
   }
 };
 
-// --- Default export for grouped import ---
+// --- Default export is now guaranteed to include 'show' ---
 export default { create, list, show, due, toggle, remove };
