@@ -192,20 +192,19 @@ export const commitPayroll = async (req, res) => {
     const { month, year, items } = draft;
 
     const saved = [];
-    // Counter per CURRENT period (year-month) to generate sequential slipId in format: SLP<YYYY><M><n>
+    // Counter per requested period (year-month) to generate sequential slipId in format: SLP<YYYY><MM><n>
     // Example: SLP2025101, SLP2025102, ... for Oct 2025
-    const now = new Date();
-    const nowYear = now.getFullYear();
-    const nowMonth = now.getMonth() + 1; // 1-12 (no leading zero)
-    const slipPrefix = `SLP${nowYear}${nowMonth}`;
+    const slipMonth = String(month).padStart(2, "0");
+    const slipPrefix = `SLP${year}${slipMonth}`;
     // Compute last sequence for this prefix
     const existing = await PaymentSlip.find(
-      { slipId: new RegExp(`^${slipPrefix}`) },
+      { year, month, slipId: new RegExp(`^${slipPrefix}`) },
       { slipId: 1 }
     ).lean();
     let lastSequence = 0;
     for (const d of existing) {
-      const n = Number(String(d.slipId || "").replace(slipPrefix, ""));
+      const suffix = String(d.slipId || "").slice(slipPrefix.length);
+      const n = Number(suffix);
       if (Number.isFinite(n) && n > lastSequence) lastSequence = n;
     }
 
