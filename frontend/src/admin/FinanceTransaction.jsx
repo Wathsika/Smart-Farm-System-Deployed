@@ -250,11 +250,13 @@ export default function FinanceTransaction() {
       const signedAmount =
         txn.type === "EXPENSE" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
+      // Use transaction_id if available, else fallback to a readable string
+      let pdfTxnId = txn.transaction_id && String(txn.transaction_id).trim();
+      if (!pdfTxnId) {
+        pdfTxnId = `TXN-${index + 1}`;
+      }
       return {
-        id:
-          resolveRowId(txn) ||
-          txn.transaction_id ||
-          `txn-${index}-${shortDate(txn.date)}`,
+        id: pdfTxnId,
         date: shortDate(txn.date),
         type: txn.type || "—",
         category: txn.category || "—",
@@ -679,7 +681,9 @@ export default function FinanceTransaction() {
                             {r.category || "—"}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {r.description || "—"}
+                            <span className="break-words whitespace-pre-line">
+                              {r.description || "—"}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {currency(r.amount)}
