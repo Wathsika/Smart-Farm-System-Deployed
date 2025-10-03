@@ -132,7 +132,8 @@ const actionBadgeClass = (action) => {
 };
 
 /* ---------- Change Block ---------- */
-function ChangeBlock({ originalData, newData }) {
+// Removed duplicate ChangeBlock definition
+function ChangeBlock({ originalData, newData, action }) {
   const [expanded, setExpanded] = useState(false);
   const diffs = useMemo(
     () => getAuditFieldDiffs(originalData, newData),
@@ -177,76 +178,84 @@ function ChangeBlock({ originalData, newData }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-red-50 border-b border-red-100 px-3 py-2">
-                <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  Original Data
+          <div
+            className={`grid grid-cols-1 ${
+              action === "UPDATE" ? "lg:grid-cols-2" : ""
+            } gap-4`}
+          >
+            {(action === "UPDATE" || action === "DELETE") && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-red-50 border-b border-red-100 px-3 py-2">
+                  <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    Original Data
+                  </div>
+                </div>
+                <div className="p-3">
+                  <dl className="divide-y divide-gray-100">
+                    {AUDIT_FIELDS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
+                          diffs[key] && action === "UPDATE"
+                            ? "bg-amber-50 border-l-2 border-amber-300"
+                            : ""
+                        }`}
+                      >
+                        <dt className="text-xs font-medium text-gray-600 col-span-1">
+                          {label}
+                        </dt>
+                        <dd className="text-xs text-gray-800 col-span-2">
+                          {formatAuditFieldValue(originalData?.[key], key)}
+                          {diffs[key] && action === "UPDATE" && (
+                            <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-amber-700">
+                              Prev
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
-              <div className="p-3">
-                <dl className="divide-y divide-gray-100">
-                  {AUDIT_FIELDS.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
-                        diffs[key]
-                          ? "bg-amber-50 border-l-2 border-amber-300"
-                          : ""
-                      }`}
-                    >
-                      <dt className="text-xs font-medium text-gray-600 col-span-1">
-                        {label}
-                      </dt>
-                      <dd className="text-xs text-gray-800 col-span-2">
-                        {formatAuditFieldValue(originalData?.[key], key)}
-                        {diffs[key] && (
-                          <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-amber-700">
-                            Prev
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
+            )}
 
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
-                <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Updated Data
+            {(action === "UPDATE" || action === "ADD") && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
+                  <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    Updated Data
+                  </div>
+                </div>
+                <div className="p-3">
+                  <dl className="divide-y divide-gray-100">
+                    {AUDIT_FIELDS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
+                          diffs[key] && action === "UPDATE"
+                            ? "bg-emerald-50 border-l-2 border-emerald-300"
+                            : ""
+                        }`}
+                      >
+                        <dt className="text-xs font-medium text-gray-600 col-span-1">
+                          {label}
+                        </dt>
+                        <dd className="text-xs text-gray-800 col-span-2">
+                          {formatAuditFieldValue(newData?.[key], key)}
+                          {diffs[key] && action === "UPDATE" && (
+                            <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-emerald-700">
+                              New
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
-              <div className="p-3">
-                <dl className="divide-y divide-gray-100">
-                  {AUDIT_FIELDS.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
-                        diffs[key]
-                          ? "bg-emerald-50 border-l-2 border-emerald-300"
-                          : ""
-                      }`}
-                    >
-                      <dt className="text-xs font-medium text-gray-600 col-span-1">
-                        {label}
-                      </dt>
-                      <dd className="text-xs text-gray-800 col-span-2">
-                        {formatAuditFieldValue(newData?.[key], key)}
-                        {diffs[key] && (
-                          <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-emerald-700">
-                            New
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -583,9 +592,7 @@ export default function AuditLogPage() {
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <User size={14} className="inline mr-1" /> User
                       </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Collection
-                      </th>
+                      {/* Collection column removed */}
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <Hash size={14} className="inline mr-1" /> Transaction
                         ID
@@ -611,9 +618,7 @@ export default function AuditLogPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm">{row.user || "—"}</td>
-                        <td className="px-6 py-4 text-sm">
-                          {row.collection || "—"}
-                        </td>
+                        {/* Collection cell removed */}
                         <td className="px-6 py-4 text-sm">
                           <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                             {row.transactionId || row.recordId || "—"}
@@ -623,6 +628,7 @@ export default function AuditLogPage() {
                           <ChangeBlock
                             originalData={row.originalData}
                             newData={row.newData}
+                            action={row.action}
                           />
                         </td>
                       </tr>
