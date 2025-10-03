@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play,
@@ -10,6 +16,9 @@ import {
   Settings,
 } from "lucide-react";
 import { api } from "../lib/api";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { PayrollPdfTemplate } from "../components/reports/PayrollPdfTemplate";
 
 const money = (n) =>
   (Number(n) || 0).toLocaleString(undefined, {
@@ -94,6 +103,8 @@ export default function PayrollRunPage() {
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pdfData, setPdfData] = useState(null);
+  const pdfRef = useRef(null);
 
   const isYearValid = Number.isInteger(year) && year >= 2020 && year <= 2100;
 
@@ -149,6 +160,7 @@ export default function PayrollRunPage() {
           const employeeId = employee.id || employee._id || null;
 
           return {
+            slipId: slip.slipId || null,
             employee: {
               id: employeeId,
               empId:
@@ -318,6 +330,76 @@ export default function PayrollRunPage() {
     }
   }
 
+  // Build printable data for a single row
+  const buildPdfData = useCallback((row) => {
+    if (!row) return null;
+    return {
+      slipNumber:
+        row?.slipId ||
+        `SLP${new Date().getFullYear()}${new Date().getMonth() + 1}1`,
+      generatedAt: new Date(),
+      employee: {
+        name: row?.employee?.name || "Unknown",
+        empId:
+          row?.employee?.empId ||
+          (row?.employee?.id ? String(row.employee.id).slice(-6) : "—"),
+      },
+      month: row?.month,
+      year: row?.year,
+      basicSalary: row?.basicSalary,
+      workingHours: row?.workingHours,
+      allowances: row?.allowances,
+      loan: row?.loan,
+      otTotal: row?.otTotal ?? 0,
+      epf: row?.epf ?? 0,
+      etf: row?.etf ?? 0,
+      gross: row?.gross ?? 0,
+      netSalary: row?.netSalary ?? 0,
+    };
+  }, []);
+
+  // Trigger PDF download after pdfData renders
+  useEffect(() => {
+    if (!pdfData) return;
+    const el = pdfRef.current;
+    if (!el) return;
+    let cancelled = false;
+    (async () => {
+      await new Promise((r) => requestAnimationFrame(r));
+      if (cancelled) return;
+      try {
+        const canvas = await html2canvas(el, { scale: 2 });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, imgHeight);
+        const filename = `${pdfData.slipNumber || "Payslip"}.pdf`;
+        pdf.save(filename);
+      } catch (err) {
+        console.error("Payslip PDF export failed", err);
+        alert("Failed to generate payslip PDF");
+      } finally {
+        setPdfData(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfData]);
+
+  const handleDownloadSlip = useCallback(
+    (row) => {
+      if (!row || row.netSalary == null) {
+        alert("Please calculate and save before downloading the payslip.");
+        return;
+      }
+      setPdfData(buildPdfData(row));
+    },
+    [buildPdfData]
+  );
+
   const valid = rows.filter((r) => r.netSalary != null);
   const totalGross = valid.reduce((s, r) => s + (r.gross || 0), 0);
   const totalNet = valid.reduce((s, r) => s + (r.netSalary || 0), 0);
@@ -438,94 +520,118 @@ export default function PayrollRunPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {[
-                  "Employee",
-                  "Month",
-                  "Year",
-                  "Basic Salary",
-                  "Working Hours",
-                  "Allowances",
-                  "Overtime",
-                  "EPF",
-                  "ETF",
-                  "Loan",
-                  "Gross",
-                  "Net",
-                  "Status",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-right first:text-left text-xs font-medium text-gray-500 uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {rows.map((row, idx) => {
-                const { label, className } =
-                  STATUS_STYLES[row.status] || STATUS_STYLES.PENDING;
-                return (
-                  <tr
-                    key={`${row.employee.id ?? "row"}-${idx}`}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{row.employee.name}</div>
-                    </td>
+        <div className="bg-white rounded-lg shadow-sm">
+          <div className="table-container">
+            <table className="table-fixed w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    "Employee",
+                    "Month",
+                    "Year",
+                    "Basic Salary",
+                    "Working Hours",
+                    "Allowances",
+                    "Overtime",
+                    "EPF",
+                    "ETF",
+                    "Loan",
+                    "Gross",
+                    "Net",
+                    "Status",
+                    "Payslip",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-right first:text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {rows.map((row, idx) => {
+                  const { label, className } =
+                    STATUS_STYLES[row.status] || STATUS_STYLES.PENDING;
+                  return (
+                    <tr
+                      key={`${row.employee.id ?? "row"}-${idx}`}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{row.employee.name}</div>
+                      </td>
 
-                    <td className="px-4 py-3 text-right">
-                      {row.month ? getMonthName(row.month) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.year != null ? row.year : "—"}
-                    </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.month ? getMonthName(row.month) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.year != null ? row.year : "—"}
+                      </td>
 
-                    <td className="px-4 py-3 text-right font-medium">
-                      {money(row.basicSalary)}
-                    </td>
-                    <td className="px-4 py-3 text-right">{row.workingHours}</td>
-                    <td className="px-4 py-3 text-right">
-                      {money(row.allowances)}
-                    </td>
+                      <td className="px-4 py-3 text-right font-medium">
+                        {money(row.basicSalary)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.workingHours}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {money(row.allowances)}
+                      </td>
 
-                    <td className="px-4 py-3 text-right">
-                      {row.otTotal == null ? "—" : money(row.otTotal)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-red-600">
-                      {row.epf == null ? "—" : `(${money(row.epf)})`}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.etf == null ? "—" : money(row.etf)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-red-600">
-                      {row.loan == null ? "—" : `(${money(row.loan)})`}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.gross == null ? "—" : money(row.gross)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-green-600">
-                      {row.netSalary == null ? "—" : money(row.netSalary)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={`inline-flex px-2 py-1 rounded-full text-xs ${className}`}
-                      >
-                        {label}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      <td className="px-4 py-3 text-right">
+                        {row.otTotal == null ? "—" : money(row.otTotal)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-red-600">
+                        {row.epf == null ? "—" : `(${money(row.epf)})`}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.etf == null ? "—" : money(row.etf)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-red-600">
+                        {row.loan == null ? "—" : `(${money(row.loan)})`}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.gross == null ? "—" : money(row.gross)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-green-600">
+                        {row.netSalary == null ? "—" : money(row.netSalary)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-full text-xs ${className}`}
+                        >
+                          {label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          disabled={row.netSalary == null}
+                          onClick={() => handleDownloadSlip(row)}
+                          className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 text-gray-700 hover:bg-gray-50"
+                          title={
+                            row.netSalary == null
+                              ? "Calculate & Save first"
+                              : "Download payslip PDF"
+                          }
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {loading && <div className="p-6 text-sm text-gray-500">Loading…</div>}
+        </div>
+        {/* Hidden PDF template renderer */}
+        <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          {pdfData ? <PayrollPdfTemplate ref={pdfRef} data={pdfData} /> : null}
         </div>
       </div>
     </div>

@@ -124,7 +124,8 @@ export const AuditLogPdfTemplate = forwardRef(function AuditLogPdfTemplate(
             Report #: {reportNumber || "—"}
           </p>
           <p style={{ margin: 0, fontSize: "12px", color: "#374151" }}>
-            Generated: {new Date(generatedAt).toLocaleString("en-LK", {
+            Generated:{" "}
+            {new Date(generatedAt).toLocaleString("en-LK", {
               year: "numeric",
               month: "long",
               day: "2-digit",
@@ -141,44 +142,6 @@ export const AuditLogPdfTemplate = forwardRef(function AuditLogPdfTemplate(
           <div style={summaryCardStyle}>
             <div style={labelStyle}>Date Filter</div>
             <div style={valueStyle}>{filterDateLabel}</div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Transaction Filter</div>
-            <div style={{ ...valueStyle, fontSize: "13px" }}>
-              {transactionFilterLabel}
-            </div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Total Records</div>
-            <div style={valueStyle}>{totalRecords}</div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Collections Impacted</div>
-            <div style={{ ...valueStyle, fontSize: "13px" }}>
-              {collectionsImpacted.length
-                ? collectionsImpacted.join(", ")
-                : "—"}
-            </div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Users Involved</div>
-            <div style={{ ...valueStyle, fontSize: "13px" }}>
-              {uniqueUsers.length ? uniqueUsers.join(", ") : "—"}
-            </div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Action Breakdown</div>
-            <div style={{ ...valueStyle, fontSize: "12px", lineHeight: 1.4 }}>
-              {actionSummary.length ? actionSummary.join(" | ") : "—"}
-            </div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Total Field Changes</div>
-            <div style={valueStyle}>{totalFieldChanges}</div>
-          </div>
-          <div style={summaryCardStyle}>
-            <div style={labelStyle}>Avg. Fields / Record</div>
-            <div style={valueStyle}>{averageFieldChanges}</div>
           </div>
           <div style={summaryCardStyle}>
             <div style={labelStyle}>Latest Activity</div>
@@ -225,9 +188,7 @@ export const AuditLogPdfTemplate = forwardRef(function AuditLogPdfTemplate(
                     <div style={{ fontSize: "12px", color: "#4b5563" }}>
                       {log.timestamp}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#111827" }}>
-                      Collection: <strong>{log.collection}</strong>
-                    </div>
+                    {/* Collection attribute removed */}
                     <div style={{ fontSize: "12px", color: "#4b5563" }}>
                       Transaction ID: <code>{log.transactionId}</code>
                     </div>
@@ -310,38 +271,67 @@ export const AuditLogPdfTemplate = forwardRef(function AuditLogPdfTemplate(
                         </tr>
                       </thead>
                       <tbody>
-                        {log.changes.map((change) => (
-                          <tr key={change.label}>
-                            <td
-                              style={{
-                                padding: "8px 10px",
-                                borderBottom: "1px solid #e5e7eb",
-                                fontWeight: 600,
-                                color: "#047857",
-                              }}
-                            >
-                              {change.label}
-                            </td>
-                            <td
-                              style={{
-                                padding: "8px 10px",
-                                borderBottom: "1px solid #e5e7eb",
-                                color: "#b45309",
-                              }}
-                            >
-                              {change.previous}
-                            </td>
-                            <td
-                              style={{
-                                padding: "8px 10px",
-                                borderBottom: "1px solid #e5e7eb",
-                                color: "#047857",
-                              }}
-                            >
-                              {change.next}
-                            </td>
-                          </tr>
-                        ))}
+                        {log.changes.map((change) => {
+                          // Helper to wrap long text into lines of max N chars
+                          const wrapText = (text, maxLen = 40) => {
+                            if (!text || typeof text !== "string") return text;
+                            const lines = [];
+                            let str = text;
+                            while (str.length > maxLen) {
+                              let idx = str.lastIndexOf(" ", maxLen);
+                              if (idx === -1) idx = maxLen;
+                              lines.push(str.slice(0, idx));
+                              str = str.slice(idx).trim();
+                            }
+                            if (str.length) lines.push(str);
+                            return lines;
+                          };
+
+                          const isDescription =
+                            change.label.toLowerCase() === "description";
+                          return (
+                            <tr key={change.label}>
+                              <td
+                                style={{
+                                  padding: "8px 10px",
+                                  borderBottom: "1px solid #e5e7eb",
+                                  fontWeight: 600,
+                                  color: "#047857",
+                                }}
+                              >
+                                {change.label}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "8px 10px",
+                                  borderBottom: "1px solid #e5e7eb",
+                                  color: "#b45309",
+                                }}
+                              >
+                                {isDescription &&
+                                typeof change.previous === "string"
+                                  ? wrapText(change.previous).map((line, i) => (
+                                      <div key={i}>{line}</div>
+                                    ))
+                                  : change.previous}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "8px 10px",
+                                  borderBottom: "1px solid #e5e7eb",
+                                  color: "#047857",
+                                }}
+                              >
+                                {isDescription &&
+                                typeof change.next === "string"
+                                  ? wrapText(change.next).map((line, i) => (
+                                      <div key={i}>{line}</div>
+                                    ))
+                                  : change.next}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   ) : (

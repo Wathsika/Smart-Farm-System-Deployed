@@ -144,7 +144,9 @@ export default function FinanceTransaction() {
 
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all"); // "INCOME" | "EXPENSE" | "all"
-  const [monthFilter, setMonthFilter] = useState("all");
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [allMonths, setAllMonths] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
@@ -207,10 +209,33 @@ export default function FinanceTransaction() {
     };
   }, [q, typeFilter, monthFilter]);
 
+  // Load all months once so the dropdown always shows the full list
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await api.get("/transactions");
+        const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const set = new Set(raw.map((r) => monthKey(r.date)));
+        if (currentMonth) set.add(currentMonth);
+        const monthsList = Array.from(set).filter(Boolean).sort().reverse();
+        if (!ignore) setAllMonths(monthsList);
+      } catch {
+        // ignore months prefetch error; dropdown will fallback to current filtered list
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [currentMonth]);
+
   const months = useMemo(() => {
+    if (allMonths.length) return ["all", ...allMonths];
+    // Fallback to what we have in current transactions (e.g., if prefetch failed)
     const set = new Set(transactions.map((r) => monthKey(r.date)));
+    if (currentMonth) set.add(currentMonth);
     return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
-  }, [transactions]);
+  }, [allMonths, transactions, currentMonth]);
 
   const filtered = transactions;
 
@@ -250,11 +275,13 @@ export default function FinanceTransaction() {
       const signedAmount =
         txn.type === "EXPENSE" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
+      // Use transaction_id if available, else fallback to a readable string
+      let pdfTxnId = txn.transaction_id && String(txn.transaction_id).trim();
+      if (!pdfTxnId) {
+        pdfTxnId = `TXN-${index + 1}`;
+      }
       return {
-        id:
-          resolveRowId(txn) ||
-          txn.transaction_id ||
-          `txn-${index}-${shortDate(txn.date)}`,
+        id: pdfTxnId,
         date: shortDate(txn.date),
         type: txn.type || "—",
         category: txn.category || "—",
@@ -448,21 +475,6 @@ export default function FinanceTransaction() {
                     <option value="INCOME">💰 Income Only</option>
                     <option value="EXPENSE">💸 Expenses Only</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -477,25 +489,10 @@ export default function FinanceTransaction() {
                   >
                     {months.map((m) => (
                       <option key={m} value={m}>
-                        {m === "all" ? "📅 All Months" : `📅 ${m}`}
+                        {`📅 ${formatMonthLabel(m)}`}
                       </option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
                 </div>
               </div>
             </div>
@@ -679,7 +676,9 @@ export default function FinanceTransaction() {
                             {r.category || "—"}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {r.description || "—"}
+                            <span className="break-words whitespace-pre-line">
+                              {r.description || "—"}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {currency(r.amount)}
