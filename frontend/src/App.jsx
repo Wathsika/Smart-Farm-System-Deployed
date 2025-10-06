@@ -89,11 +89,10 @@ const CustomersPage = () => (
 const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
 
-const AdminOnly = ({ children }) =>
-  auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
-
-const EmployeeOnly = ({ children }) =>
-  auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
+const AdminOrEmployee = ({ children }) =>
+  auth.user?.role === "Admin" || auth.user?.role === "Employee"
+    ? children
+    : <Navigate to="/" replace />;
 
 export default function App() {
   return (
@@ -142,9 +141,9 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <EmployeeOnly>
+          <AdminOrEmployee>
             <EmployeeDashboard />
-          </EmployeeOnly>
+          </AdminOrEmployee>
         }
       />
 
@@ -152,7 +151,7 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <AdminOnly>
+          <AdminOrEmployee>
             <Suspense
               fallback={
                 <div className="w-full h-screen flex items-center justify-center text-lg">
@@ -162,7 +161,7 @@ export default function App() {
             >
               <AdminLayout />
             </Suspense>
-          </AdminOnly>
+          </AdminOrEmployee>
         }
       >
         <Route index element={<MainDashboard />} />
