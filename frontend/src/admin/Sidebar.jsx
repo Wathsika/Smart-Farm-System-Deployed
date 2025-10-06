@@ -114,12 +114,13 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      navigate("/admin");
-    } else if (isEmployee) {
-      navigate("/dashboard");
+    if (
+      isEmployee &&
+      (location.pathname === "/admin" || location.pathname === "/admin/")
+    ) {
+      navigate("/admin/employee-dashboard", { replace: true });
     }
-  }, [isAdmin, isEmployee, navigate]);
+  }, [isEmployee, location.pathname, navigate]);
 
   return (
     <div className="flex flex-col w-full h-full p-4">
@@ -149,7 +150,7 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
         {isEmployee && (
           <>
             <SidebarLink
-              to="/dashboard"
+              to="/admin/employee-dashboard"
               icon="fas fa-briefcase"
               onNavigate={onNavigate}
             >
