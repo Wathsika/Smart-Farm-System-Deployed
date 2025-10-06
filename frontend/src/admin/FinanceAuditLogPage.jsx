@@ -499,6 +499,7 @@ export default function AuditLogPage() {
               <input
                 type="date"
                 value={filters.date}
+                max={todayISO} // Restrict to current date or earlier
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, date: e.target.value }))
                 }
