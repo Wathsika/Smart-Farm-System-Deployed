@@ -183,10 +183,8 @@ export default function LoginPage() {
       login({ token: data.token, user: data.user });
       const userRole = data?.user?.role;
 
-      if (userRole === "Admin") {
+      if (userRole === "Admin" || userRole === "Employee") {
         navigate("/admin", { replace: true });
-      } else if (userRole === "Employee") {
-        navigate("/dashboard", { replace: true });
       } else {
         navigate("/", { replace: true });
       }
