@@ -11,6 +11,7 @@ import morgan from "morgan";
 // --- DB & Error Middleware ---
 import { connectDB } from "./config/db.js";
 import { notFound, errorHandler } from "./middlewares/error.js";
+import { requireRole } from "./middlewares/auth.js";
 
 // --- Controllers ---
 import { stripeWebhookHandler } from "./controllers/order.controller.js";
@@ -48,11 +49,8 @@ import auditRoutes from "./routes/audit.routes.js";
 
 import reportRoutes from "./routes/report.routes.js";
 
-
 import chatRoutes from "./routes/chat.routes.js";
-import contactRoutes from './routes/contact.routes.js';
-
-
+import contactRoutes from "./routes/contact.routes.js";
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -148,13 +146,13 @@ app.use("/api/tasks", taskRoutes);
 // Health check
 
 app.use("/api/performance", performanceRoutes);
-
-app.use("/api/transactions", transactionRoutes);
-app.use("/api", payrollSettingsRoutes);
 app.use("/employees", employeeRoutes);
-app.use("/payrolls", payrollRoutes);
-app.use("/api/payrolls", payrollRoutes);
-app.use("/api/audit", auditRoutes);
+
+app.use("/api/transactions", requireRole("Admin"), transactionRoutes);
+app.use("/api", requireRole("Admin"), payrollSettingsRoutes);
+app.use("/api/payrolls", requireRole("Admin"), payrollRoutes);
+app.use("/api/payrolls", requireRole("Admin"), payrollRoutes);
+app.use("/api/audit", requireRole("Admin"), auditRoutes);
 
 // Smart farm modules
 app.use("/api/crops", cropRoutes);
@@ -163,11 +161,10 @@ app.use("/api/inputs", inputRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/applications", applicationRoutes);
 
-
 // ✅ Chatbot API
 app.use("/api/chat", chatRoutes);
 
-app.use('/api/contact', contactRoutes);
+app.use("/api/contact", contactRoutes);
 
 // --- Health Check ---
 app.get("/", (_req, res) =>
@@ -181,4 +178,3 @@ app.use(errorHandler);
 // --- Start Server ---
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => console.log(`✅ API running on port :${PORT}`));
-
