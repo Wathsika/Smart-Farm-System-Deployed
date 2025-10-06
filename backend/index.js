@@ -11,6 +11,7 @@ import morgan from "morgan";
 // --- DB & Error Middleware ---
 import { connectDB } from "./config/db.js";
 import { notFound, errorHandler } from "./middlewares/error.js";
+import { auth } from "./middlewares/auth.js";
 import { requireRole } from "./middlewares/auth.js";
 
 // --- Controllers ---
@@ -123,43 +124,59 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- API Routes ---
 app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/reports", reportRoutes);
 
-app.use("/api/admin", adminRoutes);
+app.use("/api/products", auth, requireRole("Admin", "Employee"), productRoutes);
+app.use("/api/orders", auth, requireRole("Admin", "Employee"), orderRoutes);
+app.use("/api/reports", auth, requireRole("Admin", "Employee"), reportRoutes);
 
-app.use("/api/cows", cowRoutes);
-app.use("/api/milk", milkRoutes);
-app.use("/api/health", healthRoutes);
-app.use("/api/breeding", breedingRoutes);
+app.use("/api/admin", auth, requireRole("Admin", "Employee"), adminRoutes);
 
-app.use("/api/discounts", discountRoutes);
+app.use("/api/cows", auth, requireRole("Admin", "Employee"), cowRoutes);
+app.use("/api/milk", auth, requireRole("Admin", "Employee"), milkRoutes);
+app.use("/api/health", auth, requireRole("Admin", "Employee"), healthRoutes);
+app.use(
+  "/api/breeding",
+  auth,
+  requireRole("Admin", "Employee"),
+  breedingRoutes
+);
 
-app.use("/api/admin/users", staffOwnerRoutes); // cleaner
-app.use("/api/employees", employeeRoutes);
+app.use(
+  "/api/discounts",
+  auth,
+  requireRole("Admin", "Employee"),
+  discountRoutes
+);
 
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/leave-requests", leaveRequestRoutes);
-app.use("/api/tasks", taskRoutes);
+app.use("/api/admin/users", auth, requireRole("Admin"), staffOwnerRoutes); // cleaner
+app.use("/api/employees", auth, requireRole("Employee"), employeeRoutes);
+
+app.use("/api/attendance", auth, requireRole("Admin"), attendanceRoutes);
+app.use("/api/leave-requests", auth, requireRole("Admin"), leaveRequestRoutes);
+app.use("/api/tasks", auth, requireRole("Admin"), taskRoutes);
 
 // Health check
 
 app.use("/api/performance", performanceRoutes);
 app.use("/employees", employeeRoutes);
 
-app.use("/api/transactions", requireRole("Admin"), transactionRoutes);
-app.use("/api", requireRole("Admin"), payrollSettingsRoutes);
-app.use("/api/payrolls", requireRole("Admin"), payrollRoutes);
-app.use("/api/payrolls", requireRole("Admin"), payrollRoutes);
-app.use("/api/audit", requireRole("Admin"), auditRoutes);
+app.use("/api/transactions", auth, requireRole("Admin"), transactionRoutes);
+app.use("/api", auth, requireRole("Admin"), payrollSettingsRoutes);
+app.use("/api/payrolls", auth, requireRole("Admin"), payrollRoutes);
+app.use("/api/payrolls", auth, requireRole("Admin"), payrollRoutes);
+app.use("/api/audit", auth, requireRole("Admin"), auditRoutes);
 
 // Smart farm modules
-app.use("/api/crops", cropRoutes);
-app.use("/api/fields", fieldRoutes);
-app.use("/api/inputs", inputRoutes);
-app.use("/api/plans", planRoutes);
-app.use("/api/applications", applicationRoutes);
+app.use("/api/crops", auth, requireRole("Admin", "Employee"), cropRoutes);
+app.use("/api/fields", auth, requireRole("Admin", "Employee"), fieldRoutes);
+app.use("/api/inputs", auth, requireRole("Admin", "Employee"), inputRoutes);
+app.use("/api/plans", auth, requireRole("Admin", "Employee"), planRoutes);
+app.use(
+  "/api/applications",
+  auth,
+  requireRole("Admin", "Employee"),
+  applicationRoutes
+);
 
 // ✅ Chatbot API
 app.use("/api/chat", chatRoutes);
