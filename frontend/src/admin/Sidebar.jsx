@@ -129,6 +129,13 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
         >
           Dashboard
         </SidebarLink>
+        <SidebarLink
+          to="/dashboard"
+          icon="fas fa-briefcase"
+          onNavigate={onNavigate}
+        >
+          Employee Dashboard
+        </SidebarLink>
 
         {/* Farm */}
         <SectionLabel>Farm</SectionLabel>
