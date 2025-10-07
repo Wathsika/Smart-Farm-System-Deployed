@@ -151,9 +151,19 @@ app.use(
 app.use("/api/admin/users", auth, requireRole("Admin"), staffOwnerRoutes); // cleaner
 app.use("/api/employees", auth, requireRole("Employee"), employeeRoutes);
 
-app.use("/api/attendance", auth, requireRole("Admin"), attendanceRoutes);
-app.use("/api/leave-requests", auth, requireRole("Admin"), leaveRequestRoutes);
-app.use("/api/tasks", auth, requireRole("Admin"), taskRoutes);
+app.use(
+  "/api/attendance",
+  auth,
+  requireRole("Admin", "Employee"),
+  attendanceRoutes
+);
+app.use(
+  "/api/leave-requests",
+  auth,
+  requireRole("Admin", "Employee"),
+  leaveRequestRoutes
+);
+app.use("/api/tasks", auth, requireRole("Admin", "Employee"), taskRoutes);
 
 // Health check
 
