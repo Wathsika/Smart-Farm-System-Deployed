@@ -3,10 +3,28 @@ import Cow from "../models/cow.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import QRCode from "qrcode";
 
+function resolveFrontendBase() {
+  const candidates = [
+    process.env.FRONTEND_URL,
+    process.env.CLIENT_URL,
+    process.env.PUBLIC_FRONTEND_URL,
+  ];
+
+  for (const raw of candidates) {
+    if (typeof raw === "string" && raw.trim()) {
+      return raw.trim().replace(/\/$/, "");
+    }
+  }
+
+  return null;
+}
+
 // helper: generate QR as buffer + upload
 async function generateCowQR(cow) {
-  const profileUrl = `${process.env.FRONTEND_URL}/admin/livestock/${cow._id}`;
-  const qrBuffer = await QRCode.toBuffer(profileUrl, { type: "png" });
+   // Ensure the QR links to the dedicated public cow page
+  const frontendBase = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
+  const profileUrl = `${frontendBase || ""}/cow/${cow._id}`;
+
   const qrUrl = await uploadToCloudinary(qrBuffer, "smart_farm_qr");
   return qrUrl;
 }

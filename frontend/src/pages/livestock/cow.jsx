@@ -10,7 +10,6 @@ import {
 import { api } from "../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
-import QRCode from "qrcode";
 
 /*  UI bits  */
 const StatusPill = ({ children, tone = "active" }) => (
@@ -24,11 +23,6 @@ const StatusPill = ({ children, tone = "active" }) => (
     {children}
   </span>
 );
-
-async function dataUrlToBlob(dataUrl) {
-  const res = await fetch(dataUrl);
-  return await res.blob();
-}
 
 /*  date helpers  */
 const calculateAge = (dob) => {
@@ -337,42 +331,28 @@ export default function CowProfilePage() {
     if (values.photoFile) payload.append("photo", values.photoFile);
     return payload;
   };
-
+  
   async function submitAdd(values) {
-  setSaving(true);
-  setError("");
-  try {
-    // 1) create cow
-    const payload = buildCowPayload(values);
-    const { data: created } = await api.post("/cows", payload, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+   setSaving(true);
+    setError("");
+    try {
+      // 1) create cow (backend also generates the QR)
+      const payload = buildCowPayload(values);
+      const { data: created } = await api.post("/cows", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    // 2) generate QR for the cow profile URL
-    const cowUrl = `${window.location.origin}/admin/livestock/${created._id}`;
-    const qrDataUrl = await QRCode.toDataURL(cowUrl, { margin: 1, width: 400 });
-
-    // 3) convert to blob and upload to backend
-    const qrBlob = await dataUrlToBlob(qrDataUrl);
-    const qrForm = new FormData();
-    qrForm.append("qr", qrBlob, `cow-${created._id}-qr.png`);
-
-    await api.post(`/cows/${created._id}/qr`, qrForm, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    // 4) re-fetch updated cow
-    const { data: fresh } = await api.get(`/cows/${created._id}`);
-
-    setCows((prev) => sortByCowIdAsc([fresh, ...prev]));
-    setAddOpen(false);
-  } catch (err) {
-    setError(err.message || "Could not add the new cow.");
-    console.error("Failed to add cow:", err);
-  } finally {
-    setSaving(false);
+      // 2) update local list with server response
+      setCows((prev) => sortByCowIdAsc([created, ...prev]));
+      setAddOpen(false);
+    } catch (err) {
+      setError(err.message || "Could not add the new cow.");
+      console.error("Failed to add cow:", err);
+    } finally {
+      setSaving(false);
+    }
   }
-}
+
 
   /* ---------- delete ---------- */
   async function deleteCow(id) {

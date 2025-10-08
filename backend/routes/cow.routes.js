@@ -5,7 +5,7 @@ import {
   getCow,
   updateCow,
   deleteCow,
-  regenerateCowQR,   // 👈 missing import ekata denna one
+  regenerateCowQR,   
 } from '../controllers/cow.controller.js';
 import { upload } from '../middlewares/upload.js';
 
