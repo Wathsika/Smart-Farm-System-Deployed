@@ -943,7 +943,9 @@ export default function TaskManagement() {
       doc.setTextColor(50, 50, 50); // Darker gray for details
       doc.setFont('helvetica', 'normal');
       doc.text("10/F, Ginimellagaha, Baddegama, Sri Lanka", 14, 27);
+
       doc.text("contact@greenleaffarm.com | +94 91 227 6246", 14, 32);
+
 
       // --- Header (Top Right - Report Title & Generated Date/Time) ---
       doc.setFontSize(18);

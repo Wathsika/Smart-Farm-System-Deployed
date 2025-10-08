@@ -61,6 +61,7 @@ import FinanceAuditLogPage from "./admin/FinanceAuditLogPage";
 
 // Livestock management pages
 import CowProfilePage from "./pages/livestock/cow.jsx";
+import CowDetailsPage from "./pages/livestock/CowDetailsPage.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
 import BreedingPage from "./pages/livestock/Breeding.jsx";
@@ -89,11 +90,10 @@ const CustomersPage = () => (
 const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
 
-const AdminOnly = ({ children }) =>
-  auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
-
-const EmployeeOnly = ({ children }) =>
-  auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
+const AdminOrEmployee = ({ children }) =>
+  auth.user?.role === "Admin" || auth.user?.role === "Employee"
+    ? children
+    : <Navigate to="/" replace />;
 
 export default function App() {
   return (
@@ -142,9 +142,9 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <EmployeeOnly>
+          <AdminOrEmployee>
             <EmployeeDashboard />
-          </EmployeeOnly>
+          </AdminOrEmployee>
         }
       />
 
@@ -152,7 +152,7 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <AdminOnly>
+          <AdminOrEmployee>
             <Suspense
               fallback={
                 <div className="w-full h-screen flex items-center justify-center text-lg">
@@ -162,13 +162,14 @@ export default function App() {
             >
               <AdminLayout />
             </Suspense>
-          </AdminOnly>
+          </AdminOrEmployee>
         }
       >
         <Route index element={<MainDashboard />} />
 
         <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
+        <Route path="livestock/:id" element={<CowDetailsPage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
         <Route path="livestock/breeding" element={<BreedingPage />} />

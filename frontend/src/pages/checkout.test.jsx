@@ -37,7 +37,7 @@ test('user can proceed to checkout', async () => {
   await userEvent.type(screen.getByLabelText(/Email Address/i), 'a@test.com');
   await userEvent.type(screen.getByLabelText(/Street Address/i), 'Street');
   await userEvent.type(screen.getByLabelText(/City/i), 'Town');
-  await userEvent.type(screen.getByLabelText(/Postal Code/i), '12345');
+  await userEvent.type(screen.getByLabelText(/Postal Code/i), '80250');
 
   await userEvent.click(screen.getByText(/Proceed to Payment/i));
 
