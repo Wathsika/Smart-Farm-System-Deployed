@@ -226,7 +226,31 @@ const AddCrop = () => {
                           id="cropName"
                           name="cropName"
                           value={formData.cropName}
-                          onChange={handleChange}
+                          onChange={(e) => {
+                            const sanitized = e.target.value.replace(/[^A-Za-z0-9\s]/g, '');
+                            handleChange({ target: { name: 'cropName', value: sanitized } });
+                          }}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key.length === 1 &&
+                              /[^A-Za-z0-9\s]/.test(e.key) &&
+                              !e.ctrlKey && !e.metaKey && !e.altKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                            const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                            if (sanitized !== text) {
+                              e.preventDefault();
+                              const target = e.target;
+                              const start = target.selectionStart ?? 0;
+                              const end = target.selectionEnd ?? 0;
+                              const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                              handleChange({ target: { name: 'cropName', value: next } });
+                            }
+                          }}
                           onBlur={() => runValidation()}
                           className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm text-lg font-medium ${
                             errors['cropName'] ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'

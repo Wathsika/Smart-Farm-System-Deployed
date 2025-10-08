@@ -278,10 +278,34 @@ const EditCrop = () => {
                 <div className="relative">
                   <input
                     type="text"
+                    id="cropName"
                     name="cropName"
                     value={formData.cropName}
-                    onChange={handleChange}
-                    onBlur={() => runValidation()}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^A-Za-z0-9\s]/g, '');
+                      handleChange({ target: { name: 'cropName', value: sanitized } });
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key.length === 1 &&
+                        /[^A-Za-z0-9\s]/.test(e.key) &&
+                        !e.ctrlKey && !e.metaKey && !e.altKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                      const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                      if (sanitized !== text) {
+                        e.preventDefault();
+                        const target = e.target;
+                        const start = target.selectionStart ?? 0;
+                        const end = target.selectionEnd ?? 0;
+                        const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                        handleChange({ target: { name: 'cropName', value: next } });
+                      }
+                    }}
                     placeholder="Enter the crop name"
                     className={`w-full px-5 py-4 bg-slate-50 border-2 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 focus:bg-white hover:bg-white text-slate-900 placeholder-slate-400 ${
                       errors['cropName'] ? 'border-red-300 bg-red-50 focus:ring-red-100 focus:border-red-400' : 'border-slate-200'
@@ -335,7 +359,7 @@ const EditCrop = () => {
                       value={formData.expectedHarvestDate}
                       onChange={handleChange}
                       onBlur={() => runValidation()}
-                      min={formData.plantingDate || todayISO()} // Ensures calendar allows selection from today or planting date
+                      min={todayISO()} // Only allow today and future dates (no past dates)
                       className={`w-full pl-12 pr-5 py-4 bg-slate-50 border-2 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 focus:bg-white hover:bg-white text-slate-900 ${
                         errors['expectedHarvestDate'] ? 'border-red-300 bg-red-50 focus:ring-red-100 focus:border-red-400' : 'border-slate-200'
                       }`}

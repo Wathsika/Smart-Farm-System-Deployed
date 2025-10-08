@@ -300,7 +300,31 @@ const AddFieldPage = () => {
                     type="text"
                     name="fieldName"
                     value={formData.fieldName}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^A-Za-z0-9\s]/g, '');
+                      handleChange({ target: { name: 'fieldName', value: sanitized } });
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key.length === 1 &&
+                        /[^A-Za-z0-9\s]/.test(e.key) &&
+                        !e.ctrlKey && !e.metaKey && !e.altKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                      const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                      if (sanitized !== text) {
+                        e.preventDefault();
+                        const target = e.target;
+                        const start = target.selectionStart ?? 0;
+                        const end = target.selectionEnd ?? 0;
+                        const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                        handleChange({ target: { name: 'fieldName', value: next } });
+                      }
+                    }}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
                       errors['fieldName']
@@ -339,7 +363,31 @@ const AddFieldPage = () => {
                     type="text"
                     name="fieldCode"
                     value={formData.fieldCode}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^A-Za-z0-9\s]/g, '');
+                      handleChange({ target: { name: 'fieldCode', value: sanitized } });
+                    }}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key.length === 1 &&
+                        /[^A-Za-z0-9\s]/.test(e.key) &&
+                        !e.ctrlKey && !e.metaKey && !e.altKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                      const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                      if (sanitized !== text) {
+                        e.preventDefault();
+                        const target = e.target;
+                        const start = target.selectionStart ?? 0;
+                        const end = target.selectionEnd ?? 0;
+                        const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                        handleChange({ target: { name: 'fieldCode', value: next } });
+                      }
+                    }}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
                       errors['fieldCode']
