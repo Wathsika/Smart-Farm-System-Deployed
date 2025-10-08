@@ -147,7 +147,10 @@ export default function LeaveManagement() {
   const [users, setUsers] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+  const sanitizeSearch = useCallback(
+    (v) => v.replace(/[^a-zA-Z0-9@,\.\s]/g, ""), // allow letters, numbers, space, @ , .
+  []);
   const [filters, setFilters] = useState({
     userId: "all",
     status: "all",
@@ -349,7 +352,7 @@ export default function LeaveManagement() {
                   type="text"
                   placeholder="Search by employee, type, reason..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(sanitizeSearch(e.target.value))}
                   className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
