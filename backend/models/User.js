@@ -40,6 +40,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: "Customer",
     },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
     empId: {
       type: String,
       unique: true,

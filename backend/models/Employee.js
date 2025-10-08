@@ -19,6 +19,36 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    nationalId: {
+      type: String,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+    },
+    dateOfBirth: {
+      type: Date,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+    },
+    department: {
+      type: String,
+      trim: true,
+    },
+    startDate: {
+      type: Date,
+    },
+    employmentType: {
+      type: String,
+      enum: ["Permanent", "Contract", "Intern"],
+    },
     basicSalary: {
       type: Number,
       default: 0,
@@ -46,6 +76,18 @@ const employeeSchema = new mongoose.Schema(
       default: 0,
 
       min: 0,
+    },
+    bankName: {
+      type: String,
+      trim: true,
+    },
+    bankAccountNumber: {
+      type: String,
+      trim: true,
+    },
+    contactPhoneNumber: {
+      type: String,
+      trim: true,
     },
   },
   { timestamps: true }
