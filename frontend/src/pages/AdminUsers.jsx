@@ -61,7 +61,7 @@ const createInitialFormState = () => ({
 const NAME_REGEX = /^[a-zA-Z\s-]+$/;
 const DEPARTMENT_REGEX = /^[a-zA-Z&\s-]+$/;
 const PHONE_REGEX = /^\+?\d{9,15}$/;
-const NATIONAL_ID_REGEX = /^[A-Z0-9-]{5,20}$/;
+const NATIONAL_ID_REGEX = /^(?:\d{12}|\d{9}V)$/;
 const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
 const GENDERS = ["Male", "Female", "Other"];
 const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Intern"];
@@ -176,6 +176,7 @@ export default function AdminUsers() {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       emp.fullName?.toLowerCase().includes(q) ||
+      String(emp.empId ?? "").toLowerCase().includes(q) ||
       emp.email?.toLowerCase().includes(q) ||
       emp.jobTitle?.toLowerCase().includes(q);
     
@@ -259,7 +260,7 @@ export default function AdminUsers() {
       errors.nationalId = "National ID / Passport Number is required.";
       isValid = false;
     } else if (!NATIONAL_ID_REGEX.test(nationalIdValue)) {
-      errors.nationalId = "National ID / Passport must be 5-20 characters (letters, numbers, or hyphen).";
+      errors.nationalId = "National ID / Passport must be 12 digits or 9 digits followed by V.";
       isValid = false;
     }
 
@@ -621,19 +622,29 @@ export default function AdminUsers() {
     }
     else if (name === 'nationalId') {
         const upperValue = value.toUpperCase();
+        let digitsCount = 0;
+        let hasV = false;
+        let result = "";
 
-        // Keep only digits and enforce a maximum of 12 numeric characters
-        const digitsOnly = upperValue.replace(/[^0-9]/g, '').slice(0, 12);
+        for (const char of upperValue) {
+          if (/\d/.test(char)) {
+            if (!hasV && digitsCount < 12 && result.length < 12) {
+              result += char;
+              digitsCount += 1;
+            }
+          } else if (char === 'V') {
+            if (!hasV && result.length < 12 && digitsCount < 12) {
+              result += 'V';
+              hasV = true;
+            }
+          }
 
-        // Determine if the latest valid character is a trailing V (or v) after 12 digits
-        const sanitized = upperValue.replace(/[^0-9V]/g, '');
-        const lastChar = sanitized[sanitized.length - 1];
-
-        newValue = digitsOnly;
-
-        if (digitsOnly.length === 12 && lastChar === 'V') {
-            newValue += 'V';
+          if (result.length >= 12) {
+            break;
+          }
         }
+
+        newValue = result;
     }
     else if (['phoneNumber', 'contactPhoneNumber'].includes(name)) {
         let cleanedValue = value.replace(/[^0-9+]/g, '');
@@ -784,6 +795,7 @@ export default function AdminUsers() {
             <input
               id="nationalId"
               name="nationalId"
+              maxLength={12}
               value={form.nationalId}
               onChange={handleInputChange}
               className={`w-full p-4 bg-white border ${formValidationErrors.nationalId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 uppercase`}
@@ -1493,7 +1505,9 @@ export default function AdminUsers() {
                             >
                               {emp.fullName}
                             </button>
-                            {/* Removed ID line as per previous request */}
+                            {emp.empId && (
+                              <div className="text-xs text-gray-500">ID: {emp.empId}</div>
+                            )}
                           </div>
                         </div>
                       </td>
