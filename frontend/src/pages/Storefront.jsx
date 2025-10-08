@@ -200,7 +200,34 @@ export default function Storefront() {
               <p className="text-gray-600">Discover our premium collection of fresh, organic products</p>
             </div>
             <div className="relative w-full lg:w-96">
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search for products..." className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-200 focus:border-green-400 transition-all shadow-sm" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value.replace(/[^A-Za-z0-9\s]/g, ''))}
+                onKeyDown={(e) => {
+                  if (
+                    e.key.length === 1 &&
+                    /[^A-Za-z0-9\s]/.test(e.key) &&
+                    !e.ctrlKey && !e.metaKey && !e.altKey
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => {
+                  const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                  const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                  if (sanitized !== text) {
+                    e.preventDefault();
+                    const target = e.target;
+                    const start = target.selectionStart ?? 0;
+                    const end = target.selectionEnd ?? 0;
+                    const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                    setSearchQuery(next);
+                  }
+                }}
+                placeholder="Search for products..."
+                className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-200 focus:border-green-400 transition-all shadow-sm"
+              />
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
               {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"><i className="fas fa-times"></i></button>}
             </div>

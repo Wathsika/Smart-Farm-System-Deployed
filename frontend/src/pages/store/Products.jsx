@@ -427,7 +427,28 @@ export default function ProductsPage() {
                   type="text"
                   placeholder="Search products, categories, SKU..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value.replace(/[^A-Za-z0-9\s]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key.length === 1 &&
+                      /[^A-Za-z0-9\s]/.test(e.key) &&
+                      !e.ctrlKey && !e.metaKey && !e.altKey
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+                    const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                    if (sanitized !== text) {
+                      e.preventDefault();
+                      const target = e.target;
+                      const start = target.selectionStart ?? 0;
+                      const end = target.selectionEnd ?? 0;
+                      const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                      setSearchTerm(next);
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-transparent transition"
                 />
                 <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

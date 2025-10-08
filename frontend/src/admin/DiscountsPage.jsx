@@ -265,14 +265,35 @@ export default function AdminDiscountsPage() {
               <div className="relative flex-1 sm:w-72">
                 <Search
                   size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="text"
-                  placeholder="Search by name or code..."
+                  placeholder="Search discounts..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600"
+                  onChange={(e) => setSearchTerm(e.target.value.replace(/[^A-Za-z0-9\s]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key.length === 1 &&
+                      /[^A-Za-z0-9\s]/.test(e.key) &&
+                      !e.ctrlKey && !e.metaKey && !e.altKey
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+                    const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                    if (sanitized !== text) {
+                      e.preventDefault();
+                      const target = e.target;
+                      const start = target.selectionStart ?? 0;
+                      const end = target.selectionEnd ?? 0;
+                      const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                      setSearchTerm(next);
+                    }
+                  }}
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border"
                 />
               </div>
 
