@@ -7,7 +7,7 @@ import {
 const router = Router();
 
 // /api/payroll/settings
-router.get("/payroll/settings", getPayrollSettings);
-router.put("/payroll/settings", updatePayrollSettings);
+router.get("/settings", getPayrollSettings);
+router.put("/settings", updatePayrollSettings);
 
 export default router;

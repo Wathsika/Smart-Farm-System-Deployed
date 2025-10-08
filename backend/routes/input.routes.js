@@ -1,18 +1,21 @@
 // /backend/routes/input.routes.js
-import { Router } from 'express';
-import { create, list, one, update, remove } from '../controllers/input.controller.js';
-// The auth middlewares are kept imported but are commented out in the routes below.
-import { auth, isAdmin } from '../middlewares/auth.js';
+import { Router } from "express";
+import {
+  create,
+  list,
+  one,
+  update,
+  remove,
+} from "../controllers/input.controller.js";
 
 const router = Router();
 
 // --- Temporarily disabled auth middleware for development ---
-// TODO: Uncomment 'auth' and 'isAdmin' before final deployment.
-router.post('/', /* auth, isAdmin, */ create);
-router.get('/', /* auth, */ list);
-router.get('/:id', /* auth, */ one);
-router.put('/:id', /* auth, isAdmin, */ update);
-router.delete('/:id', /* auth, isAdmin, */ remove);
+router.post("/", create);
+router.get("/", list);
+router.get("/:id", one);
+router.put("/:id", update);
+router.delete("/:id", remove);
 // --- End of temporarily disabled section ---
 
 export default router;

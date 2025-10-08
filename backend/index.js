@@ -171,7 +171,7 @@ app.use("/api/performance", performanceRoutes);
 app.use("/employees", employeeRoutes);
 
 app.use("/api/transactions", auth, requireRole("Admin"), transactionRoutes);
-app.use("/api", auth, requireRole("Admin"), payrollSettingsRoutes);
+app.use("/api/payroll", auth, requireRole("Admin"), payrollSettingsRoutes);
 app.use("/api/payrolls", auth, requireRole("Admin"), payrollRoutes);
 app.use("/api/payrolls", auth, requireRole("Admin"), payrollRoutes);
 app.use("/api/audit", auth, requireRole("Admin"), auditRoutes);
