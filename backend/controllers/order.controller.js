@@ -3,10 +3,12 @@ import stripe from '../config/stripe.config.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Discount from '../models/Discount.js';
+import Transaction from '../models/Transaction.js';
 import orderEvents from '../events/orderEvents.js';
 import { generateInvoicePdf } from '../utils/invoice.js';
 import { sendOrderEmail } from '../utils/mailer.js';
 import { getStartOfDay } from '../utils/dateUtils.js';
+import { generateTransactionId } from '../utils/transactionId.js';
 
 // --- Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
@@ -355,6 +357,19 @@ const fulfillOrder = async (session) => {
 
     const createdOrder = await order.save();
 
+    try {
+      await Transaction.create({
+        type: 'INCOME',
+        transaction_id: generateTransactionId(),
+        amount: createdOrder.totalPrice,
+        date: createdOrder.paidAt ?? createdOrder.createdAt ?? new Date(),
+        category: 'Store Orders',
+        description: `Order ${createdOrder.orderNumber} payment received`,
+      });
+    } catch (error) {
+      console.error('Failed to log transaction for fulfilled order:', error);
+    }
+    
     try {
       const invoiceBuffer = await generateInvoicePdf(createdOrder);
       await sendOrderEmail(createdOrder, invoiceBuffer);
