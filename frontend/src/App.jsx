@@ -91,9 +91,11 @@ const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
 
 const AdminOrEmployee = ({ children }) =>
-  auth.user?.role === "Admin" || auth.user?.role === "Employee"
-    ? children
-    : <Navigate to="/" replace />;
+  auth.user?.role === "Admin" || auth.user?.role === "Employee" ? (
+    children
+  ) : (
+    <Navigate to="/" replace />
+  );
 
 export default function App() {
   return (
@@ -166,6 +168,7 @@ export default function App() {
         }
       >
         <Route index element={<MainDashboard />} />
+        <Route path="employee-dashboard" element={<EmployeeDashboard />} />
 
         <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
@@ -187,7 +190,6 @@ export default function App() {
         <Route path="crop/plan/new" element={<AddPlan />} />
 
         <Route path="crop/plan/edit/:id" element={<EditPlanPage />} />
-        
 
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />

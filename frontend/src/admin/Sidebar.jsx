@@ -40,9 +40,13 @@ const drawerVariants = {
   exit: { x: -320, opacity: 0, transition: { duration: 0.2 } },
 };
 
-
 const SidebarInner = ({ location, navigate, closeMobile }) => {
-  const { logout } = useAuth();
+  //role-base access
+  const { user, logout } = useAuth();
+
+  const role = user?.role;
+  const isAdmin = role === "Admin";
+  const isEmployee = role === "Employee";
 
   // Auto-open accordions based on current route
   const isOnStore = useMemo(
@@ -106,8 +110,17 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
   const handleLivestockClick = () => {
     setLivestockOpen((v) => !v);
     navigate("/admin/livestock");
-     closeMobile?.();
+    closeMobile?.();
   };
+
+  useEffect(() => {
+    if (
+      isEmployee &&
+      (location.pathname === "/admin" || location.pathname === "/admin/")
+    ) {
+      navigate("/admin/employee-dashboard", { replace: true });
+    }
+  }, [isEmployee, location.pathname, navigate]);
 
   return (
     <div className="flex flex-col w-full h-full p-4">
@@ -122,321 +135,345 @@ const SidebarInner = ({ location, navigate, closeMobile }) => {
       {/* Navigation */}
       <nav className="flex flex-1 flex-col space-y-1">
         <SectionLabel>Overview</SectionLabel>
-        <SidebarLink
-          to="/admin"
-          icon="fas fa-chart-pie"
-          onNavigate={onNavigate}
-        >
-          Dashboard
-        </SidebarLink>
-        <SidebarLink
-          to="/dashboard"
-          icon="fas fa-briefcase"
-          onNavigate={onNavigate}
-        >
-          Employee Dashboard
-        </SidebarLink>
+
+        {isAdmin && (
+          <>
+            <SidebarLink
+              to="/admin"
+              icon="fas fa-chart-pie"
+              onNavigate={onNavigate}
+            >
+              Dashboard
+            </SidebarLink>
+          </>
+        )}
+        {isEmployee && (
+          <>
+            <SidebarLink
+              to="/admin/employee-dashboard"
+              icon="fas fa-briefcase"
+              onNavigate={onNavigate}
+            >
+              Employee Dashboard
+            </SidebarLink>
+          </>
+        )}
 
         {/* Farm */}
         <SectionLabel>Farm</SectionLabel>
 
         {/* Livestock accordion */}
-        <button
-          onClick={handleLivestockClick}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-        >
-          <div className="flex items-center gap-3">
-            <i className="fas fa-cow w-5 text-center" />
-            <span>Livestock</span>
-          </div>
-          <motion.i
-            animate={{ rotate: isLivestockOpen ? 0 : -90 }}
-            className="fas fa-chevron-down text-xs"
-          />
-        </button>
-        <AnimatePresence>
-          {isLivestockOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
+        {(isAdmin || isEmployee) && (
+          <>
+            <button
+              onClick={handleLivestockClick}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
             >
-              <SidebarLink
-                to="/admin/livestock"
-                icon="fas fa-id-card"
-                onNavigate={onNavigate}
-              >
-                Cow Profile
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/livestock/milk"
-                icon="fas fa-tint"
-                onNavigate={onNavigate}
-              >
-                Milk Production
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/livestock/health"
-                icon="fas fa-heartbeat"
-                onNavigate={onNavigate}
-              >
-                Health Records
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/livestock/breeding"
-                icon="fas fa-venus-mars"
-                onNavigate={onNavigate}
-              >
-                Breeding Records
-              </SidebarLink>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex items-center gap-3">
+                <i className="fas fa-cow w-5 text-center" />
+                <span>Livestock</span>
+              </div>
+              <motion.i
+                animate={{ rotate: isLivestockOpen ? 0 : -90 }}
+                className="fas fa-chevron-down text-xs"
+              />
+            </button>
+            <AnimatePresence>
+              {isLivestockOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden pl-6 space-y-1"
+                >
+                  <SidebarLink
+                    to="/admin/livestock"
+                    icon="fas fa-id-card"
+                    onNavigate={onNavigate}
+                  >
+                    Cow Profile
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/livestock/milk"
+                    icon="fas fa-tint"
+                    onNavigate={onNavigate}
+                  >
+                    Milk Production
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/livestock/health"
+                    icon="fas fa-heartbeat"
+                    onNavigate={onNavigate}
+                  >
+                    Health Records
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/livestock/breeding"
+                    icon="fas fa-venus-mars"
+                    onNavigate={onNavigate}
+                  >
+                    Breeding Records
+                  </SidebarLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
 
         {/* Crop accordion */}
-        <button
-          type="button"
-          onClick={handleCropClick}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-        >
-          <div className="flex items-center gap-3">
-            <i className="fas fa-seedling w-5 text-center" />
-            <span>Crop</span>
-          </div>
-          <motion.i
-            animate={{ rotate: isCropOpen ? 0 : -90 }}
-            className="fas fa-chevron-down text-xs"
-          />
-        </button>
-        <AnimatePresence>
-          {isCropOpen && (
-
-<motion.div
-  initial={{ height: 0, opacity: 0 }}
-  animate={{ height: "auto", opacity: 1 }}
-  exit={{ height: 0, opacity: 0 }}
-  className="overflow-hidden pl-6 space-y-1"
->
-  <SidebarLink
-    to="/admin/crop"
-    icon="fas fa-tractor"
-    onNavigate={onNavigate}
-  >
-    Crop List
-  </SidebarLink>
-  <SidebarLink
-    to="/admin/fields"
-    icon="fas fa-map-marked-alt"
-    onNavigate={onNavigate}
-  >
-    Farm Fields
-  </SidebarLink>
-  <SidebarLink
-    to="/admin/crop/plans"
-    icon="fas fa-clipboard-list"
-    onNavigate={onNavigate}
-  >
-    Plans
-  </SidebarLink>
-  <SidebarLink
-    to="/admin/crop/inputs"
-    icon="fas fa-plus-circle"
-    onNavigate={onNavigate}
-  > 
- 
-    Inputs Inventory
-  </SidebarLink>
-</motion.div>    
-
-            
-
-          )}
-        </AnimatePresence>
-
-        {/* Staff accordion */}
-        <button
-          type="button"
-          onClick={() => setStaffOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-          aria-expanded={isStaffOpen}
-        >
-          <div className="flex items-center gap-3">
-            <i className="fas fa-users-cog w-5 text-center" />
-            <span>Staff</span>
-          </div>
-          <motion.i
-            animate={{ rotate: isStaffOpen ? 0 : -90 }}
-            className="fas fa-chevron-down text-xs"
-          />
-        </button>
-        <AnimatePresence>
-          {isStaffOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
+        {(isAdmin || isEmployee) && (
+          <>
+            <button
+              type="button"
+              onClick={handleCropClick}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
             >
-              <SidebarLink
-                to="/admin/users"
-                icon="fas fa-users"
-                onNavigate={onNavigate}
-              >
-                Manage Staff
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/tasks"
-                icon="fas fa-tasks"
-                onNavigate={onNavigate}
-              >
-                Task Management
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/attendance"
-                icon="fas fa-clock"
-                onNavigate={onNavigate}
-              >
-                Attendance
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/leave"
-                icon="fas fa-calendar-check"
-                onNavigate={onNavigate}
-              >
-                Leave Requests
-              </SidebarLink>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex items-center gap-3">
+                <i className="fas fa-seedling w-5 text-center" />
+                <span>Crop</span>
+              </div>
+              <motion.i
+                animate={{ rotate: isCropOpen ? 0 : -90 }}
+                className="fas fa-chevron-down text-xs"
+              />
+            </button>
+            <AnimatePresence>
+              {isCropOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden pl-6 space-y-1"
+                >
+                  <SidebarLink
+                    to="/admin/crop"
+                    icon="fas fa-tractor"
+                    onNavigate={onNavigate}
+                  >
+                    Crop List
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/fields"
+                    icon="fas fa-map-marked-alt"
+                    onNavigate={onNavigate}
+                  >
+                    Farm Fields
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/crop/plans"
+                    icon="fas fa-clipboard-list"
+                    onNavigate={onNavigate}
+                  >
+                    Plans
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/crop/inputs"
+                    icon="fas fa-plus-circle"
+                    onNavigate={onNavigate}
+                  >
+                    Inputs Inventory
+                  </SidebarLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
 
         {/* Store accordion */}
-        <button
-          type="button"
-          onClick={handleStoreClick}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-          aria-expanded={isStoreOpen}
-        >
-          <div className="flex items-center gap-3">
-            <i className="fas fa-store w-5 text-center" />
-            <span>Store</span>
-          </div>
-          <motion.i
-            animate={{ rotate: isStoreOpen ? 0 : -90 }}
-            className="fas fa-chevron-down text-xs"
-          />
-        </button>
-        <AnimatePresence initial={false}>
-          {isStoreOpen && (
-            <motion.div
-              key="store-sub"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
+        {(isAdmin || isEmployee) && (
+          <>
+            <button
+              type="button"
+              onClick={handleStoreClick}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              aria-expanded={isStoreOpen}
             >
-              <SidebarLink
-                to="/admin/store/dashboard"
-                icon="fas fa-tachometer-alt"
-                onNavigate={onNavigate}
-              >
-                Dashboard
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/store/products"
-                icon="fas fa-box"
-                onNavigate={onNavigate}
-              >
-                Products
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/store/orders"
-                icon="fas fa-shopping-cart"
-                onNavigate={onNavigate}
-              >
-                Orders
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/store/discounts"
-                icon="fas fa-tags"
-                onNavigate={onNavigate}
-              >
-                Discounts
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/store/reports"
-                icon="fas fa-chart-bar"
-                onNavigate={onNavigate}
-              >
-                Reports
-              </SidebarLink>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex items-center gap-3">
+                <i className="fas fa-store w-5 text-center" />
+                <span>Store</span>
+              </div>
+              <motion.i
+                animate={{ rotate: isStoreOpen ? 0 : -90 }}
+                className="fas fa-chevron-down text-xs"
+              />
+            </button>
+            <AnimatePresence initial={false}>
+              {isStoreOpen && (
+                <motion.div
+                  key="store-sub"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden pl-6 space-y-1"
+                >
+                  <SidebarLink
+                    to="/admin/store/dashboard"
+                    icon="fas fa-tachometer-alt"
+                    onNavigate={onNavigate}
+                  >
+                    Store Dashboard
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/store/products"
+                    icon="fas fa-box"
+                    onNavigate={onNavigate}
+                  >
+                    Products
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/store/orders"
+                    icon="fas fa-shopping-cart"
+                    onNavigate={onNavigate}
+                  >
+                    Orders
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/store/discounts"
+                    icon="fas fa-tags"
+                    onNavigate={onNavigate}
+                  >
+                    Discounts
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/store/reports"
+                    icon="fas fa-chart-bar"
+                    onNavigate={onNavigate}
+                  >
+                    Reports
+                  </SidebarLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        {/* Staff accordion */}
+        {isAdmin && (
+          <>
+            <button
+              type="button"
+              onClick={() => setStaffOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              aria-expanded={isStaffOpen}
+            >
+              <div className="flex items-center gap-3">
+                <i className="fas fa-users-cog w-5 text-center" />
+                <span>Staff</span>
+              </div>
+              <motion.i
+                animate={{ rotate: isStaffOpen ? 0 : -90 }}
+                className="fas fa-chevron-down text-xs"
+              />
+            </button>
+            <AnimatePresence>
+              {isStaffOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden pl-6 space-y-1"
+                >
+                  <SidebarLink
+                    to="/admin/users"
+                    icon="fas fa-users"
+                    onNavigate={onNavigate}
+                  >
+                    Manage Staff
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/tasks"
+                    icon="fas fa-tasks"
+                    onNavigate={onNavigate}
+                  >
+                    Task Management
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/attendance"
+                    icon="fas fa-clock"
+                    onNavigate={onNavigate}
+                  >
+                    Attendance
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/leave"
+                    icon="fas fa-calendar-check"
+                    onNavigate={onNavigate}
+                  >
+                    Leave Requests
+                  </SidebarLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
 
         {/* Finance accordion */}
-        <button
-          type="button"
-          onClick={() => setFinanceOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-          aria-expanded={isFinanceOpen}
-        >
-          <div className="flex items-center gap-3">
-            <i className="fas fa-coins w-5 text-center" />
-            <span>Finance</span>
-          </div>
-          <motion.i
-            animate={{ rotate: isFinanceOpen ? 0 : -90 }}
-            className="fas fa-chevron-down text-xs"
-          />
-        </button>
-        <AnimatePresence initial={false}>
-          {isFinanceOpen && (
-            <motion.div
-              key="finance-sub"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pl-6 space-y-1"
+        {isAdmin && (
+          <>
+            <button
+              type="button"
+              onClick={() => setFinanceOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              aria-expanded={isFinanceOpen}
             >
-              <SidebarLink
-                to="/admin/finance/overview"
-                icon="fas fa-chart-line"
-                onNavigate={onNavigate}
-              >
-                Overview
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/transaction"
-                icon="fas fa-receipt"
-                onNavigate={onNavigate}
-              >
-                Transactions
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/new_transaction"
-                icon="fas fa-plus-circle"
-                onNavigate={onNavigate}
-              >
-                Add New Transaction
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/payroll_management"
-                icon="fas fa-file-invoice-dollar"
-                onNavigate={onNavigate}
-              >
-                Payroll Management
-              </SidebarLink>
-              <SidebarLink
-                to="/admin/finance/audit_log"
-                icon="fas fa-file-invoice-dollar"
-                onNavigate={onNavigate}
-              >
-                Audit Log
-              </SidebarLink>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="flex items-center gap-3">
+                <i className="fas fa-coins w-5 text-center" />
+                <span>Finance</span>
+              </div>
+              <motion.i
+                animate={{ rotate: isFinanceOpen ? 0 : -90 }}
+                className="fas fa-chevron-down text-xs"
+              />
+            </button>
+            <AnimatePresence initial={false}>
+              {isFinanceOpen && (
+                <motion.div
+                  key="finance-sub"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden pl-6 space-y-1"
+                >
+                  <SidebarLink
+                    to="/admin/finance/overview"
+                    icon="fas fa-chart-line"
+                    onNavigate={onNavigate}
+                  >
+                    Overview
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/finance/transaction"
+                    icon="fas fa-receipt"
+                    onNavigate={onNavigate}
+                  >
+                    Transactions
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/finance/new_transaction"
+                    icon="fas fa-plus-circle"
+                    onNavigate={onNavigate}
+                  >
+                    Add New Transaction
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/finance/payroll_management"
+                    icon="fas fa-file-invoice-dollar"
+                    onNavigate={onNavigate}
+                  >
+                    Payroll Management
+                  </SidebarLink>
+                  <SidebarLink
+                    to="/admin/finance/audit_log"
+                    icon="fas fa-file-invoice-dollar"
+                    onNavigate={onNavigate}
+                  >
+                    Audit Log
+                  </SidebarLink>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </nav>
 
       {/* Logout */}
