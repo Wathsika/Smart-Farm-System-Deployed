@@ -1,5 +1,5 @@
 // src/pages/AdminUsers.jsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { 
   Edit, 
   Trash2, 
@@ -18,10 +18,54 @@ import {
   UserCheck, 
   Coffee, 
   AlertCircle,
-  Zap // Added for 'No Data' status fallback
+  Zap, // Added for 'No Data' status fallback
+  IdCard,
+  UserCircle,
+  Calendar,
+  CalendarDays,
+  MapPin,
+  Phone,
+  PhoneCall,
+  Building2,
+  Landmark,
+  Hash,
+  UserCog
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
+
+const createInitialFormState = () => ({
+  fullName: "",
+  email: "",
+  password: "",
+  role: "Employee",
+  jobTitle: "",
+  status: "active",
+  basicSalary: "",
+  workingHours: "",
+  allowance: "",
+  loan: "",
+  nationalId: "",
+  gender: "",
+  dateOfBirth: "",
+  address: "",
+  phoneNumber: "",
+  department: "",
+  startDate: "",
+  employmentType: "",
+  bankName: "",
+  bankAccountNumber: "",
+  contactPhoneNumber: "",
+});
+
+const NAME_REGEX = /^[a-zA-Z\s-]+$/;
+const DEPARTMENT_REGEX = /^[a-zA-Z&\s-]+$/;
+const PHONE_REGEX = /^\+?\d{9,15}$/;
+const NATIONAL_ID_REGEX = /^[A-Z0-9-]{5,20}$/;
+const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
+const GENDERS = ["Male", "Female", "Other"];
+const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Intern"];
+const MINIMUM_EMPLOYEE_AGE = 18;
 
 export default function AdminUsers() {
   const [employees, setEmployees] = useState([]);
@@ -35,24 +79,26 @@ export default function AdminUsers() {
 
   // form state
   const [showForm, setShowForm] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null); 
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    role: "Employee", // always employee
-    jobTitle: "",
-    status: "active",
-    basicSalary: "",
-    workingHours: "", // This is now for standard/expected working hours
-    allowance: "",
-    loan: "",
-  });
+  const [form, setForm] = useState(() => createInitialFormState());
   const [formError, setFormError] = useState(""); // General error for form submission
   // FIX: Changed from {} to useState({})
   const [formValidationErrors, setFormValidationErrors] = useState({}); // Specific validation errors for each field
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dateLimits = useMemo(() => {
+    const today = new Date();
+    const isoToday = today.toISOString().split("T")[0];
+    const maxDobDate = new Date(today);
+    maxDobDate.setFullYear(maxDobDate.getFullYear() - 18);
+    return {
+      today: isoToday,
+      maxDob: maxDobDate.toISOString().split("T")[0],
+    };
+  }, []);
 
   // delete confirm modal
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -147,29 +193,29 @@ export default function AdminUsers() {
     const errors = {};
     let isValid = true;
 
-    // Full Name Validation
-    if (!form.fullName.trim()) {
+    const trimmedFullName = form.fullName.trim();
+    if (!trimmedFullName) {
       errors.fullName = "Full Name is required.";
       isValid = false;
-    } else if (form.fullName.trim().length < 2) {
+    } else if (trimmedFullName.length < 2) {
       errors.fullName = "Full Name must be at least 2 characters.";
       isValid = false;
-    } else if (form.fullName.trim().length > 100) {
+    } else if (trimmedFullName.length > 100) {
       errors.fullName = "Full Name cannot exceed 100 characters.";
       isValid = false;
-    } else if (!/^[a-zA-Z\s-]+$/.test(form.fullName)) { // Allows letters, spaces, hyphens, NO PERIODS, NO NUMBERS
+    } else if (!NAME_REGEX.test(trimmedFullName)) {
       errors.fullName = "Full Name can only contain letters, spaces, and hyphens.";
       isValid = false;
     }
 
-    // Email Validation
-    if (!form.email.trim()) {
+    const emailValue = form.email.trim();
+    if (!emailValue) {
       errors.email = "Email Address is required.";
       isValid = false;
-    } else if (!/\S+@\S+\.\S/.test(form.email)) { // Basic regex for email format
+    } else if (!/^\S+@\S+\.\S+$/.test(emailValue)) {
       errors.email = "Please enter a valid email address.";
       isValid = false;
-    } else if (form.email.length > 255) {
+    } else if (emailValue.length > 255) {
       errors.email = "Email address cannot exceed 255 characters.";
       isValid = false;
     }
@@ -193,22 +239,131 @@ export default function AdminUsers() {
       // }
     }
 
-    // Job Title Validation (Optional, validate if present)
-    if (form.jobTitle.trim()) {
-      if (form.jobTitle.trim().length < 2) {
-        errors.jobTitle = "Job Title must be at least 2 characters.";
+    const jobTitleValue = form.jobTitle.trim();
+    if (!jobTitleValue) {
+      errors.jobTitle = "Job Title is required.";
+      isValid = false;
+    } else if (jobTitleValue.length < 2) {
+      errors.jobTitle = "Job Title must be at least 2 characters.";
+      isValid = false;
+    } else if (jobTitleValue.length > 100) {
+      errors.jobTitle = "Job Title cannot exceed 100 characters.";
+      isValid = false;
+    } else if (!NAME_REGEX.test(jobTitleValue)) {
+      errors.jobTitle = "Job Title can only contain letters, spaces, and hyphens.";
+      isValid = false;
+    }
+
+    const nationalIdValue = form.nationalId.trim().toUpperCase();
+    if (!nationalIdValue) {
+      errors.nationalId = "National ID / Passport Number is required.";
+      isValid = false;
+    } else if (!NATIONAL_ID_REGEX.test(nationalIdValue)) {
+      errors.nationalId = "National ID / Passport must be 5-20 characters (letters, numbers, or hyphen).";
+      isValid = false;
+    }
+
+    if (!GENDERS.includes(form.gender)) {
+      errors.gender = "Please select a gender.";
+      isValid = false;
+    }
+
+    if (!form.dateOfBirth) {
+      errors.dateOfBirth = "Date of Birth is required.";
+      isValid = false;
+    } else {
+      const dobDate = new Date(form.dateOfBirth);
+      if (Number.isNaN(dobDate.getTime())) {
+        errors.dateOfBirth = "Please enter a valid date of birth.";
         isValid = false;
-      } else if (form.jobTitle.trim().length > 100) {
-        errors.jobTitle = "Job Title cannot exceed 100 characters.";
-        isValid = false;
-      } else if (!/^[a-zA-Z\s-]+$/.test(form.jobTitle)) { // Allows letters, spaces, hyphens, NO PERIODS, NO NUMBERS
-        errors.jobTitle = "Job Title can only contain letters, spaces, and hyphens.";
-        isValid = false;
+      } else {
+        const today = new Date();
+        if (dobDate > today) {
+          errors.dateOfBirth = "Date of Birth cannot be in the future.";
+          isValid = false;
+        }
+        const age = today.getFullYear() - dobDate.getFullYear() - (today < new Date(today.getFullYear(), dobDate.getMonth(), dobDate.getDate()) ? 1 : 0);
+        if (age < MINIMUM_EMPLOYEE_AGE) {
+          errors.dateOfBirth = `Employee must be at least ${MINIMUM_EMPLOYEE_AGE} years old.`;
+          isValid = false;
+        }
       }
     }
 
-    // Basic Salary Validation (Optional, validate if present)
-    if (form.basicSalary !== "" && form.basicSalary !== null) { // Check if not empty string or null
+    const addressValue = form.address.trim();
+    if (!addressValue) {
+      errors.address = "Address is required.";
+      isValid = false;
+    } else if (addressValue.length < 10) {
+      errors.address = "Address must be at least 10 characters long.";
+      isValid = false;
+    } else if (addressValue.length > 250) {
+      errors.address = "Address cannot exceed 250 characters.";
+      isValid = false;
+    }
+
+    const phoneValue = form.phoneNumber.trim();
+    if (!phoneValue) {
+      errors.phoneNumber = "Phone Number is required.";
+      isValid = false;
+    } else if (!PHONE_REGEX.test(phoneValue)) {
+      errors.phoneNumber = "Phone Number must contain 9 to 15 digits and may start with +.";
+      isValid = false;
+    }
+
+    const contactPhoneValue = form.contactPhoneNumber.trim();
+    if (!contactPhoneValue) {
+      errors.contactPhoneNumber = "Contact Phone Number is required.";
+      isValid = false;
+    } else if (!PHONE_REGEX.test(contactPhoneValue)) {
+      errors.contactPhoneNumber = "Contact Phone Number must contain 9 to 15 digits and may start with +.";
+      isValid = false;
+    }
+
+    const departmentValue = form.department.trim();
+    if (!departmentValue) {
+      errors.department = "Department is required.";
+      isValid = false;
+    } else if (departmentValue.length < 2) {
+      errors.department = "Department must be at least 2 characters.";
+      isValid = false;
+    } else if (departmentValue.length > 100) {
+      errors.department = "Department cannot exceed 100 characters.";
+      isValid = false;
+    } else if (!DEPARTMENT_REGEX.test(departmentValue)) {
+      errors.department = "Department can only contain letters, spaces, ampersands, and hyphens.";
+      isValid = false;
+    }
+
+    if (!EMPLOYMENT_TYPES.includes(form.employmentType)) {
+      errors.employmentType = "Please select an employment type.";
+      isValid = false;
+    }
+
+    if (!form.startDate) {
+      errors.startDate = "Start Date is required.";
+      isValid = false;
+    } else {
+      const startDate = new Date(form.startDate);
+      if (Number.isNaN(startDate.getTime())) {
+        errors.startDate = "Please enter a valid start date.";
+        isValid = false;
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const normalizedStart = new Date(startDate);
+        normalizedStart.setHours(0, 0, 0, 0);
+        if (normalizedStart > today) {
+          errors.startDate = "Start Date cannot be in the future.";
+          isValid = false;
+        }
+      }
+    }
+
+    if (form.basicSalary === "" || form.basicSalary === null) {
+      errors.basicSalary = "Basic Salary is required.";
+      isValid = false;
+    } else {
       const salary = parseFloat(form.basicSalary);
       if (isNaN(salary)) {
         errors.basicSalary = "Basic Salary must be a number.";
@@ -216,10 +371,10 @@ export default function AdminUsers() {
       } else if (salary < 0) {
         errors.basicSalary = "Basic Salary cannot be negative.";
         isValid = false;
-      } else if (salary > 1000000) { // Max salary check (10 Lakhs)
-        errors.basicSalary = "Basic Salary cannot exceed Rs. 1,000,000."; 
+      } else if (salary > 1000000) {
+        errors.basicSalary = "Basic Salary cannot exceed Rs. 1,000,000.";
         isValid = false;
-      } else if (/\.\d{3,}/.test(form.basicSalary)) { // Check for more than 2 decimal places
+      } else if (/\.\d{3,}/.test(form.basicSalary)) {
         errors.basicSalary = "Basic Salary can have at most 2 decimal places.";
         isValid = false;
       }
@@ -279,6 +434,30 @@ export default function AdminUsers() {
       }
     }
 
+    const bankNameValue = form.bankName.trim();
+    if (!bankNameValue) {
+      errors.bankName = "Bank Name is required.";
+      isValid = false;
+    } else if (bankNameValue.length < 2) {
+      errors.bankName = "Bank Name must be at least 2 characters.";
+      isValid = false;
+    } else if (bankNameValue.length > 100) {
+      errors.bankName = "Bank Name cannot exceed 100 characters.";
+      isValid = false;
+    } else if (!DEPARTMENT_REGEX.test(bankNameValue)) {
+      errors.bankName = "Bank Name can only contain letters, spaces, ampersands, and hyphens.";
+      isValid = false;
+    }
+
+    const bankAccountValue = form.bankAccountNumber.trim();
+    if (!bankAccountValue) {
+      errors.bankAccountNumber = "Bank Account Number is required.";
+      isValid = false;
+    } else if (!BANK_ACCOUNT_REGEX.test(bankAccountValue)) {
+      errors.bankAccountNumber = "Bank Account Number must be 6 to 20 digits.";
+      isValid = false;
+    }
+
     // Status Validation (should always be valid due to select options, but a fallback check is good)
     if (!['active', 'inactive'].includes(form.status)) {
         errors.status = "Invalid status selected.";
@@ -304,16 +483,36 @@ export default function AdminUsers() {
 
     setIsSubmitting(true);
     try {
+      const basePayload = { ...form };
+      const fieldsToTrim = [
+        "fullName",
+        "email",
+        "jobTitle",
+        "nationalId",
+        "address",
+        "phoneNumber",
+        "department",
+        "employmentType",
+        "bankName",
+        "bankAccountNumber",
+        "contactPhoneNumber",
+      ];
+
+      fieldsToTrim.forEach((field) => {
+        if (typeof basePayload[field] === "string") {
+          basePayload[field] = basePayload[field].trim();
+        }
+      });
+
+      basePayload.nationalId = basePayload.nationalId.toUpperCase();
+      basePayload.role = "Employee";
+
       if (editingEmployee) {
-        const payload = { ...form };
+        const payload = { ...basePayload };
         if (!payload.password) delete payload.password; // Don't send empty password if not changed
-        // Ensure role is "Employee" (it's hardcoded anyway in form, but good for safety)
-        payload.role = "Employee"; 
         await api.patch(`/admin/users/${editingEmployee._id}`, payload);
       } else {
-        const payload = { ...form };
-        // Ensure role is "Employee" for new users
-        payload.role = "Employee";
+        const payload = { ...basePayload };
         await api.post("/admin/users", payload);
       }
       resetForm();
@@ -339,46 +538,76 @@ export default function AdminUsers() {
     }
   };
 
-  // edit employee
-  const editEmployee = (emp) => {
-    setEditingEmployee(emp);
-    setForm({
-      fullName: emp.fullName || "",
-      email: emp.email || "",
-      password: "", // Password is never pre-filled for security
-      role: "Employee",
-      jobTitle: emp.jobTitle || "",
-      status: emp.status || "active",
-      basicSalary: emp.basicSalary !== undefined && emp.basicSalary !== null ? emp.basicSalary.toString() : "", // Convert to string for input
-      workingHours: emp.workingHours !== undefined && emp.workingHours !== null ? emp.workingHours.toString() : "", // Convert to string for standard hours
-      allowance: emp.allowance !== undefined && emp.allowance !== null ? emp.allowance.toString() : "",
-      loan: emp.loan !== undefined && emp.loan !== null ? emp.loan.toString() : "",
-    });
-    setShowPassword(false);
+  const resetFormState = () => {
+    setForm(createInitialFormState());
     setFormError("");
-    setFormValidationErrors({}); // Clear errors when opening for edit
+    setFormValidationErrors({});
+    setShowPassword(false);
+  };
+
+  const resetForm = () => {
+    resetFormState();
+    setShowForm(false);
+    setShowDetailModal(false);
+    setEditingEmployee(null);
+    setSelectedEmployee(null);
+  };
+
+  const openAddForm = () => {
+    resetFormState();
+    setEditingEmployee(null);
+    setSelectedEmployee(null);
+    setShowDetailModal(false);
     setShowForm(true);
   };
 
-  // reset form
-  const resetForm = () => {
+  // edit employee
+  const editEmployee = (emp) => {
+    if (!emp) return;
+
+    const formatNumber = (value) =>
+      value !== undefined && value !== null && value !== ""
+        ? String(value)
+        : "";
+
+    const formatDate = (value) => {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toISOString().split("T")[0];
+    };
+
+    setEditingEmployee(emp);
+    setSelectedEmployee(emp);
+    setShowForm(false);
     setForm({
-      fullName: "",
-      email: "",
+      ...createInitialFormState(),
+      fullName: emp.fullName || "",
+      email: emp.email || "",
       password: "",
       role: "Employee",
-      jobTitle: "",
-      status: "active",
-      basicSalary: "",
-      workingHours: "",
-      allowance: "",
-      loan: "",
+      jobTitle: emp.jobTitle || "",
+      status: emp.status || "active",
+      basicSalary: formatNumber(emp.basicSalary),
+      workingHours: formatNumber(emp.workingHours),
+      allowance: formatNumber(emp.allowance),
+      loan: formatNumber(emp.loan),
+      nationalId: (emp.nationalId || "").toString().toUpperCase(),
+      gender: emp.gender || "",
+      dateOfBirth: formatDate(emp.dateOfBirth),
+      address: emp.address || "",
+      phoneNumber: emp.phoneNumber || "",
+      department: emp.department || "",
+      startDate: formatDate(emp.startDate),
+      employmentType: emp.employmentType || "",
+      bankName: emp.bankName || "",
+      bankAccountNumber: emp.bankAccountNumber ? emp.bankAccountNumber.toString() : "",
+      contactPhoneNumber: emp.contactPhoneNumber || "",
     });
-    setShowForm(false);
-    setEditingEmployee(null);
-    setFormError("");
-    setFormValidationErrors({}); // Clear validation errors
     setShowPassword(false);
+    setFormError("");
+    setFormValidationErrors({});
+    setShowDetailModal(true);
   };
 
   const handleInputChange = (e) => {
@@ -388,12 +617,36 @@ export default function AdminUsers() {
     // Prevent numbers and most symbols in Full Name and Job Title
     if (name === 'fullName' || name === 'jobTitle') {
         // Allow letters, spaces, and hyphens. Remove anything else (including periods).
-        newValue = value.replace(/[^a-zA-Z\s-]/g, ''); 
-    } 
+        newValue = value.replace(/[^a-zA-Z\s-]/g, '');
+    }
+    else if (name === 'nationalId') {
+        newValue = value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
+    }
+    else if (['phoneNumber', 'contactPhoneNumber'].includes(name)) {
+        let cleanedValue = value.replace(/[^0-9+]/g, '');
+        if (cleanedValue.startsWith('+')) {
+            cleanedValue = '+' + cleanedValue.slice(1).replace(/\+/g, '');
+        } else {
+            cleanedValue = cleanedValue.replace(/\+/g, '');
+        }
+        if (cleanedValue.length > 16) {
+            cleanedValue = cleanedValue.slice(0, 16);
+        }
+        newValue = cleanedValue;
+    }
+    else if (name === 'bankAccountNumber') {
+        newValue = value.replace(/[^0-9]/g, '').slice(0, 20);
+    }
+    else if (name === 'department' || name === 'bankName') {
+        newValue = value.replace(/[^a-zA-Z&\s-]/g, '').slice(0, 100);
+    }
+    else if (name === 'address') {
+        newValue = value.slice(0, 250);
+    }
     // Special handling for number inputs to ensure only valid numbers are typed and respect length limits
     else if (['basicSalary', 'workingHours', 'allowance', 'loan'].includes(name)) {
         // 1. Remove non-numeric characters except for a single decimal point
-        let cleanedValue = value.replace(/[^0-9.]/g, ''); 
+        let cleanedValue = value.replace(/[^0-9.]/g, '');
 
         // 2. Ensure only one decimal point
         const parts = cleanedValue.split('.');
@@ -438,6 +691,424 @@ export default function AdminUsers() {
       });
     }
   };
+
+  const renderEmployeeFormFields = () => (
+    <div className="space-y-10">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Full Name */}
+          <div className="space-y-2">
+            <label htmlFor="fullName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 mr-2 text-gray-500" />
+              Full Name *
+            </label>
+            <input
+              id="fullName"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.fullName ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter full name"
+              required
+            />
+            {formValidationErrors.fullName && <p className="text-red-500 text-xs mt-1">{formValidationErrors.fullName}</p>}
+          </div>
+
+          {/* Email Address */}
+          <div className="space-y-2">
+            <label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Mail className="w-4 h-4 mr-2 text-gray-500" />
+              Email Address *
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter email address"
+              required
+            />
+            {formValidationErrors.email && <p className="text-red-500 text-xs mt-1">{formValidationErrors.email}</p>}
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <label htmlFor="password" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Eye className="w-4 h-4 mr-2 text-gray-500" />
+              Password {!editingEmployee && <span className="text-red-500 ml-1">*</span>} {editingEmployee && <span className="text-gray-500 text-xs">(leave blank to keep current)</span>}
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={handleInputChange}
+                className={`w-full p-4 bg-white border ${formValidationErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12`}
+                placeholder="Enter password"
+                required={!editingEmployee}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            {formValidationErrors.password && <p className="text-red-500 text-xs mt-1">{formValidationErrors.password}</p>}
+          </div>
+
+          {/* National ID */}
+          <div className="space-y-2">
+            <label htmlFor="nationalId" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <IdCard className="w-4 h-4 mr-2 text-gray-500" />
+              National ID / Passport Number *
+            </label>
+            <input
+              id="nationalId"
+              name="nationalId"
+              value={form.nationalId}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.nationalId ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 uppercase`}
+              placeholder="Enter ID or passport number"
+              required
+            />
+            {formValidationErrors.nationalId && <p className="text-red-500 text-xs mt-1">{formValidationErrors.nationalId}</p>}
+          </div>
+
+          {/* Gender */}
+          <div className="space-y-2">
+            <label htmlFor="gender" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <UserCircle className="w-4 h-4 mr-2 text-gray-500" />
+              Gender *
+            </label>
+            <select
+              id="gender"
+              name="gender"
+              value={form.gender}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.gender ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer`}
+              required
+            >
+              <option value="">Select Gender</option>
+              {GENDERS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            {formValidationErrors.gender && <p className="text-red-500 text-xs mt-1">{formValidationErrors.gender}</p>}
+          </div>
+
+          {/* Date of Birth */}
+          <div className="space-y-2">
+            <label htmlFor="dateOfBirth" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+              Date of Birth *
+            </label>
+            <input
+              id="dateOfBirth"
+              name="dateOfBirth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={handleInputChange}
+              max={dateLimits.maxDob}
+              className={`w-full p-4 bg-white border ${formValidationErrors.dateOfBirth ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              required
+            />
+            {formValidationErrors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{formValidationErrors.dateOfBirth}</p>}
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-2">
+            <label htmlFor="phoneNumber" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Phone className="w-4 h-4 mr-2 text-gray-500" />
+              Phone Number *
+            </label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              inputMode="tel"
+              value={form.phoneNumber}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.phoneNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter phone number"
+              required
+            />
+            {formValidationErrors.phoneNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.phoneNumber}</p>}
+          </div>
+
+          {/* Contact Phone Number */}
+          <div className="space-y-2">
+            <label htmlFor="contactPhoneNumber" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <PhoneCall className="w-4 h-4 mr-2 text-gray-500" />
+              Contact Phone Number *
+            </label>
+            <input
+              id="contactPhoneNumber"
+              name="contactPhoneNumber"
+              inputMode="tel"
+              value={form.contactPhoneNumber}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.contactPhoneNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter emergency contact number"
+              required
+            />
+            {formValidationErrors.contactPhoneNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.contactPhoneNumber}</p>}
+          </div>
+        </div>
+
+        {/* Address */}
+        <div className="space-y-2 mt-6">
+          <label htmlFor="address" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+            Address *
+          </label>
+          <textarea
+            id="address"
+            name="address"
+            rows={3}
+            value={form.address}
+            onChange={handleInputChange}
+            className={`w-full p-4 bg-white border ${formValidationErrors.address ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+            placeholder="Enter residential address"
+            required
+          />
+          {formValidationErrors.address && <p className="text-red-500 text-xs mt-1">{formValidationErrors.address}</p>}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Employment Details</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Job Title */}
+          <div className="space-y-2">
+            <label htmlFor="jobTitle" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Briefcase className="w-4 h-4 mr-2 text-gray-500" />
+              Job Title *
+            </label>
+            <input
+              id="jobTitle"
+              name="jobTitle"
+              value={form.jobTitle}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.jobTitle ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter job title"
+              required
+            />
+            {formValidationErrors.jobTitle && <p className="text-red-500 text-xs mt-1">{formValidationErrors.jobTitle}</p>}
+          </div>
+
+          {/* Department */}
+          <div className="space-y-2">
+            <label htmlFor="department" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Building2 className="w-4 h-4 mr-2 text-gray-500" />
+              Department *
+            </label>
+            <input
+              id="department"
+              name="department"
+              value={form.department}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.department ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter department"
+              required
+            />
+            {formValidationErrors.department && <p className="text-red-500 text-xs mt-1">{formValidationErrors.department}</p>}
+          </div>
+
+          {/* Employment Type */}
+          <div className="space-y-2">
+            <label htmlFor="employmentType" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <UserCog className="w-4 h-4 mr-2 text-gray-500" />
+              Employment Type *
+            </label>
+            <select
+              id="employmentType"
+              name="employmentType"
+              value={form.employmentType}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.employmentType ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer`}
+              required
+            >
+              <option value="">Select employment type</option>
+              {EMPLOYMENT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            {formValidationErrors.employmentType && <p className="text-red-500 text-xs mt-1">{formValidationErrors.employmentType}</p>}
+          </div>
+
+          {/* Start Date */}
+          <div className="space-y-2">
+            <label htmlFor="startDate" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <CalendarDays className="w-4 h-4 mr-2 text-gray-500" />
+              Start Date *
+            </label>
+            <input
+              id="startDate"
+              name="startDate"
+              type="date"
+              value={form.startDate}
+              onChange={handleInputChange}
+              max={dateLimits.today}
+              className={`w-full p-4 bg-white border ${formValidationErrors.startDate ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              required
+            />
+            {formValidationErrors.startDate && <p className="text-red-500 text-xs mt-1">{formValidationErrors.startDate}</p>}
+          </div>
+
+          {/* Employment Status */}
+          <div className="space-y-2">
+            <label htmlFor="status" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Filter className="w-4 h-4 mr-2 text-gray-500" />
+              Employment Status
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={form.status}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.status ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-200`}
+            >
+              <option value="active">Active Employee</option>
+              <option value="inactive">Inactive Employee</option>
+            </select>
+            {formValidationErrors.status && <p className="text-red-500 text-xs mt-1">{formValidationErrors.status}</p>}
+          </div>
+
+          {/* Working Hours */}
+          <div className="space-y-2">
+            <label htmlFor="workingHours" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 mr-2 text-gray-500" />
+              Working Hours (Standard)
+            </label>
+            <input
+              id="workingHours"
+              name="workingHours"
+              type="text"
+              inputMode="decimal"
+              pattern="^\d*\.?\d{0,2}$"
+              value={form.workingHours}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.workingHours ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Hours per week (max 60.00)"
+            />
+            {formValidationErrors.workingHours && <p className="text-red-500 text-xs mt-1">{formValidationErrors.workingHours}</p>}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Compensation &amp; Banking</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Basic Salary */}
+          <div className="space-y-2">
+            <label htmlFor="basicSalary" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+              Basic Salary *
+            </label>
+            <input
+              id="basicSalary"
+              name="basicSalary"
+              type="text"
+              inputMode="decimal"
+              pattern="^\d*\.?\d{0,2}$"
+              value={form.basicSalary}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.basicSalary ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter salary amount"
+              required
+            />
+            {formValidationErrors.basicSalary && <p className="text-red-500 text-xs mt-1">{formValidationErrors.basicSalary}</p>}
+          </div>
+
+          {/* Allowance */}
+          <div className="space-y-2">
+            <label htmlFor="allowance" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+              Allowance
+            </label>
+            <input
+              id="allowance"
+              name="allowance"
+              type="text"
+              inputMode="decimal"
+              pattern="^\d*\.?\d{0,2}$"
+              value={form.allowance}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.allowance ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter allowance amount"
+            />
+            {formValidationErrors.allowance && <p className="text-red-500 text-xs mt-1">{formValidationErrors.allowance}</p>}
+          </div>
+
+          {/* Loan */}
+          <div className="space-y-2">
+            <label htmlFor="loan" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
+              Loan
+            </label>
+            <input
+              id="loan"
+              name="loan"
+              type="text"
+              inputMode="decimal"
+              pattern="^\d*\.?\d{0,2}$"
+              value={form.loan}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.loan ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter outstanding loan amount"
+            />
+            {formValidationErrors.loan && <p className="text-red-500 text-xs mt-1">{formValidationErrors.loan}</p>}
+          </div>
+
+          {/* Bank Name */}
+          <div className="space-y-2">
+            <label htmlFor="bankName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Landmark className="w-4 h-4 mr-2 text-gray-500" />
+              Bank Name *
+            </label>
+            <input
+              id="bankName"
+              name="bankName"
+              value={form.bankName}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.bankName ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter bank name"
+              required
+            />
+            {formValidationErrors.bankName && <p className="text-red-500 text-xs mt-1">{formValidationErrors.bankName}</p>}
+          </div>
+
+          {/* Bank Account Number */}
+          <div className="space-y-2">
+            <label htmlFor="bankAccountNumber" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Hash className="w-4 h-4 mr-2 text-gray-500" />
+              Bank Account Number *
+            </label>
+            <input
+              id="bankAccountNumber"
+              name="bankAccountNumber"
+              inputMode="numeric"
+              value={form.bankAccountNumber}
+              onChange={handleInputChange}
+              className={`w-full p-4 bg-white border ${formValidationErrors.bankAccountNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
+              placeholder="Enter bank account number"
+              required
+            />
+            {formValidationErrors.bankAccountNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.bankAccountNumber}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // Calculate active employees based on current attendance status (Present or Late) and if they haven't clocked out.
   // An employee is "currently clocked in" if their currentAttendanceStatus is 'Present' or 'Late' AND their 'todayLastCheckOut' is null.
@@ -501,9 +1172,12 @@ export default function AdminUsers() {
               </div>
               
               <motion.button
-                onClick={() => { 
-                  if (showForm && editingEmployee) resetForm(); 
-                  else setShowForm((s) => !s); 
+                onClick={() => {
+                  if (showForm) {
+                    resetForm();
+                  } else {
+                    openAddForm();
+                  }
                 }}
                 className="group relative overflow-hidden bg-white/20 backdrop-blur-sm text-white font-semibold px-6 py-4 rounded-2xl border border-white/30 hover:bg-white/30 transition-all duration-300"
                 whileHover={{ scale: 1.05, y: -2 }}
@@ -644,191 +1318,10 @@ export default function AdminUsers() {
               )}
 
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Full Name */}
-                  <div className="space-y-2">
-                    <label htmlFor="fullName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Users className="w-4 h-4 mr-2 text-gray-500" />
-                      Full Name *
-                    </label>
-                    <input 
-                      id="fullName"
-                      name="fullName" 
-                      value={form.fullName} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.fullName ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter full name (only letters, spaces, hyphens)" 
-                      required
-                    />
-                    {formValidationErrors.fullName && <p className="text-red-500 text-xs mt-1">{formValidationErrors.fullName}</p>}
-                  </div>
-                  
-                  {/* Email Address */}
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Mail className="w-4 h-4 mr-2 text-gray-500" />
-                      Email Address *
-                    </label>
-                    <input 
-                      id="email"
-                      name="email" 
-                      type="email" 
-                      value={form.email} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter email address"
-                      required
-                    />
-                    {formValidationErrors.email && <p className="text-red-500 text-xs mt-1">{formValidationErrors.email}</p>}
-                  </div>
-                  
-                  {/* Password */}
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Eye className="w-4 h-4 mr-2 text-gray-500" />
-                      Password {!editingEmployee && <span className="text-red-500 ml-1">*</span>} {editingEmployee && <span className="text-gray-500 text-xs">(leave blank to keep current)</span>}
-                    </label>
-                    <div className="relative">
-                      <input 
-                        id="password"
-                        name="password" 
-                        type={showPassword ? "text" : "password"} 
-                        value={form.password} 
-                        onChange={handleInputChange} 
-                        className={`w-full p-4 bg-white border ${formValidationErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12`}
-                        placeholder="Enter password"
-                        required={!editingEmployee}
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowPassword((s) => !s)} 
-                        className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {formValidationErrors.password && <p className="text-red-500 text-xs mt-1">{formValidationErrors.password}</p>}
-                  </div>
-                  
-                  {/* Job Title */}
-                  <div className="space-y-2">
-                    <label htmlFor="jobTitle" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Briefcase className="w-4 h-4 mr-2 text-gray-500" />
-                      Job Title
-                    </label>
-                    <input 
-                      id="jobTitle"
-                      name="jobTitle" 
-                      value={form.jobTitle} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.jobTitle ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter job title (only letters, spaces, hyphens)" 
-                    />
-                    {formValidationErrors.jobTitle && <p className="text-red-500 text-xs mt-1">{formValidationErrors.jobTitle}</p>}
-                  </div>
-                  
-                  {/* Basic Salary */}
-                  <div className="space-y-2">
-                    <label htmlFor="basicSalary" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
-                      Basic Salary
-                    </label>
-                    <input 
-                      id="basicSalary"
-                      name="basicSalary" 
-                      type="text" // Changed type to "text" for more control with regex in handleInputChange
-                      inputMode="decimal" // Hint for mobile keyboards
-                      pattern="^\d*\.?\d{0,2}$" // Basic pattern for allowing decimals (further enforced by JS)
-                      value={form.basicSalary} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.basicSalary ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter salary amount (max Rs. 1,000,000.00)"
-                    />
-                    {formValidationErrors.basicSalary && <p className="text-red-500 text-xs mt-1">{formValidationErrors.basicSalary}</p>}
-                  </div>
-                  
-                  {/* Working Hours */}
-                  <div className="space-y-2">
-                    <label htmlFor="workingHours" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                      Working Hours (Standard)
-                    </label>
-                    <input 
-                      id="workingHours"
-                      name="workingHours" 
-                      type="text" // Changed type to "text" for more control with regex in handleInputChange
-                      inputMode="decimal"
-                      pattern="^\d*\.?\d{0,2}$"
-                      value={form.workingHours} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.workingHours ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Hours per week (max 60.00)" 
-                    />
-                    {formValidationErrors.workingHours && <p className="text-red-500 text-xs mt-1">{formValidationErrors.workingHours}</p>}
-                  </div>
-                  
-                  {/* Allowance Field */}
-                  <div className="space-y-2">
-                    <label htmlFor="allowance" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
-                      Allowance
-                    </label>
-                    <input 
-                      id="allowance"
-                      name="allowance" 
-                      type="text" // Changed type to "text" for more control with regex in handleInputChange
-                      inputMode="decimal"
-                      pattern="^\d*\.?\d{0,2}$"
-                      value={form.allowance} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.allowance ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter allowance amount (max Rs. 1,000,000.00)"
-                    />
-                    {formValidationErrors.allowance && <p className="text-red-500 text-xs mt-1">{formValidationErrors.allowance}</p>}
-                  </div>
-
-                  {/* Loan Field */}
-                  <div className="space-y-2">
-                    <label htmlFor="loan" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
-                      Loan
-                    </label>
-                    <input 
-                      id="loan"
-                      name="loan" 
-                      type="text" // Changed type to "text" for more control with regex in handleInputChange
-                      inputMode="decimal"
-                      pattern="^\d*\.?\d{0,2}$"
-                      value={form.loan} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.loan ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-                      placeholder="Enter outstanding loan amount (max Rs. 1,000,000.00)"
-                    />
-                    {formValidationErrors.loan && <p className="text-red-500 text-xs mt-1">{formValidationErrors.loan}</p>}
-                  </div>
-
-                  {/* Employment Status (Permanent employment status, not daily attendance) */}
-                  <div className="space-y-2">
-                    <label htmlFor="status" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                      <Filter className="w-4 h-4 mr-2 text-gray-500" />
-                      Employment Status
-                    </label>
-                    <select 
-                      id="status"
-                      name="status" 
-                      value={form.status} 
-                      onChange={handleInputChange} 
-                      className={`w-full p-4 bg-white border ${formValidationErrors.status ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-200`}
-                    >
-                      <option value="active">Active Employee</option>
-                      <option value="inactive">Inactive Employee</option>
-                    </select>
-                    {formValidationErrors.status && <p className="text-red-500 text-xs mt-1">{formValidationErrors.status}</p>}
-                  </div>
-                </div>
+                {renderEmployeeFormFields()}
 
                 <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
-                  <motion.button 
+                  <motion.button
                     type="submit"
                     disabled={isSubmitting} 
                     className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
@@ -848,6 +1341,82 @@ export default function AdminUsers() {
                   </motion.button>
                 </div>
               </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showDetailModal && (
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={modalVariants}
+              onClick={resetForm}
+            >
+              <motion.div
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8"
+                onClick={(e) => e.stopPropagation()}
+                variants={modalVariants}
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xl font-semibold">
+                      {(form.fullName || selectedEmployee?.fullName || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">{form.fullName || selectedEmployee?.fullName || "Employee"}</h2>
+                      <p className="text-sm text-gray-500">
+                        {selectedEmployee?.empId ? `Employee ID: ${selectedEmployee.empId}` : "Employee details"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {[form.jobTitle || selectedEmployee?.jobTitle, form.department || selectedEmployee?.department]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {formError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
+                    {formError}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                  {renderEmployeeFormFields()}
+
+                  <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
+                    <motion.button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isSubmitting ? "Processing..." : "Save Changes"}
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={resetForm}
+                      className="flex-1 sm:flex-none px-8 py-4 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all duration-200"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Cancel
+                    </motion.button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -904,7 +1473,13 @@ export default function AdminUsers() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{emp.fullName}</div>
+                            <button
+                              type="button"
+                              onClick={() => editEmployee(emp)}
+                              className="text-sm font-semibold text-gray-900 hover:text-green-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 rounded"
+                            >
+                              {emp.fullName}
+                            </button>
                             {/* Removed ID line as per previous request */}
                           </div>
                         </div>
