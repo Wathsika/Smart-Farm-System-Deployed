@@ -396,7 +396,18 @@ export default function CowProfilePage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-64">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="text" placeholder="Search cows..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-black text-sm" />
+                <input
+                  type="text"
+                  placeholder="Search cows..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^[a-zA-Z0-9\s-]*$/.test(val)) {
+                      setSearchQuery(val);
+                    }
+                  }}
+                  className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-black text-sm"
+                />
             </div>
             <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none bg-white text-black text-sm" >
               <option>All</option>

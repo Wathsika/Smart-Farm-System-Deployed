@@ -519,9 +519,13 @@ function Breeding() {
                 type="text"
                 placeholder="Search..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 rounded-lg border focus:ring-2 focus:ring-green-500"
-              />
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^[a-zA-Z0-9\s-]*$/.test(val)) {
+                    setSearch(val);
+                  }
+                }}
+                className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-400  outline-none transition-all duration-200"/>
             </div>
             <select
               value={cowId}
