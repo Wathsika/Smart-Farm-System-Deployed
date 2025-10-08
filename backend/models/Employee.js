@@ -7,7 +7,13 @@ const employeeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, 
+      unique: true,
+    },
+    empId: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
     },
     jobTitle: {
       type: String,

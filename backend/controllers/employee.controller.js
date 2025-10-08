@@ -9,7 +9,7 @@ export const listEmployeesMinimal = async (_req, res) => {
 
     const rows = emps.map((e) => ({
       _id: String(e._id),
-      empId: e.user?.empId || String(e._id).slice(-6),
+      empId: e.empId || e.user?.empId || String(e._id).slice(-6),
       name: e.user?.fullName || "Unknown",
       basicSalary: Number(e.basicSalary) || 0,
       workingHours: Number(e.workingHours) || 0, // This is standard/expected hours

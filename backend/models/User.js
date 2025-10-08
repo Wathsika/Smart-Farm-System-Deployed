@@ -35,12 +35,16 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     role: {
-
       type: String,
       enum: ["Customer", "Employee", "Admin"], // The allowed roles
       required: true,
       default: "Customer",
-
+    },
+    empId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
     },
     // This field is for Employees only
     jobTitle: {
