@@ -982,10 +982,11 @@ export default function TaskManagement() {
       // --- Metric and Value (Green bar) ---
       const startYForMetric = 60;
       const rowHeight = 10;
-      const columnWidth = (doc.internal.pageSize.getWidth() - 28) / 2; // Split width for Metric and Value
+      const tableFullWidth = doc.internal.pageSize.getWidth() - 28; // Shared width for both tables
+      const columnWidth = tableFullWidth / 2; // Split width for Metric and Value
 
       doc.setFillColor(34, 139, 34); // Green for the bar
-      doc.rect(14, startYForMetric, doc.internal.pageSize.getWidth() - 28, rowHeight, 'F'); // Draw filled rectangle
+      doc.rect(14, startYForMetric, tableFullWidth, rowHeight, 'F'); // Draw filled rectangle
 
       doc.setFontSize(12);
       doc.setTextColor(255, 255, 255); // White text for metric header
@@ -996,7 +997,7 @@ export default function TaskManagement() {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50, 50, 50); // Dark gray for data
       doc.setFillColor(248, 248, 248); // Light gray background for data row
-      doc.rect(14, startYForMetric + rowHeight, doc.internal.pageSize.getWidth() - 28, rowHeight, 'F');
+      doc.rect(14, startYForMetric + rowHeight, tableFullWidth, rowHeight, 'F');
 
       doc.text("Total Tasks", 18, startYForMetric + rowHeight * 1.5 + 2);
       doc.text(`${reportTasks.length}`, 14 + columnWidth + 4, startYForMetric + rowHeight * 1.5 + 2);
@@ -1017,6 +1018,8 @@ export default function TaskManagement() {
         body: tableData,
         startY: tableStartY,
         theme: 'striped',
+        margin: { left: 14, right: 14 },
+        tableWidth: tableFullWidth,
         headStyles: {
           fillColor: [34, 139, 34], // Green header
           textColor: 255,
@@ -1034,10 +1037,10 @@ export default function TaskManagement() {
           overflow: 'linebreak'
         },
         columnStyles: {
-          0: { cellWidth: 30 }, // Due Date
-          1: { cellWidth: 40 }, // Assigned To
-          2: { cellWidth: 70 }, // Task Title
-          3: { cellWidth: 25 }, // Status
+          0: { cellWidth: tableFullWidth * 0.2 }, // Due Date
+          1: { cellWidth: tableFullWidth * 0.28 }, // Assigned To
+          2: { cellWidth: tableFullWidth * 0.32 }, // Task Title
+          3: { cellWidth: tableFullWidth * 0.2 }, // Status
         }
       });
 

@@ -45,6 +45,11 @@ const LeaveStatusBadge = ({ status }) => {
 };
 
 
+const getLocalDateString = (date) => {
+  const tzOffsetInMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffsetInMs).toISOString().split('T')[0];
+};
+
 export default function MyLeaveRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +77,7 @@ export default function MyLeaveRequests() {
   // --- Client-side validation logic ---
   const validateForm = () => {
     const errors = {};
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    const today = getLocalDateString(new Date()); // Get today's date in YYYY-MM-DD format without timezone shift
 
     if (!formState.leaveType) {
       errors.leaveType = "Leave Type is required.";
@@ -125,7 +130,7 @@ export default function MyLeaveRequests() {
   };
 
   // Get today's date for the min attribute of date inputs
-  const todayDateString = new Date().toISOString().split('T')[0];
+  const todayDateString = getLocalDateString(new Date());
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">

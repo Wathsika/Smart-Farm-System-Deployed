@@ -14,6 +14,7 @@ const employeeSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      maxlength: 10,
     },
     jobTitle: {
       type: String,
