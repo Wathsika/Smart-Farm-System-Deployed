@@ -1015,6 +1015,8 @@ export default function TaskManagement() {
         body: tableData,
         startY: tableStartY,
         theme: 'striped',
+        margin: { left: 14, right: 14 },
+        tableWidth: doc.internal.pageSize.getWidth() - 28,
         headStyles: {
           fillColor: [34, 139, 34], // Green header
           textColor: 255,
