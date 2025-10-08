@@ -620,7 +620,20 @@ export default function AdminUsers() {
         newValue = value.replace(/[^a-zA-Z\s-]/g, '');
     }
     else if (name === 'nationalId') {
-        newValue = value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
+        const upperValue = value.toUpperCase();
+
+        // Keep only digits and enforce a maximum of 12 numeric characters
+        const digitsOnly = upperValue.replace(/[^0-9]/g, '').slice(0, 12);
+
+        // Determine if the latest valid character is a trailing V (or v) after 12 digits
+        const sanitized = upperValue.replace(/[^0-9V]/g, '');
+        const lastChar = sanitized[sanitized.length - 1];
+
+        newValue = digitsOnly;
+
+        if (digitsOnly.length === 12 && lastChar === 'V') {
+            newValue += 'V';
+        }
     }
     else if (['phoneNumber', 'contactPhoneNumber'].includes(name)) {
         let cleanedValue = value.replace(/[^0-9+]/g, '');
