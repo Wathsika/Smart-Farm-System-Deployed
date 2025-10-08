@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import Employee from "../models/Employee.js";
 import Attendance from "../models/Attendance.js"; // Import Attendance model
 import LeaveRequest from "../models/LeaveRequest.js"; // Import LeaveRequest model
+import generateEmployeeId from "../utils/generateEmployeeId.js";
 
 // Helper to get the start of a given date (resides here too for consistency)
 const startOfDay = (date) => {
@@ -54,6 +55,11 @@ export const addUserByAdmin = async (req, res) => {
     // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    let empId;
+    if (role === "Employee") {
+      empId = await generateEmployeeId();
+    }
+
     // create user
     const user = await User.create({
       fullName,
@@ -62,12 +68,14 @@ export const addUserByAdmin = async (req, res) => {
       role,
       jobTitle,
       status,
+      ...(empId ? { empId } : {}),
     });
 
     // if employee, create employee record
     if (role === "Employee") {
       await Employee.create({
         user: user._id,
+        empId: empId || user.empId,
         jobTitle,
         basicSalary,
         workingHours: workingHours || 0,
@@ -142,6 +150,7 @@ export const listUsers = async (req, res) => {
     const items = await Promise.all(employees.map(async (u) => {
       const empExtra = empMap[u._id.toString()] || {};
       const userLeaveRequests = leaveRequestsMap[u._id.toString()] || [];
+      const empId = u.empId || empExtra.empId;
 
       let currentAttendanceStatus = "Absent"; // Default status
       let todayFirstCheckIn = null;
@@ -193,6 +202,7 @@ export const listUsers = async (req, res) => {
       
       return {
         ...u,
+        empId,
         basicSalary: empExtra.basicSalary || 0,
         workingHours: empExtra.workingHours || 0,
         accumulatedWorkingHours: empExtra.accumulatedWorkingHours || 0,
@@ -252,6 +262,9 @@ export const updateUserByAdmin = async (req, res) => {
     const { id } = req.params; // User _id
     const updates = { ...req.body };
 
+    // Prevent manual updates to the generated employee id
+    delete updates.empId;
+
     // Handle password
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
@@ -275,15 +288,21 @@ export const updateUserByAdmin = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Update Employee extra fields
+    const employeeUpdates = {
+      jobTitle: updates.jobTitle,
+      basicSalary: updates.basicSalary,
+      workingHours: updates.workingHours,
+      allowance: updates.allowance,
+      loan: updates.loan,
+    };
+
+    if (user.empId) {
+      employeeUpdates.empId = user.empId;
+    }
+
     await Employee.findOneAndUpdate(
       { user: user._id },
-      {
-        jobTitle: updates.jobTitle,
-        basicSalary: updates.basicSalary,
-        workingHours: updates.workingHours,
-        allowance: updates.allowance,
-        loan: updates.loan,
-      },
+      employeeUpdates,
       { upsert: true, new: true }
     ); //
 
