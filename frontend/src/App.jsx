@@ -61,6 +61,7 @@ import FinanceAuditLogPage from "./admin/FinanceAuditLogPage";
 
 // Livestock management pages
 import CowProfilePage from "./pages/livestock/cow.jsx";
+import CowDetailsPage from "./pages/livestock/CowDetailsPage.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
 import BreedingPage from "./pages/livestock/Breeding.jsx";
@@ -168,6 +169,7 @@ export default function App() {
 
         <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
+        <Route path="livestock/:id" element={<CowDetailsPage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
         <Route path="livestock/breeding" element={<BreedingPage />} />
