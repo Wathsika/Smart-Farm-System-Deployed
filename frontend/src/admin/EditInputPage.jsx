@@ -14,15 +14,196 @@ const EditInputPage = () => {
     });
 
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(null); // For API errors and general form errors
+    const [validationErrors, setValidationErrors] = useState({}); // For field validation errors
+    const [isSubmitting, setIsSubmitting] = useState(false); // To manage button state during submission
+
+    // Helper function to validate a single field
+    const validateField = (name, value) => {
+        let errorMessage = '';
+
+        // Regex for "letters and spaces only"
+        const lettersSpacesOnlyRegex = /^[A-Za-z\s]*$/;
+        // Regex for "positive numbers only (with decimals)"
+        const positiveNumbersOnlyRegex = /^(?:\d+\.?\d*|\.?\d+)$/; // Does not allow negative values
+        // Regex for "positive integers only"
+        const positiveIntegersOnlyRegex = /^[0-9]*$/; // Matches empty string and positive integers
+
+        switch (name) {
+            case 'name':
+                if (!value.trim()) {
+                    errorMessage = 'Product Name is required.';
+                } else if (!lettersSpacesOnlyRegex.test(value)) {
+                    errorMessage = 'Product Name can only contain letters and spaces (no numbers or special characters).';
+                }
+                break;
+            case 'stockQty':
+                if (!value.toString().trim()) {
+                    errorMessage = 'Initial Stock Quantity is required.';
+                } else if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                    errorMessage = 'Stock Quantity must be a whole number (no decimals, letters, or special characters).';
+                } else if (Number(value) < 1 || Number(value) > 1000) { // Range 1-1000
+                    errorMessage = 'Stock Quantity must be between 1 and 1000.';
+                }
+                break;
+            case 'activeIngredient':
+                // No specific validation required for Active Ingredient - allows all characters as per user request.
+                break;
+            case 'dilutionRate':
+                if (value.toString().trim()) {
+                    const parsedValue = parseFloat(value);
+                    if (isNaN(parsedValue)) {
+                        errorMessage = 'Dilution Rate must be a valid number.';
+                    } else if (parsedValue < 0.50 || parsedValue > 100.00) { // Range 0.50-100.00
+                        errorMessage = 'Dilution Rate must be between 0.50 and 100.00.';
+                    } else if (value.includes('.') && value.split('.')[1].length > 2) {
+                        errorMessage = 'Dilution Rate can have a maximum of 2 decimal places.';
+                    }
+                }
+                break;
+            case 'method':
+                if (!value) {
+                    errorMessage = 'Application Method is required.';
+                }
+                break;
+            case 'preHarvestIntervalDays':
+                if (value.toString().trim()) {
+                    if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                        errorMessage = 'Pre-Harvest Interval must be a whole number (no decimals, letters, or special characters).';
+                    } else if (Number(value) < 1 || Number(value) > 30) { // Range 1-30
+                        errorMessage = 'Pre-Harvest Interval must be between 1 and 30 days.';
+                    }
+                }
+                break;
+            case 'reEntryHours':
+                if (value.toString().trim()) {
+                    if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                        errorMessage = 'Re-Entry Period must be a whole number (no decimals, letters, or special characters).';
+                    } else if (Number(value) < 0 || Number(value) > 72) { // Range 0-72, allows 0
+                        errorMessage = 'Re-Entry Period must be between 0 and 72 hours.';
+                    }
+                }
+                break;
+            case 'notes':
+                // No specific validation required for Notes - allows all characters as per user request.
+                break;
+            default:
+                break;
+        }
+        return errorMessage;
+    };
+
+    // New common key down handler to restrict character input and check values
+    const handleKeyDown = (e, fieldName) => {
+        const { key } = e;
+        const currentValue = e.target.value;
+
+        const isControlKey = [
+            'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Escape'
+        ].includes(key) ||
+        ((e.ctrlKey || e.metaKey) && (key === 'a' || key === 'c' || key === 'v' || key === 'x'));
+
+        if (isControlKey) {
+            return; // Allow control keys
+        }
+
+        let allowDecimal = false;
+        let maxValue = 0;
+        let maxIntegerDigits = 0;
+
+        switch (fieldName) {
+            case 'name':
+                if (!/^[A-Za-z\s]$/.test(key)) {
+                    e.preventDefault(); // Block anything that is not a letter or space
+                }
+                return; // No further numeric checks needed for this field
+            case 'stockQty':
+                maxValue = 1000;
+                maxIntegerDigits = 4; // Max 4 digits for '1000'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'dilutionRate':
+                // For dilutionRate, allow digits, '.', letters, and '/'
+                // We'll rely on validateField for numeric range and decimal precision
+                if (!/^[0-9.A-Za-z/]$/.test(key)) {
+                    e.preventDefault();
+                    return;
+                }
+                if (key === '.' && currentValue.includes('.')) {
+                    e.preventDefault(); // Only one decimal point
+                    return;
+                }
+                // No max value/length checks here, as letters are allowed and it complicates the logic.
+                // The main validation will happen in validateField.
+                return;
+            case 'preHarvestIntervalDays':
+                maxValue = 30;
+                maxIntegerDigits = 2; // Max 2 digits for '30'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'reEntryHours':
+                maxValue = 72;
+                maxIntegerDigits = 2; // Max 2 digits for '72'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'activeIngredient':
+            case 'notes':
+                // No keydown restrictions for Active Ingredient and Notes as per user request.
+                return;
+            default:
+                return;
+        }
+
+        // Common numeric field checks (for stockQty, preHarvestIntervalDays, reEntryHours)
+        const selectionStart = e.target.selectionStart;
+        const selectionEnd = e.target.selectionEnd;
+        const potentialValue = currentValue.substring(0, selectionStart) + key + currentValue.substring(selectionEnd);
+
+        if (potentialValue !== '') {
+            const numericPotentialValue = parseFloat(potentialValue);
+            if (!isNaN(numericPotentialValue)) {
+                if (numericPotentialValue > maxValue) {
+                    // Allow '0' if it's a valid minimum (like for reEntryHours)
+                    if (!(numericPotentialValue === 0 && fieldName === 'reEntryHours')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }
+            if (potentialValue.length > maxIntegerDigits) {
+                e.preventDefault();
+                return;
+            }
+        }
+    };
 
     // Gather data to the back end if while page is loading
     useEffect(() => {
         const fetchInputData = async () => {
             try {
                 const response = await api.get(`/inputs/${id}`);
-                // form sate
-                setFormData(response.data);
+                // Ensure null values from API are converted to empty strings for controlled inputs
+                const data = response.data;
+                setFormData({
+                    name: data.name || '',
+                    category: data.category || 'fertilizer',
+                    stockQty: data.stockQty !== null ? data.stockQty : '',
+                    activeIngredient: data.activeIngredient || '',
+                    dilutionRate: data.dilutionRate !== null ? data.dilutionRate : '',
+                    method: data.method || '',
+                    preHarvestIntervalDays: data.preHarvestIntervalDays !== null ? data.preHarvestIntervalDays : '',
+                    reEntryHours: data.reEntryHours !== null ? data.reEntryHours : '',
+                    notes: data.notes || '',
+                });
             } catch (err) {
                 setError("Could not load data for this input.");
             } finally {
@@ -35,19 +216,81 @@ const EditInputPage = () => {
 
     // Handling the Input Field Function
     const handleChange = (e) => {
-        const { name, value, type } = e.target;
+        const { name, value } = e.target; // Removed 'type' as we're using custom handling
+
+        // Clear previous error for this field when user types
+        setValidationErrors(prevErrors => ({
+            ...prevErrors,
+            [name]: ''
+        }));
+
+        let processedValue = value;
+        // Fields that should be numbers but use type="text" for stricter input control
+        const numericFields = ['stockQty', 'dilutionRate', 'preHarvestIntervalDays', 'reEntryHours'];
+
+        if (numericFields.includes(name) && value !== '') {
+            // For dilutionRate, keep as string during input to allow flexible typing before final validation
+            if (name === 'dilutionRate') {
+                processedValue = value;
+            } else { // For other integer fields, parse to int
+                processedValue = parseInt(value, 10);
+                if (isNaN(processedValue)) processedValue = value; // Keep string if invalid int
+            }
+        }
+
         setFormData(prevState => ({
             ...prevState,
-         [name]: type === 'number' && value !== '' ? Number(value) : value}));
+            [name]: processedValue
+        }));
+    };
+
+    // Function to validate the entire form
+    const validateForm = () => {
+        let errors = {};
+        let isValid = true;
+
+        Object.keys(formData).forEach(fieldName => {
+            const errorMessage = validateField(fieldName, formData[fieldName]);
+            if (errorMessage) {
+                errors[fieldName] = errorMessage;
+                isValid = false;
+            }
+        });
+
+        setValidationErrors(errors);
+        return isValid;
     };
 
     // Form submit function
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setError(null); // Clear generic API error
+
+        if (!validateForm()) {
+            setError('Please correct the highlighted errors before submitting.');
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            const response = await api.put(`/inputs/${id}`, formData);
-            alert('Farm input updated successfully!'); //new
+            // Prepare data for submission, convert empty strings for optional numbers to 'null'
+            const dataToSubmit = { ...formData };
+
+            // Convert empty strings for optional numeric fields to null
+            if (dataToSubmit.preHarvestIntervalDays === '') dataToSubmit.preHarvestIntervalDays = null;
+            if (dataToSubmit.reEntryHours === '') dataToSubmit.reEntryHours = null;
+            if (dataToSubmit.dilutionRate === '') dataToSubmit.dilutionRate = null;
+            // stockQty is required, so it shouldn't be empty after validation, but adding a check for robustness
+            if (dataToSubmit.stockQty === '') dataToSubmit.stockQty = null;
+
+            // Ensure numeric fields are actually numbers before sending, as `handleChange` might keep them as string for validation
+            dataToSubmit.stockQty = dataToSubmit.stockQty !== null ? Number(dataToSubmit.stockQty) : null;
+            dataToSubmit.dilutionRate = dataToSubmit.dilutionRate !== null ? Number(dataToSubmit.dilutionRate) : null;
+            dataToSubmit.preHarvestIntervalDays = dataToSubmit.preHarvestIntervalDays !== null ? Number(dataToSubmit.preHarvestIntervalDays) : null;
+            dataToSubmit.reEntryHours = dataToSubmit.reEntryHours !== null ? Number(dataToSubmit.reEntryHours) : null;
+
+            const response = await api.put(`/inputs/${id}`, dataToSubmit);
+            alert('Farm input updated successfully!');
             navigate('/admin/crop/inputs', {
                 replace: true,
                 state: {
@@ -55,7 +298,11 @@ const EditInputPage = () => {
                 },
             });
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update input.');
+            const serverError = err.response?.data?.message || 'Failed to update input.';
+            setError(serverError);
+            console.error(serverError);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -70,7 +317,7 @@ const EditInputPage = () => {
         </div>
     );
 
-    if (error) return (
+    if (error && !isSubmitting) return ( // Only show error if not currently submitting
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-200">
                 <div className="flex items-center space-x-4">
@@ -148,8 +395,9 @@ const EditInputPage = () => {
                                             name="name" 
                                             value={formData.name || ''} 
                                             onChange={handleChange} 
+                                            onKeyDown={(e) => handleKeyDown(e, 'name')}
                                             required 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.name ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="Enter product name"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -158,6 +406,7 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.name && <p className="mt-1 text-xs text-red-600">{validationErrors.name}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">
@@ -169,7 +418,7 @@ const EditInputPage = () => {
                                             value={formData.category || 'other'} 
                                             onChange={handleChange} 
                                             required
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white appearance-none"
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white appearance-none ${validationErrors.category ? 'border-red-500' : 'border-slate-300'}`}
                                         >
                                             <option value="fertilizer">Fertilizer</option>
                                             <option value="pesticide">Pesticide</option>
@@ -182,6 +431,7 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.category && <p className="mt-1 text-xs text-red-600">{validationErrors.category}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">
@@ -189,13 +439,13 @@ const EditInputPage = () => {
                                     </label>
                                     <div className="relative">
                                         <input 
-                                            type="number" 
+                                            type="text" // Changed to text for strict input control
                                             name="stockQty" 
-                                            min="0" 
                                             value={formData.stockQty || ''} 
                                             onChange={handleChange} 
+                                            onKeyDown={(e) => handleKeyDown(e, 'stockQty')}
                                             required 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.stockQty ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="Enter quantity"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -204,6 +454,7 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.stockQty && <p className="mt-1 text-xs text-red-600">{validationErrors.stockQty}</p>}
                                 </div>
                             </div>
                         </div>
@@ -234,7 +485,8 @@ const EditInputPage = () => {
                                             name="activeIngredient" 
                                             value={formData.activeIngredient || ''} 
                                             onChange={handleChange} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            onKeyDown={(e) => handleKeyDown(e, 'activeIngredient')} // No specific keydown restrictions.
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.activeIngredient ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="Enter active ingredient"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -243,16 +495,18 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.activeIngredient && <p className="mt-1 text-xs text-red-600">{validationErrors.activeIngredient}</p>}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-slate-700">Application Method</label>
+                                    <label className="block text-sm font-semibold text-slate-700">Application Method <span className="text-red-500">*</span></label>
                                     <div className="relative">
                                         <input 
                                             type="text" 
                                             name="method" 
                                             value={formData.method || ''} 
                                             onChange={handleChange} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            required
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.method ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="e.g., Foliar spray, Soil application"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -261,6 +515,7 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.method && <p className="mt-1 text-xs text-red-600">{validationErrors.method}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">Dilution Rate</label>
@@ -270,8 +525,9 @@ const EditInputPage = () => {
                                             name="dilutionRate" 
                                             value={formData.dilutionRate || ''} 
                                             onChange={handleChange} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
-                                            placeholder="e.g., 1:100, 2ml per liter"
+                                            onKeyDown={(e) => handleKeyDown(e, 'dilutionRate')} // onKeyDown handler for numbers, letters, '/'
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.dilutionRate ? 'border-red-500' : 'border-slate-300'}`}
+                                            placeholder="e.g., 0.50"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,41 +535,44 @@ const EditInputPage = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {validationErrors.dilutionRate && <p className="mt-1 text-xs text-red-600">{validationErrors.dilutionRate}</p>}
                                 </div>
-                                <div></div>
+                                <div></div> {/* Empty div to maintain grid layout */}
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">Pre-Harvest Interval</label>
                                     <div className="relative">
                                         <input 
-                                            type="number" 
+                                            type="text" // Changed to text for strict input control
                                             name="preHarvestIntervalDays" 
-                                            min="0" 
                                             value={formData.preHarvestIntervalDays || ''} 
                                             onChange={handleChange} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            onKeyDown={(e) => handleKeyDown(e, 'preHarvestIntervalDays')} // onKeyDown handler for numbers
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.preHarvestIntervalDays ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="Days before harvest"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <span className="text-sm text-slate-500">days</span>
                                         </div>
                                     </div>
+                                    {validationErrors.preHarvestIntervalDays && <p className="mt-1 text-xs text-red-600">{validationErrors.preHarvestIntervalDays}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700">Re-Entry Period</label>
                                     <div className="relative">
                                         <input 
-                                            type="number" 
+                                            type="text" // Changed to text for strict input control
                                             name="reEntryHours" 
-                                            min="0" 
                                             value={formData.reEntryHours || ''} 
                                             onChange={handleChange} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400"
+                                            onKeyDown={(e) => handleKeyDown(e, 'reEntryHours')} // onKeyDown handler for numbers
+                                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 ${validationErrors.reEntryHours ? 'border-red-500' : 'border-slate-300'}`}
                                             placeholder="Hours before re-entry"
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <span className="text-sm text-slate-500">hours</span>
                                         </div>
                                     </div>
+                                    {validationErrors.reEntryHours && <p className="mt-1 text-xs text-red-600">{validationErrors.reEntryHours}</p>}
                                 </div>
                             </div>
                         </div>
@@ -341,31 +600,63 @@ const EditInputPage = () => {
                                     name="notes" 
                                     value={formData.notes || ''} 
                                     onChange={handleChange} 
+                                    onKeyDown={(e) => handleKeyDown(e, 'notes')} // No specific keydown restrictions.
                                     rows="4"
-                                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 resize-none"
+                                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white placeholder-slate-400 resize-none ${validationErrors.notes ? 'border-red-500' : 'border-slate-300'}`}
                                     placeholder="Enter any additional notes, storage instructions, or special considerations..."
                                 ></textarea>
                             </div>
+                            {validationErrors.notes && <p className="mt-1 text-xs text-red-600">{validationErrors.notes}</p>}
                         </div>
                     </div>
                     
+                    {/* Error Display for form-level errors */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-red-800">{error}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-4 pt-6">
                         <button 
                             type="button"
                             onClick={() => navigate('/admin/crop/inputs')}
                             className="px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 transition-all duration-200"
+                            disabled={isSubmitting}
                         >
                             Cancel
                         </button>
                         <button 
                             type="submit" 
-                            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-200 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center"
+                            className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-200 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isSubmitting}
                         >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                            </svg>
-                            Update Input
+                            {isSubmitting ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Update Input
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>

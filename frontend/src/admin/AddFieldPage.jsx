@@ -9,8 +9,14 @@ const todayISO = () => {
   return new Date(Date.now() - off).toISOString().slice(0, 10);
 };
 
+// Updated decimalDraftPattern:
+// - Allows integer part from 1 to 1000.
+// - Allows an optional decimal part with up to two digits.
+// This prevents typing numbers like '0.5' or '10000' directly.
+const decimalDraftPattern = /^(?:[1-9]\d{0,2}|1000)(?:\.\d{0,2})?$/;
 
-const decimalDraftPattern = /^\d+(?:\.\d{0,2})?$/;
+// New pattern for allowing only letters and spaces
+const alphaSpacesPattern = /^[a-zA-Z\s]*$/;
 
 
 const rules = {
@@ -22,10 +28,14 @@ const rules = {
     String(v || '').length > n ? msg : null,
   number: (msg = 'Must be a number') => v =>
     v === '' || v === null || v === undefined || isNaN(Number(v)) ? msg : null,
-    max: (n, msg = `Must be ≤ ${n}`) => v =>
+  max: (n, msg = `Must be ≤ ${n}`) => v =>
     v === '' || v === null || v === undefined ? null : Number(v) <= n ? null : msg,
+  min: (n, msg = `Must be ≥ ${n}`) => v =>
+    v === '' || v === null || v === undefined ? null : Number(v) >= n ? null : msg,
   decimalPlaces: (places = 2, msg = `Use up to ${places} decimal places`) => v => {
     if (v === '' || v === null || v === undefined) return null;
+    // This regex ensures that if a decimal part exists, it has up to 'places' digits.
+    // It also implicitly validates the overall number format after user input.
     const re = new RegExp(`^\\d+(?:\\.\\d{1,${places}})?$`);
     return re.test(String(v)) ? null : msg;
   },
@@ -77,53 +87,118 @@ const AddFieldPage = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
+
+    // Real-time validation for Irrigation System: disallow numbers and special characters
+    if (name === 'irrigationSystem') {
+      if (value === '' || alphaSpacesPattern.test(value)) {
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setErrors(prevErrors => {
+          const newErrors = { ...prevErrors };
+          delete newErrors[name]; // Clear error if input is now valid
+          return newErrors;
+        });
+      } else {
+        // If it doesn't match the pattern, don't update formData, but set an error
+        const errorMsg = 'Cannot contain numbers or special characters';
+        if (errors[name] !== errorMsg) { // Prevent setting the same error repeatedly
+          setErrors(prevErrors => ({
+            ...prevErrors,
+            [name]: errorMsg,
+          }));
+        }
+      }
+      return;
+    }
+
+    // For other fields, update formData and clear specific error on change
     setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+    });
   };
 
   const handleAreaChange = e => {
     const { name, value } = e.target;
     if (name === 'value') {
+      // Use the refined decimalDraftPattern to restrict typing large numbers and 0.xx
       if (value === '' || decimalDraftPattern.test(value)) {
         setFormData(prev => ({
           ...prev,
           area: { ...prev.area, value },
         }));
+        // Clear area.value related errors that might be due to pattern mismatch
+        setErrors(prevErrors => {
+          const newErrors = { ...prevErrors };
+          delete newErrors['area.value'];
+          return newErrors;
+        });
+      } else {
+        // If the value does not match the draft pattern, prevent setting the value
+        // and set an immediate error for invalid input characters/format.
+        const errorMsg = 'Invalid number format (1-1000, up to 2 decimals)';
+        if (errors['area.value'] !== errorMsg) {
+          setErrors(prevErrors => ({
+            ...prevErrors,
+            'area.value': errorMsg,
+          }));
+        }
       }
       return;
     }
 
+    // For area unit, update formData and clear specific error on change
     setFormData(prev => ({ ...prev, area: { ...prev.area, [name]: value } }));
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      delete newErrors['area.unit'];
+      return newErrors;
+    });
   };
 
   const validateForm = () => {
     const schema = {
-      fieldName: [rules.required(), rules.minLength(2), rules.maxLength(60)],
+      // Field Name: Allows any characters, min 2, max 100
+      fieldName: [rules.required(), rules.minLength(2), rules.maxLength(100)],
+      // Field Code: Allows any characters, max 50 (removed space and pattern restrictions)
       fieldCode: [
         rules.required(),
-        rules.noSpaces(),
-        rules.pattern(/^[A-Za-z0-9-]+$/, 'Use letters, numbers, hyphen only'),
-        rules.maxLength(20),
+        rules.maxLength(50),
       ],
-      locationDescription: [rules.required(), rules.minLength(3)],
+      // Location Description: Allows any characters, min 3, max 250
+      locationDescription: [rules.required(), rules.minLength(3), rules.maxLength(250)],
+      // Area Size: Required, 2 decimal places, min 1.00, max 1000.00
       'area.value': [
         rules.required(),
+        // The decimalPlaces rule is kept for final validation on submit.
+        // The decimalDraftPattern in handleAreaChange provides real-time typing restriction.
         rules.decimalPlaces(2, 'Allow up to two decimal places'),
-        rules.gt(0, 'Must be greater than 0'),
-        rules.max(100, 'Must be 100 or less'),
+        rules.number('Must be a number'), // Ensure it's treated as a number
+        rules.min(1, 'Must be 1.00 or greater'), // Updated minimum limit
+        rules.max(1000, 'Must be 1000.00 or less'), // Updated maximum limit
       ],
       'area.unit': [rules.oneOf(['acres', 'hectares', 'sqm'])],
       soilType: [rules.oneOf(['Loamy', 'Clay', 'Sandy'])],
       status: [validateStatus],
-      irrigationSystem: [rules.maxLength(60)],
+      // Irrigation System: Allows letters and spaces, max 60 (optional)
+      // The `alphaSpacesPattern` is used for real-time input restriction,
+      // and also for final validation on submit.
+      irrigationSystem: [
+        rules.maxLength(60),
+        rules.pattern(alphaSpacesPattern, 'Cannot contain numbers or special characters'),
+      ],
+      // Notes: Allows any characters, max 500 (optional)
       notes: [rules.maxLength(500)],
     };
     const { valid, errors: errs } = validate(schema, formData);
-    setErrors(errs);
+    setErrors(prevErrors => ({ ...prevErrors, ...errs })); // Merge new errors with existing ones
     return valid;
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    // Run full validation on submit
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -132,6 +207,8 @@ const AddFieldPage = () => {
         ...formData,
         area: { ...formData.area, value: Number(formData.area.value) },
       };
+      // In a real application, you would send this payload to your API:
+      // await api.post('/admin/fields', payload);
       alert('Field added successfully!');
       navigate('/admin/fields');
     } catch (err) {
@@ -150,12 +227,14 @@ const AddFieldPage = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">  
+         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-4">
               <Link
                 to="/admin/fields"
                 className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors duration-200"
-              ></Link>
+              >
+                {/* Back button content */}
+              </Link>
               <div className="h-6 border-l border-gray-300"></div>
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-100 rounded-lg">
@@ -220,6 +299,7 @@ const AddFieldPage = () => {
                   <input
                     type="text"
                     name="fieldName"
+                    value={formData.fieldName}
                     onChange={handleChange}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
@@ -258,6 +338,7 @@ const AddFieldPage = () => {
                   <input
                     type="text"
                     name="fieldCode"
+                    value={formData.fieldCode}
                     onChange={handleChange}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
@@ -320,6 +401,7 @@ const AddFieldPage = () => {
                 </label>
                 <textarea
                   name="locationDescription"
+                  value={formData.locationDescription}
                   onChange={handleChange}
                   required
                   className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white resize-none ${
@@ -343,7 +425,7 @@ const AddFieldPage = () => {
                         strokeLinejoin="round"
                         strokeWidth={2}
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
+                        />
                     </svg>
                     <p className="text-red-600 text-sm font-medium">
                       {errors['locationDescription']}
@@ -362,10 +444,12 @@ const AddFieldPage = () => {
                     type="text"
                     name="value"
                     step="0.01"
-                    min="0.01"
+                    min="1.00" // HTML5 min attribute updated for better user experience
+                    max="1000.00" // HTML5 max attribute updated
                     value={formData.area.value}
                     inputMode="decimal"
-                    pattern="^\\d+(?:\\.\\d{1,2})?$"
+                    // HTML5 pattern helps with some browser-level validation, but JS validation is primary.
+                    pattern="^(?:[1-9]\d{0,2}|1000)(?:\.\d{0,2})?$"
                     onChange={handleAreaChange}
                     required
                     className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
@@ -453,11 +537,12 @@ const AddFieldPage = () => {
               {/* Irrigation */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Irrigation System
+                  Irrigation System (e.g., Drip, Sprinkler, Manual)
                 </label>
                 <input
                   type="text"
                   name="irrigationSystem"
+                  value={formData.irrigationSystem}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white ${
                     errors['irrigationSystem']
@@ -495,6 +580,7 @@ const AddFieldPage = () => {
                 </label>
                 <textarea
                   name="notes"
+                  value={formData.notes}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 focus:bg-white resize-none ${
                     errors['notes']

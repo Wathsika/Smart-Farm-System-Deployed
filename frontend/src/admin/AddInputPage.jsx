@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 const AddInputPage = () => {
     const navigate = useNavigate();
 
-    // Form state - කිසිදු වෙනසක් කර නැත
+    // Form state - No changes made
     const [formData, setFormData] = useState({
         name: '',
         category: 'fertilizer', 
@@ -18,18 +18,218 @@ const AddInputPage = () => {
         notes: '',
     });
 
+<<<<<<< Updated upstream
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // handleChange function - කිසිදු වෙනසක් කර නැත
     const handleChange = (e) => {
         const { name, value, type } = e.target;
+=======
+    const [error, setError] = useState(null); // For API errors
+    const [validationErrors, setValidationErrors] = useState({}); // For field validation errors
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Helper function to validate a single field
+    const validateField = (name, value) => {
+        let errorMessage = '';
+
+        // Regex for "letters and spaces only"
+        const lettersSpacesOnlyRegex = /^[A-Za-z\s]*$/;
+        // Regex for "positive numbers only (with decimals)"
+        const positiveNumbersOnlyRegex = /^(?:\d+\.?\d*|\.?\d+)$/; // Does not allow negative values
+        // Regex for "positive integers only"
+        const positiveIntegersOnlyRegex = /^[0-9]*$/; // Matches empty string and positive integers
+
+        switch (name) {
+            case 'name':
+                if (!value.trim()) {
+                    errorMessage = 'Product Name is required.';
+                } else if (!lettersSpacesOnlyRegex.test(value)) {
+                    errorMessage = 'Product Name can only contain letters and spaces (no numbers or special characters).';
+                }
+                break;
+            case 'stockQty':
+                if (!value.toString().trim()) {
+                    errorMessage = 'Initial Stock Quantity is required.';
+                } else if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                    errorMessage = 'Stock Quantity must be a whole number (no decimals, letters, or special characters).';
+                } else if (Number(value) < 1 || Number(value) > 1000) { // Range 1-1000
+                    errorMessage = 'Stock Quantity must be between 1 and 1000.';
+                }
+                break;
+            case 'activeIngredient':
+                // No specific validation required for Active Ingredient - allows all characters as per user request.
+                break;
+            case 'dilutionRate':
+                if (value.toString().trim()) {
+                    const parsedValue = parseFloat(value);
+                    if (isNaN(parsedValue)) {
+                        errorMessage = 'Dilution Rate must be a valid number.';
+                    } else if (parsedValue < 0.50 || parsedValue > 100.00) { // Range 0.50-100.00
+                        errorMessage = 'Dilution Rate must be between 0.50 and 100.00.';
+                    } else if (value.includes('.') && value.split('.')[1].length > 2) {
+                        errorMessage = 'Dilution Rate can have a maximum of 2 decimal places.';
+                    }
+                }
+                break;
+            case 'method':
+                if (!value) {
+                    errorMessage = 'Application Method is required.';
+                }
+                break;
+            case 'preHarvestIntervalDays':
+                if (value.toString().trim()) {
+                    if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                        errorMessage = 'Pre-Harvest Interval must be a whole number (no decimals, letters, or special characters).';
+                    } else if (Number(value) < 1 || Number(value) > 30) { // Range 1-30
+                        errorMessage = 'Pre-Harvest Interval must be between 1 and 30 days.';
+                    }
+                }
+                break;
+            case 'reEntryHours':
+                if (value.toString().trim()) {
+                    if (!positiveIntegersOnlyRegex.test(value.toString())) {
+                        errorMessage = 'Re-Entry Period must be a whole number (no decimals, letters, or special characters).';
+                    } else if (Number(value) < 0 || Number(value) > 72) { // Range 0-72, allows 0
+                        errorMessage = 'Re-Entry Period must be between 0 and 72 hours.';
+                    }
+                }
+                break;
+            case 'notes':
+                // No specific validation required for Notes - allows all characters as per user request.
+                break;
+            default:
+                break;
+        }
+        return errorMessage;
+    };
+
+    // New common key down handler to restrict character input and check values
+    const handleKeyDown = (e, fieldName) => {
+        const { key } = e;
+        const currentValue = e.target.value;
+
+        const isControlKey = [
+            'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Escape'
+        ].includes(key) ||
+        ((e.ctrlKey || e.metaKey) && (key === 'a' || key === 'c' || key === 'v' || key === 'x'));
+
+        if (isControlKey) {
+            return; // Allow control keys
+        }
+
+        let allowDecimal = false;
+        let maxValue = 0;
+        let maxIntegerDigits = 0;
+
+        switch (fieldName) {
+            case 'name':
+                if (!/^[A-Za-z\s]$/.test(key)) {
+                    e.preventDefault(); // Block anything that is not a letter or space
+                }
+                return; // No further numeric checks needed for this field
+            case 'stockQty':
+                maxValue = 1000;
+                maxIntegerDigits = 4; // Max 4 digits for '1000'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'dilutionRate':
+                // For dilutionRate, allow digits, '.', letters, and '/'
+                // We'll rely on validateField for numeric range and decimal precision
+                if (!/^[0-9.A-Za-z/]$/.test(key)) {
+                    e.preventDefault();
+                    return;
+                }
+                if (key === '.' && currentValue.includes('.')) {
+                    e.preventDefault(); // Only one decimal point
+                    return;
+                }
+                // No max value/length checks here, as letters are allowed and it complicates the logic.
+                // The main validation will happen in validateField.
+                return;
+            case 'preHarvestIntervalDays':
+                maxValue = 30;
+                maxIntegerDigits = 2; // Max 2 digits for '30'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'reEntryHours':
+                maxValue = 72;
+                maxIntegerDigits = 2; // Max 2 digits for '72'
+                if (!/^[0-9]$/.test(key)) { // Only digits
+                    e.preventDefault();
+                    return;
+                }
+                break;
+            case 'activeIngredient':
+            case 'notes':
+                // No keydown restrictions for Active Ingredient and Notes as per user request.
+                return;
+            default:
+                return;
+        }
+
+        // Common numeric field checks (for stockQty, preHarvestIntervalDays, reEntryHours)
+        const selectionStart = e.target.selectionStart;
+        const selectionEnd = e.target.selectionEnd;
+        const potentialValue = currentValue.substring(0, selectionStart) + key + currentValue.substring(selectionEnd);
+
+        if (potentialValue !== '') {
+            const numericPotentialValue = parseFloat(potentialValue);
+            if (!isNaN(numericPotentialValue)) {
+                if (numericPotentialValue > maxValue) {
+                    // Allow '0' if it's a valid minimum (like for reEntryHours)
+                    if (!(numericPotentialValue === 0 && fieldName === 'reEntryHours')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }
+            if (potentialValue.length > maxIntegerDigits) {
+                e.preventDefault();
+                return;
+            }
+        }
+    };
+
+    // handleChange function - Improved to clear field errors and handle number conversion.
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        // Clear previous error for this field when user types
+        setValidationErrors(prevErrors => ({
+            ...prevErrors,
+            [name]: ''
+        }));
+
+        let processedValue = value;
+        // Fields that should be numbers but use type="text" for stricter input control
+        const numericFields = ['stockQty', 'dilutionRate', 'preHarvestIntervalDays', 'reEntryHours'];
+
+        if (numericFields.includes(name) && value !== '') {
+            // For dilutionRate, keep as string during input to allow flexible typing before final validation
+            if (name === 'dilutionRate') {
+                processedValue = value;
+            } else { // For other integer fields, parse to int
+                processedValue = parseInt(value, 10);
+                if (isNaN(processedValue)) processedValue = value; // Keep string if invalid int
+            }
+        }
+
+>>>>>>> Stashed changes
         setFormData(prevState => ({
             ...prevState,
             [name]: type === 'number' && value !== '' ? Number(value) : value
         }));
     };
 
+<<<<<<< Updated upstream
     // handleSubmit function - enhanced with loading state
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -37,6 +237,54 @@ const AddInputPage = () => {
         setIsSubmitting(true);
         try {
             await api.post('/inputs', formData);
+=======
+    // Function to validate the entire form
+    const validateForm = () => {
+        let errors = {};
+        let isValid = true;
+
+        Object.keys(formData).forEach(fieldName => {
+            const errorMessage = validateField(fieldName, formData[fieldName]);
+            if (errorMessage) {
+                errors[fieldName] = errorMessage;
+                isValid = false;
+            }
+        });
+
+        setValidationErrors(errors);
+        return isValid;
+    };
+
+    // handleSubmit function - Improved with loading state and validation.
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null); // Clear generic API error
+
+        if (!validateForm()) {
+            setError('Please correct the highlighted errors before submitting.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // Prepare data for submission, convert empty strings for optional numbers to 'null'
+            const dataToSubmit = { ...formData };
+
+            // Convert empty strings for optional numeric fields to null
+            if (dataToSubmit.preHarvestIntervalDays === '') dataToSubmit.preHarvestIntervalDays = null;
+            if (dataToSubmit.reEntryHours === '') dataToSubmit.reEntryHours = null;
+            if (dataToSubmit.dilutionRate === '') dataToSubmit.dilutionRate = null;
+            // stockQty is required, so it shouldn't be empty after validation, but adding a check for robustness
+            if (dataToSubmit.stockQty === '') dataToSubmit.stockQty = null;
+
+            // Ensure numeric fields are actually numbers before sending, as `handleChange` might keep them as string for validation
+            dataToSubmit.stockQty = dataToSubmit.stockQty !== null ? Number(dataToSubmit.stockQty) : null;
+            dataToSubmit.dilutionRate = dataToSubmit.dilutionRate !== null ? Number(dataToSubmit.dilutionRate) : null;
+            dataToSubmit.preHarvestIntervalDays = dataToSubmit.preHarvestIntervalDays !== null ? Number(dataToSubmit.preHarvestIntervalDays) : null;
+            dataToSubmit.reEntryHours = dataToSubmit.reEntryHours !== null ? Number(dataToSubmit.reEntryHours) : null;
+
+            await api.post('/inputs', dataToSubmit);
+>>>>>>> Stashed changes
             alert('New farm input added successfully!');
             navigate('/admin/crop/inputs');
         } catch (err) {
@@ -85,6 +333,7 @@ const AddInputPage = () => {
                                     <label className="block text-sm font-medium text-gray-700">
                                         Product Name <span className="text-red-500">*</span>
                                     </label>
+<<<<<<< Updated upstream
                                     <input 
                                         type="text" 
                                         name="name" 
@@ -93,6 +342,17 @@ const AddInputPage = () => {
                                         required 
                                         className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                         placeholder="e.g., Urea Fertilizer" 
+=======
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        onKeyDown={(e) => handleKeyDown(e, 'name')}
+                                        required
+                                        className={`block w-full px-4 py-3 border rounded-md text-sm focus:outline-none focus:ring-2 ${validationErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+                                        placeholder="e.g., Urea Fertilizer"
+>>>>>>> Stashed changes
                                     />
                                 </div>
                                 
@@ -119,6 +379,7 @@ const AddInputPage = () => {
                                         Initial Stock Quantity <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
+<<<<<<< Updated upstream
                                         <input 
                                             type="number" 
                                             name="stockQty" 
@@ -128,6 +389,17 @@ const AddInputPage = () => {
                                             required 
                                             className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                             placeholder="500" 
+=======
+                                        <input
+                                            type="text" // Using type="text" for strict input control
+                                            name="stockQty"
+                                            value={formData.stockQty}
+                                            onChange={handleChange}
+                                            onKeyDown={(e) => handleKeyDown(e, 'stockQty')} // onKeyDown handler for numbers
+                                            required
+                                            className={`block w-full px-4 py-3 pr-16 border rounded-md text-sm focus:outline-none focus:ring-2 ${validationErrors.stockQty ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+                                            placeholder="500"
+>>>>>>> Stashed changes
                                         />
                                         <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
                                             units
@@ -151,6 +423,7 @@ const AddInputPage = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">Active Ingredient</label>
+<<<<<<< Updated upstream
                                         <input 
                                             type="text" 
                                             name="activeIngredient" 
@@ -158,6 +431,16 @@ const AddInputPage = () => {
                                             onChange={handleChange} 
                                             className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                             placeholder="e.g., Imidacloprid" 
+=======
+                                        <input
+                                            type="text"
+                                            name="activeIngredient"
+                                            value={formData.activeIngredient}
+                                            onChange={handleChange}
+                                            onKeyDown={(e) => handleKeyDown(e, 'activeIngredient')} // No specific keydown restrictions.
+                                            className={`block w-full px-4 py-3 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 ${validationErrors.activeIngredient ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+                                            placeholder="e.g., Imidacloprid"
+>>>>>>> Stashed changes
                                         />
                                     </div>
 
@@ -183,6 +466,7 @@ const AddInputPage = () => {
 
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">Dilution Rate</label>
+<<<<<<< Updated upstream
                                         <input 
                                             type="text" 
                                             name="dilutionRate" 
@@ -190,14 +474,29 @@ const AddInputPage = () => {
                                             onChange={handleChange} 
                                             className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                             placeholder="e.g., 0.3 ml/L" 
+=======
+                                        <input
+                                            type="text" // Using type="text" for strict input control
+                                            name="dilutionRate"
+                                            value={formData.dilutionRate}
+                                            onChange={handleChange}
+                                            onKeyDown={(e) => handleKeyDown(e, 'dilutionRate')} // onKeyDown handler for numbers, letters, '/'
+                                            className={`block w-full px-4 py-3 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 ${validationErrors.dilutionRate ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+                                            placeholder="e.g., 0.50"
+>>>>>>> Stashed changes
                                         />
                                     </div>
 
+<<<<<<< Updated upstream
                                     <div></div>
+=======
+                                    <div></div> {/* Empty div to maintain grid layout */}
+>>>>>>> Stashed changes
 
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">Pre-Harvest Interval</label>
                                         <div className="relative">
+<<<<<<< Updated upstream
                                             <input 
                                                 type="number" 
                                                 name="preHarvestIntervalDays" 
@@ -205,6 +504,15 @@ const AddInputPage = () => {
                                                 value={formData.preHarvestIntervalDays} 
                                                 onChange={handleChange} 
                                                 className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+=======
+                                            <input
+                                                type="text" // Using type="text" for strict input control
+                                                name="preHarvestIntervalDays"
+                                                value={formData.preHarvestIntervalDays}
+                                                onChange={handleChange}
+                                                onKeyDown={(e) => handleKeyDown(e, 'preHarvestIntervalDays')} // onKeyDown handler for numbers
+                                                className={`block w-full px-4 py-3 pr-16 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 ${validationErrors.preHarvestIntervalDays ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+>>>>>>> Stashed changes
                                                 placeholder="7"
                                             />
                                             <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
@@ -216,6 +524,7 @@ const AddInputPage = () => {
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">Re-Entry Period</label>
                                         <div className="relative">
+<<<<<<< Updated upstream
                                             <input 
                                                 type="number" 
                                                 name="reEntryHours" 
@@ -223,6 +532,15 @@ const AddInputPage = () => {
                                                 value={formData.reEntryHours} 
                                                 onChange={handleChange} 
                                                 className="block w-full px-4 py-3 pr-16 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+=======
+                                            <input
+                                                type="text" // Using type="text" for strict input control
+                                                name="reEntryHours"
+                                                value={formData.reEntryHours}
+                                                onChange={handleChange}
+                                                onKeyDown={(e) => handleKeyDown(e, 'reEntryHours')} // onKeyDown handler for numbers
+                                                className={`block w-full px-4 py-3 pr-16 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 ${validationErrors.reEntryHours ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all`}
+>>>>>>> Stashed changes
                                                 placeholder="24"
                                             />
                                             <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-500">
@@ -243,12 +561,22 @@ const AddInputPage = () => {
                             
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700">Notes & Instructions</label>
+<<<<<<< Updated upstream
                                 <textarea 
                                     name="notes" 
                                     value={formData.notes} 
                                     onChange={handleChange} 
                                     className="block w-full px-4 py-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none"
                                     rows="4" 
+=======
+                                <textarea
+                                    name="notes"
+                                    value={formData.notes}
+                                    onChange={handleChange}
+                                    onKeyDown={(e) => handleKeyDown(e, 'notes')} // No specific keydown restrictions.
+                                    className={`block w-full px-4 py-3 border rounded-md text-sm focus:outline-none focus:ring-2 ${validationErrors.notes ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500 focus:border-transparent'} transition-all resize-none`}
+                                    rows="4"
+>>>>>>> Stashed changes
                                     placeholder="Add any supplier details, safety notes, or special instructions here..."
                                 />
                             </div>
