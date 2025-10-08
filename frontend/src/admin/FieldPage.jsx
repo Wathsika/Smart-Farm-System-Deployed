@@ -566,7 +566,28 @@ const FieldPage = () => {
                   type="text"
                   placeholder="Search by field name, code, or location..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value.replace(/[^A-Za-z0-9\s]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key.length === 1 &&
+                      /[^A-Za-z0-9\s]/.test(e.key) &&
+                      !e.ctrlKey && !e.metaKey && !e.altKey
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+                    const sanitized = text.replace(/[^A-Za-z0-9\s]/g, '');
+                    if (sanitized !== text) {
+                      e.preventDefault();
+                      const target = e.target;
+                      const start = target.selectionStart ?? 0;
+                      const end = target.selectionEnd ?? 0;
+                      const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                      setSearchQuery(next);
+                    }
+                  }}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
               </div>

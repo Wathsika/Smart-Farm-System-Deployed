@@ -18,12 +18,17 @@ const EditInputPage = () => {
     const [validationErrors, setValidationErrors] = useState({}); // For field validation errors
     const [isSubmitting, setIsSubmitting] = useState(false); // To manage button state during submission
 
+    // Set page title for Edit page
+    useEffect(() => {
+        document.title = 'Edit Farm Input';
+    }, []);
+
     // Helper function to validate a single field
     const validateField = (name, value) => {
         let errorMessage = '';
 
-        // Regex for "letters and spaces only"
-        const lettersSpacesOnlyRegex = /^[A-Za-z\s]*$/;
+        // Regex for "letters, numbers, and spaces only" (no symbols)
+        const lettersSpacesOnlyRegex = /^[A-Za-z0-9\s]*$/;
         // Regex for "positive numbers only (with decimals)"
         const positiveNumbersOnlyRegex = /^(?:\d+\.?\d*|\.?\d+)$/; // Does not allow negative values
         // Regex for "positive integers only"
@@ -34,7 +39,7 @@ const EditInputPage = () => {
                 if (!value.trim()) {
                     errorMessage = 'Product Name is required.';
                 } else if (!lettersSpacesOnlyRegex.test(value)) {
-                    errorMessage = 'Product Name can only contain letters and spaces (no numbers or special characters).';
+                    errorMessage = 'Product Name can only contain letters, numbers, and spaces (no special characters).';
                 }
                 break;
             case 'stockQty':
@@ -42,8 +47,8 @@ const EditInputPage = () => {
                     errorMessage = 'Initial Stock Quantity is required.';
                 } else if (!positiveIntegersOnlyRegex.test(value.toString())) {
                     errorMessage = 'Stock Quantity must be a whole number (no decimals, letters, or special characters).';
-                } else if (Number(value) < 1 || Number(value) > 1000) { // Range 1-1000
-                    errorMessage = 'Stock Quantity must be between 1 and 1000.';
+                } else if (Number(value) < 1 || Number(value) > 2000) { // Range 1-2000
+                    errorMessage = 'Stock Quantity must be between 1 and 2000.';
                 }
                 break;
             case 'activeIngredient':
@@ -113,12 +118,12 @@ const EditInputPage = () => {
 
         switch (fieldName) {
             case 'name':
-                if (!/^[A-Za-z\s]$/.test(key)) {
+                if (!/^[A-Za-z0-9\s]$/.test(key)) {
                     e.preventDefault(); // Block anything that is not a letter or space
                 }
                 return; // No further numeric checks needed for this field
             case 'stockQty':
-                maxValue = 1000;
+                maxValue = 2000;
                 maxIntegerDigits = 4; // Max 4 digits for '1000'
                 if (!/^[0-9]$/.test(key)) { // Only digits
                     e.preventDefault();
@@ -126,18 +131,32 @@ const EditInputPage = () => {
                 }
                 break;
             case 'dilutionRate':
-                // For dilutionRate, allow digits, '.', letters, and '/'
-                // We'll rely on validateField for numeric range and decimal precision
-                if (!/^[0-9.A-Za-z/]$/.test(key)) {
+                // Allow only digits and a single dot
+                if (!/^[0-9.]$/.test(key)) {
                     e.preventDefault();
                     return;
                 }
+                // Only one decimal point
                 if (key === '.' && currentValue.includes('.')) {
-                    e.preventDefault(); // Only one decimal point
+                    e.preventDefault();
                     return;
                 }
-                // No max value/length checks here, as letters are allowed and it complicates the logic.
-                // The main validation will happen in validateField.
+                // Enforce at most 2 decimal places and max 100.00 while typing
+                const sStart = e.target.selectionStart ?? currentValue.length;
+                const sEnd = e.target.selectionEnd ?? currentValue.length;
+                const potential = currentValue.slice(0, sStart) + key + currentValue.slice(sEnd);
+                if (potential.includes('.')) {
+                    const [, dec = ''] = potential.split('.');
+                    if (dec.length > 2) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+                const num = parseFloat(potential);
+                if (!isNaN(num) && num > 100) {
+                    e.preventDefault();
+                    return;
+                }
                 return;
             case 'preHarvestIntervalDays':
                 maxValue = 30;
@@ -450,7 +469,7 @@ const EditInputPage = () => {
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2v-1a9 9 0 00-18 0v1a2 2 0 002 2h2a2 2 0 002-2z" />
                                             </svg>
                                         </div>
                                     </div>
@@ -531,7 +550,7 @@ const EditInputPage = () => {
                                         />
                                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 012 2z" />
                                             </svg>
                                         </div>
                                     </div>

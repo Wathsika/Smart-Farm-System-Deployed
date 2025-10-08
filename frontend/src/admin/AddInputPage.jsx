@@ -7,9 +7,9 @@ export default function AddInput() {
 
   // --- VALIDATION CONSTANTS ---
   const MAX_NAME_LENGTH = 100;
-  const MAX_STOCK_QUANTITY = 999999.99;
+  const MAX_STOCK_QUANTITY = 2000; // integer only (no decimals)
   const MIN_STOCK_QUANTITY = 0.01;
-  const MAX_PRICE = 999999.99;
+  const MAX_PRICE = 100000.00; // up to two decimals
   const MIN_PRICE = 0.01;
   const MAX_ALERT_VALUE = 99999.99;
   const MIN_ALERT_VALUE = 0.01;
@@ -77,13 +77,15 @@ export default function AddInput() {
         if (value === "") {
           error = "Stock quantity is required.";
         } else {
-          const qty = parseFloat(value);
-          if (isNaN(qty) || qty <= 0) {
-            error = "Must be a positive number.";
-          } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
-            error = "No more than 2 decimal places allowed.";
-          } else if (qty > MAX_STOCK_QUANTITY) {
-            error = `Quantity cannot exceed ${MAX_STOCK_QUANTITY}.`;
+          if (!/^\d+$/.test(value)) {
+            error = "No decimals allowed.";
+          } else {
+            const qty = parseInt(value, 10);
+            if (isNaN(qty) || qty <= 0) {
+              error = "Must be a positive number.";
+            } else if (qty > MAX_STOCK_QUANTITY) {
+              error = `Quantity cannot exceed ${MAX_STOCK_QUANTITY}.`;
+            }
           }
         }
         break;
@@ -105,14 +107,16 @@ export default function AddInput() {
 
       case "minStockAlert":
         if (value !== "") {
-          const alert = parseFloat(value);
-          const stock = parseFloat(form.stockQuantity);
+          if (!/^\d+$/.test(value)) {
+            error = "No decimals allowed.";
+            break;
+          }
+          const alert = parseInt(value, 10);
+           const stock = parseFloat(form.stockQuantity);
           if (isNaN(alert) || alert <= 0) {
             error = "Must be a positive number.";
-          } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
-            error = "No more than 2 decimal places allowed.";
-          } else if (alert > MAX_ALERT_VALUE) {
-            error = `Value cannot exceed ${MAX_ALERT_VALUE}.`;
+          } else if (alert > 10) {
+            error = "Value cannot exceed 10.";
           } else if (!isNaN(stock) && alert >= stock) {
             error = "Should be less than stock quantity.";
           }
@@ -121,17 +125,19 @@ export default function AddInput() {
 
       case "reorderPoint":
         if (value !== "") {
-          const reorder = parseFloat(value);
-          const minAlert = parseFloat(form.minStockAlert);
-          if (isNaN(reorder) || reorder <= 0) {
-            error = "Must be a positive number.";
-          } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
-            error = "No more than 2 decimal places allowed.";
-          } else if (reorder > MAX_ALERT_VALUE) {
-            error = `Value cannot exceed ${MAX_ALERT_VALUE}.`;
-          } else if (!isNaN(minAlert) && reorder >= minAlert) {
-            error = "Should be less than minimum stock alert.";
+          if (!/^\d+$/.test(value)) {
+            error = "No decimals allowed.";
+            break;
           }
+          const reorder = parseInt(value, 10);
+           const minAlert = parseFloat(form.minStockAlert);
+           if (isNaN(reorder) || reorder <= 0) {
+             error = "Must be a positive number.";
+          } else if (reorder > 100) {
+            error = "Value cannot exceed 100.";
+           } else if (!isNaN(minAlert) && reorder >= minAlert) {
+             error = "Should be less than minimum stock alert.";
+           }
         }
         break;
 
@@ -154,6 +160,12 @@ export default function AddInput() {
         }
         break;
 
+      case "supplier":
+        if (value && !/^[A-Za-z\s]+$/.test(value)) {
+          error = "Only letters and spaces are allowed.";
+        }
+        break;
+
       default:
         break;
     }
@@ -167,30 +179,48 @@ export default function AddInput() {
     const { name, value } = event.target;
     let newValue = value;
 
-    if (
-      name === "stockQuantity" ||
-      name === "price" ||
-      name === "minStockAlert" ||
-      name === "reorderPoint" ||
-      name === "dilutionRate" // Apply numeric and decimal formatting to dilutionRate
-    ) {
+    // Price and dilutionRate: allow up to two decimals + clamp to bounds
+    if (name === "price" || name === "dilutionRate") {
       if (newValue !== "") {
         newValue = newValue.replace(/[^0-9.]/g, "");
         const parts = newValue.split(".");
         if (parts[1] && parts[1].length > 2) {
           newValue = parts[0] + "." + parts[1].substring(0, 2);
         }
-        if (newValue.startsWith(".")) {
-          newValue = "0" + newValue;
-        }
+        if (newValue.startsWith(".")) newValue = "0" + newValue;
         if (newValue.length > 1 && newValue.startsWith("0") && !newValue.includes(".")) {
           newValue = parseFloat(newValue).toString();
         }
+        const v = parseFloat(newValue);
+        if (!isNaN(v)) {
+          if (name === "price" && v > MAX_PRICE) newValue = MAX_PRICE.toFixed(2);
+          if (name === "dilutionRate") {
+            if (v > MAX_DILUTION_RATE) newValue = MAX_DILUTION_RATE.toFixed(2);
+            if (v < MIN_DILUTION_RATE) newValue = MIN_DILUTION_RATE.toFixed(2);
+          }
+        }
+      }
+    // Integers only: stockQuantity, minStockAlert, reorderPoint + clamp to max
+    } else if (name === "stockQuantity" || name === "minStockAlert" || name === "reorderPoint") {
+      newValue = newValue.replace(/\D/g, "");
+      if (newValue.length > 1 && newValue.startsWith("0")) {
+        newValue = String(parseInt(newValue, 10));
+      }
+      const v = parseInt(newValue || "0", 10);
+      if (!isNaN(v)) {
+        if (name === "stockQuantity" && v > MAX_STOCK_QUANTITY) newValue = String(MAX_STOCK_QUANTITY);
+        if (name === "minStockAlert" && v > 10) newValue = "10";
+        if (name === "reorderPoint" && v > 100) newValue = "100";
       }
     } else if (name === "unit") {
       newValue = newValue.replace(/[^a-zA-Z/]/g, "");
-    } else if (name === "name" && newValue.length > MAX_NAME_LENGTH) {
-      newValue = newValue.substring(0, MAX_NAME_LENGTH);
+    } else if (name === "name") {
+      // Product name: letters, numbers, spaces only (no symbols)
+      newValue = newValue.replace(/[^A-Za-z0-9\s]/g, "");
+      if (newValue.length > MAX_NAME_LENGTH) newValue = newValue.substring(0, MAX_NAME_LENGTH);
+    } else if (name === "supplier") {
+      // Supplier: letters and spaces only
+      newValue = newValue.replace(/[^A-Za-z\s]/g, "");
     } else if (name === "notes" && newValue.length > MAX_NOTES_LENGTH) {
       newValue = newValue.substring(0, MAX_NOTES_LENGTH);
     }
