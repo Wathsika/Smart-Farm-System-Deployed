@@ -1,5 +1,8 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { 
+  Page, Text, View, Document, StyleSheet, Font, 
+  Svg, Line, Rect, Path, Circle 
+} from '@react-pdf/renderer';
 
 // --- Styles ---
 const styles = StyleSheet.create({
@@ -149,6 +152,34 @@ export const MilkReportPDF = ({ records = [], monthName, year, cowName }) => {
   const uniqueDays = new Set(records.map(r => formatDate(r.date))).size;
   const averageDaily = uniqueDays > 0 ? totalVolume / uniqueDays : 0;
 
+  // --- Summary analytics ---
+const groupedByDate = {};
+records.forEach(r => {
+  const day = formatDate(r.date);
+  groupedByDate[day] = (groupedByDate[day] || 0) + (Number(r.volumeLiters) || 0);
+});
+
+const dailyArray = Object.entries(groupedByDate).map(([date, liters]) => ({ date, liters }));
+const sorted = [...dailyArray].sort((a, b) => b.liters - a.liters);
+const highestDay = sorted[0];
+const lowestDay = sorted[sorted.length - 1];
+
+// Group by cow
+const cowTotals = {};
+records.forEach(r => {
+  const name = r.cow?.name || "Unknown";
+  cowTotals[name] = (cowTotals[name] || 0) + (Number(r.volumeLiters) || 0);
+});
+const topCow = Object.entries(cowTotals).sort((a, b) => b[1] - a[1])[0];
+
+// --- Chart scaling ---
+const maxLiters = Math.max(...dailyArray.map(d => d.liters), 0);
+const points = dailyArray.map((d, i) => {
+  const x = 30 + (i * (500 / (dailyArray.length - 1 || 1)));
+  const y = 150 - (d.liters / (maxLiters || 1)) * 120;
+  return `${x},${y}`;
+}).join(' ');
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -170,52 +201,204 @@ export const MilkReportPDF = ({ records = [], monthName, year, cowName }) => {
 
         {/* === Report Details Section === */}
         <View style={styles.detailsSection}>
-            <View style={styles.detailsColumn}>
-                <Text style={styles.detailsTitle}>Report For:</Text>
-                <Text style={styles.detailsText}>{monthName} {year}</Text>
-            </View>
-            <View style={styles.detailsColumn}>
-                <Text style={styles.detailsTitle}>Filtered By:</Text>
-                <Text style={styles.detailsText}>Cow: {cowName}</Text>
-            </View>
+          <View style={styles.detailsColumn}>
+            <Text style={styles.detailsTitle}>Report For:</Text>
+            <Text style={styles.detailsText}>{monthName} {year}</Text>
+          </View>
         </View>
 
-        {/* === Data Table === */}
-        <View style={styles.table}>
-          <View style={[styles.tableRow, styles.tableHeader]} fixed>
-            <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Date</Text></View>
-            <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Cow Name</Text></View>
-            <View style={styles.tableCol}><Text style={styles.tableCellHeader}>Shift</Text></View>
-            <View style={styles.tableCol}><Text style={[styles.tableCellHeader, {textAlign: 'right'}]}>Volume (L)</Text></View>
+        {/* === Daily Milk Totals Table  === */}
+        <View style={{ marginBottom: 25 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: "Helvetica-Bold",
+              color: "#166534",
+              marginBottom: 10,
+            }}
+          >
+            Daily Milk Totals
+          </Text>
+
+          {/* Table Header */}
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#f1f5f1",
+              borderTopWidth: 1,
+              borderBottomWidth: 1,
+              borderColor: "#cbd5c0",
+              paddingVertical: 6,
+              paddingHorizontal: 4,
+            }}
+          >
+            <Text
+              style={{
+                width: "50%",
+                fontSize: 10,
+                fontFamily: "Helvetica-Bold",
+                color: "#166534",
+              }}
+            >
+              Date
+            </Text>
+            <Text
+              style={{
+                width: "50%",
+                fontSize: 10,
+                fontFamily: "Helvetica-Bold",
+                textAlign: "right",
+                color: "#166534",
+              }}
+            >
+              Total Milk (L)
+            </Text>
           </View>
 
-          {records.map((item, index) => (
-            <View style={styles.tableRow} key={item._id || index} wrap={false}>
-              <View style={styles.tableCol}><Text style={styles.tableCell}>{formatDate(item.date)}</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCell}>{item.cow?.name || 'N/A'}</Text></View>
-              <View style={styles.tableCol}><Text style={styles.tableCell}>{item.shift || 'AM'}</Text></View>
-              <View style={styles.tableCol}><Text style={[styles.tableCell, {textAlign: 'right'}]}>{Number(item.volumeLiters || 0).toFixed(2)}</Text></View>
+          {/* Table Rows */}
+          {dailyArray.length > 0 ? (
+            dailyArray.map((d, i) => (
+              <View
+                key={i}
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: i % 2 === 0 ? "#ffffff" : "#f9faf9",
+                  borderBottomWidth: 0.5,
+                  borderColor: "#e0e0e0",
+                  paddingVertical: 5,
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Text style={{ width: "50%", fontSize: 10, color: "#333" }}>
+                  {new Date(d.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "2-digit",
+                  })}
+                </Text>
+                <Text
+                  style={{
+                    width: "50%",
+                    fontSize: 10,
+                    color: "#333",
+                    textAlign: "right",
+                    fontFamily: "Helvetica-Bold",
+                  }}
+                >
+                  {d.liters.toFixed(2)}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: "#e5e5e5",
+                padding: 8,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 10, color: "#666" }}>
+                No records found for this month.
+              </Text>
             </View>
-          ))}
+          )}
+
+          {/* Footer Row (Total) */}
+          <View
+            style={{
+              flexDirection: "row",
+              borderTopWidth: 1,
+              borderColor: "#cbd5c0",
+              backgroundColor: "#f1f5f1",
+              paddingVertical: 5,
+              paddingHorizontal: 4,
+            }}
+          >
+            <Text
+              style={{
+                width: "50%",
+                fontSize: 10,
+                fontFamily: "Helvetica-Bold",
+                color: "#166534",
+              }}
+            >
+              Total for {monthName}
+            </Text>
+            <Text
+              style={{
+                width: "50%",
+                fontSize: 10,
+                fontFamily: "Helvetica-Bold",
+                color: "#166534",
+                textAlign: "right",
+              }}
+            >
+              {totalVolume.toFixed(2)} L
+            </Text>
+          </View>
         </View>
 
         {/* === Summary Section === */}
         <View style={styles.summarySection}>
-          <Text style={styles.summaryTitle}>Summary</Text>
-          
+          <Text style={styles.summaryTitle}>Monthly Production Summary</Text>
+
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Milk Records:</Text>
-            <Text style={styles.summaryValue}>{totalRecords}</Text>
-          </View>
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Production for Month:</Text>
-            <Text style={styles.summaryValue}>{totalVolume.toFixed(2)} Liters</Text>
+            <Text style={styles.summaryLabel}>Total Milk Collected:</Text>
+            <Text style={styles.summaryValue}>{totalVolume.toFixed(2)} L</Text>
           </View>
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Average Daily Production:</Text>
-            <Text style={styles.summaryValue}>{averageDaily.toFixed(2)} Liters / Day</Text>
+            <Text style={styles.summaryValue}>{averageDaily.toFixed(2)} L / day</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Highest Production Day:</Text>
+            <Text style={styles.summaryValue}>
+              {highestDay ? `${highestDay.date} (${highestDay.liters.toFixed(2)} L)` : '—'}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Lowest Production Day:</Text>
+            <Text style={styles.summaryValue}>
+              {lowestDay ? `${lowestDay.date} (${lowestDay.liters.toFixed(2)} L)` : '—'}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Top Producing Cow:</Text>
+            <Text style={styles.summaryValue}>
+              {topCow ? `${topCow[0]} (${topCow[1].toFixed(2)} L)` : '—'}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Days Recorded:</Text>
+            <Text style={styles.summaryValue}>{uniqueDays}</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Cows Included:</Text>
+            <Text style={styles.summaryValue}>{Object.keys(cowTotals).length}</Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Variation Range:</Text>
+            <Text style={styles.summaryValue}>
+              {highestDay && lowestDay
+                ? `${(highestDay.liters - lowestDay.liters).toFixed(2)} L difference`
+                : '—'}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Average per Cow:</Text>
+            <Text style={styles.summaryValue}>
+              {Object.keys(cowTotals).length > 0
+                ? (totalVolume / Object.keys(cowTotals).length).toFixed(2) + ' L'
+                : '—'}
+            </Text>
           </View>
         </View>
 

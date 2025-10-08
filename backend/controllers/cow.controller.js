@@ -3,7 +3,7 @@ import Cow from "../models/cow.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import QRCode from "qrcode";
 
-function resolveFrontendBase() {
+function resolveFrontendBase(req) {
   const candidates = [
     process.env.FRONTEND_URL,
     process.env.CLIENT_URL,
@@ -16,14 +16,36 @@ function resolveFrontendBase() {
     }
   }
 
-  return null;
+  if (req) {
+    const origin = req.get?.("origin");
+    if (origin && origin.trim()) {
+      return origin.trim().replace(/\/$/, "");
+    }
+
+    const host = req.get?.("host");
+    if (host && host.trim()) {
+      const forwardedProto = req.get?.("x-forwarded-proto");
+      const protocol = (forwardedProto?.split(",")[0] || req.protocol || "http").replace(/:$/, "");
+      return `${protocol}://${host.trim()}`.replace(/\/$/, "");
+    }
+  }
+
+  return "";
 }
 
 // helper: generate QR as buffer + upload
-async function generateCowQR(cow) {
-   // Ensure the QR links to the dedicated public cow page
-  const frontendBase = (process.env.FRONTEND_URL || "").replace(/\/$/, "");
-  const profileUrl = `${frontendBase || ""}/cow/${cow._id}`;
+async function generateCowQR(cow, req) {
+  // Ensure the QR links to the dedicated public cow page
+  const frontendBase = resolveFrontendBase(req);
+  const profilePath = `/cow/${cow._id}`;
+  const profileUrl = frontendBase ? `${frontendBase}${profilePath}` : profilePath;
+
+  const qrBuffer = await QRCode.toBuffer(profileUrl, {
+    type: "png",
+    errorCorrectionLevel: "M",
+    width: 512,
+    margin: 1,
+  });
 
   const qrUrl = await uploadToCloudinary(qrBuffer, "smart_farm_qr");
   return qrUrl;
@@ -45,7 +67,7 @@ export const addCow = async (req, res, next) => {
     let cow = await Cow.create({ name, breed, bday, gender, photoUrl });
 
     // generate QR
-    cow.qrUrl = await generateCowQR(cow);
+    cow.qrUrl = await generateCowQR(cow, req);
     await cow.save();
 
     res.status(201).json(cow);
@@ -61,7 +83,7 @@ export const regenerateCowQR = async (req, res, next) => {
     const cow = await Cow.findById(id);
     if (!cow) return res.status(404).json({ message: "Cow not found" });
 
-    cow.qrUrl = await generateCowQR(cow);
+    cow.qrUrl = await generateCowQR(cow, req);
     await cow.save();
 
     res.json({ qrUrl: cow.qrUrl });
