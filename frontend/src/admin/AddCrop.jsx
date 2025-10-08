@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
 
 // -------- Inline validators (no extra files) --------
 const todayISO = () => {
   const off = new Date().getTimezoneOffset() * 60000;
   return new Date(Date.now() - off).toISOString().slice(0, 10);
+};
+
+// Helper function to get tomorrow's date in ISO format (YYYY-MM-DD)
+const tomorrowISO = () => {
+  const today = new Date();
+  today.setDate(today.getDate() + 1); // Increment to tomorrow's date
+  const off = today.getTimezoneOffset() * 60000;
+  return new Date(today.getTime() - off).toISOString().slice(0, 10);
 };
 
 const rules = {
@@ -20,6 +28,9 @@ const rules = {
     v == null || re.test(String(v)) ? null : msg,
   dateNotPast: (msg = 'Date cannot be in the past') => v =>
     !v ? msg : (v >= todayISO() ? null : msg),
+  // New rule: Date must be strictly a future date (after today)
+  dateIsFuture: (msg = 'Date must be a future date') => v =>
+    !v ? null : (v > todayISO() ? null : msg),
   dateOnOrAfter: (field, msg) => (v, all) =>
     !v || !all[field] || v >= all[field] ? null : (msg || `Must be on/after ${field}`),
 };
@@ -49,7 +60,7 @@ const AddCrop = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const navigate = useNavigate(); //New 
+  const navigate = useNavigate(); //New
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -65,11 +76,13 @@ const AddCrop = () => {
       ],
       plantingDate: [
         rules.required('Planting Date is required'),
-        rules.dateNotPast()
+        rules.dateNotPast() // Allows today or future dates
       ],
       expectedHarvestDate: [
         // optional; if present must be >= planting
-        rules.dateOnOrAfter('plantingDate', 'Harvest must be after planting'),
+        rules.dateOnOrAfter('plantingDate', 'Harvest must be on or after planting date'), // Keeping existing 'on or after' logic
+        // New validation: if present, must be strictly a future date (not today or past)
+        rules.dateIsFuture('Expected harvest date must be a future date')
       ],
     };
     const { valid, errors } = validate(schema, data);
@@ -90,7 +103,7 @@ const AddCrop = () => {
       setMessage(res.data.message || 'Crop added successfully!');
       setFormData({ cropName: '', plantingDate: '', expectedHarvestDate: '' });
       setErrors({});
-       
+
 
       // ✅ redirect to crop list after success
       navigate("/admin/crop", { replace: true });
@@ -124,10 +137,28 @@ const AddCrop = () => {
   // Calculate form completion percentage
   const completionPercentage = () => {
     let completed = 0;
-    if (formData.cropName) completed += 50;
-    if (formData.plantingDate) completed += 50;
-    return completed;
+    if (formData.cropName) completed += 33.3; // Approx 1/3 for each major field
+    if (formData.plantingDate) completed += 33.3;
+    if (formData.expectedHarvestDate) completed += 33.4; // Make it sum to 100%
+    return Math.min(100, Math.round(completed));
   };
+
+  // Determine the minimum selectable date for expectedHarvestDate input
+  const getMinHarvestDate = () => {
+    const minPossibleHarvest = tomorrowISO(); // Harvest date must be at least tomorrow
+    if (formData.plantingDate) {
+      // If planting date is set, harvest must be *after* planting date.
+      // So, we calculate planting date + 1 day.
+      const plantDateObj = new Date(formData.plantingDate);
+      plantDateObj.setDate(plantDateObj.getDate() + 1);
+      const plantDatePlusOneISO = new Date(plantDateObj.getTime() - plantDateObj.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+      // The actual minimum harvest date is the later of (plantingDate + 1 day) and tomorrow's date.
+      return plantDatePlusOneISO > minPossibleHarvest ? plantDatePlusOneISO : minPossibleHarvest;
+    }
+    return minPossibleHarvest;
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
@@ -142,11 +173,11 @@ const AddCrop = () => {
               </h1>
             </div>
           </div>
-          
+
           {/* Compact Progress Indicator */}
           <div className="flex items-center bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/20">
             <div className="w-20 bg-gray-200 rounded-full h-2 mr-3">
-              <div 
+              <div
                 className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${completionPercentage()}%` }}
               ></div>
@@ -242,12 +273,13 @@ const AddCrop = () => {
                             setFormData(prev => ({
                               ...prev,
                               plantingDate: v,
+                              // If planting date changes to a date later than current harvest date, clear harvest date
                               expectedHarvestDate:
                                 prev.expectedHarvestDate && prev.expectedHarvestDate < v ? '' : prev.expectedHarvestDate
                             }));
                           }}
                           onBlur={() => runValidation()}
-                          min={todayISO()}
+                          min={todayISO()} // Allows today or future
                           className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm text-lg font-medium ${
                             errors['plantingDate'] ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
                           }`}
@@ -289,7 +321,7 @@ const AddCrop = () => {
                           value={formData.expectedHarvestDate}
                           onChange={handleChange}
                           onBlur={() => runValidation()}
-                          min={formData.plantingDate || todayISO()}
+                          min={getMinHarvestDate()} // Ensures it's always a future date and after planting date
                           className={`w-full pl-12 pr-12 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm text-lg font-medium ${
                             errors['expectedHarvestDate'] ? 'border-red-300 focus:ring-red-500' : 'border-gray-200'
                           }`}
@@ -314,7 +346,7 @@ const AddCrop = () => {
                       )}
                       <div className="mt-2 text-xs text-gray-500">
                         <i className="fas fa-info-circle mr-1"></i>
-                        Estimate when you expect to harvest this crop
+                        Estimate when you expect to harvest this crop. Must be a future date.
                       </div>
                     </div>
                   </div>
