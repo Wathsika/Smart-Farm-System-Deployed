@@ -176,6 +176,7 @@ export default function AdminUsers() {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
       emp.fullName?.toLowerCase().includes(q) ||
+      String(emp.empId ?? "").toLowerCase().includes(q) ||
       emp.email?.toLowerCase().includes(q) ||
       emp.jobTitle?.toLowerCase().includes(q);
     
@@ -1504,7 +1505,9 @@ export default function AdminUsers() {
                             >
                               {emp.fullName}
                             </button>
-                            {/* Removed ID line as per previous request */}
+                            {emp.empId && (
+                              <div className="text-xs text-gray-500">ID: {emp.empId}</div>
+                            )}
                           </div>
                         </div>
                       </td>
