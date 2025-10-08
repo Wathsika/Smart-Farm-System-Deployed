@@ -198,7 +198,9 @@ export default function StaffAttendance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-
+  const sanitizeSearch = useCallback(
+    (v) => v.replace(/[^a-zA-Z0-9,\s]/g, ""), // allow letters, numbers, space, and comma only
+  []);
   const [filters, setFilters] = useState({
     userId: "all",
     statusFilter: "all", // New filter for attendance status
@@ -505,7 +507,7 @@ export default function StaffAttendance() {
                   type="text"
                   placeholder="Search by name, job title, email..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(sanitizeSearch(e.target.value))}
                   className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                 />
               </div>

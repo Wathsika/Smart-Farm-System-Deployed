@@ -74,6 +74,10 @@ export default function AdminUsers() {
 
   // search / filters
   const [searchTerm, setSearchTerm] = useState("");
+  // Add sanitize helper
+  const sanitizeSearch = useCallback(
+    (v) => v.replace(/[^a-zA-Z0-9@\.\s]/g, ""), // allow letters, numbers, space, @ and .
+  []) 
   // This statusFilter is for the employee's permanent 'active' or 'inactive' status
   const [statusFilter, setStatusFilter] = useState("all"); 
 
@@ -1280,7 +1284,7 @@ export default function AdminUsers() {
                 type="text"
                 placeholder="Search employees..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(sanitizeSearch(e.target.value))}
                 className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
               />
             </div>
