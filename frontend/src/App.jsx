@@ -65,6 +65,7 @@ import CowDetailsPage from "./pages/livestock/CowDetailsPage.jsx";
 import MilkProduction from "./pages/livestock/Milk.jsx";
 import HealthPage from "./pages/livestock/Health.jsx";
 import BreedingPage from "./pages/livestock/Breeding.jsx";
+import CowPublicPage from "./pages/livestock/CowPublicPage";
 
 // --- ADMIN PAGES (Lazy Loading for performance) ---
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -108,6 +109,8 @@ export default function App() {
         <Route path="/order/success" element={<OrderSuccessPage />} />
         <Route path="/order/cancel" element={<OrderCancelPage />} />
       </Route>
+
+      <Route path="/cow/:id" element={<CowPublicPage />} />
 
       {/* STANDALONE */}
       <Route path="/login" element={<Login />} />

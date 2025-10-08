@@ -3,15 +3,17 @@ import Cow from "../models/cow.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import QRCode from "qrcode";
 
-// helper: generate QR as buffer + upload
+//  helper: generate QR as buffer + upload
 async function generateCowQR(cow) {
-  const profileUrl = `${process.env.FRONTEND_URL}/admin/livestock/${cow._id}`;
+  // Use the correct public route path
+  const profileUrl = `${process.env.FRONTEND_URL}/cows/${cow._id}`;
+
   const qrBuffer = await QRCode.toBuffer(profileUrl, { type: "png" });
   const qrUrl = await uploadToCloudinary(qrBuffer, "smart_farm_qr");
   return qrUrl;
 }
 
-// Add cow
+//  Add cow
 export const addCow = async (req, res, next) => {
   try {
     const { name, breed, bday, gender } = req.body;
@@ -26,7 +28,7 @@ export const addCow = async (req, res, next) => {
 
     let cow = await Cow.create({ name, breed, bday, gender, photoUrl });
 
-    // generate QR
+    //  generate QR
     cow.qrUrl = await generateCowQR(cow);
     await cow.save();
 
@@ -36,7 +38,7 @@ export const addCow = async (req, res, next) => {
   }
 };
 
-// Regenerate QR
+//  Regenerate QR manually
 export const regenerateCowQR = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -52,7 +54,7 @@ export const regenerateCowQR = async (req, res, next) => {
   }
 };
 
-// List cows
+//  List all cows
 export const listCows = async (_req, res, next) => {
   try {
     const cows = await Cow.find().sort({ cowId: -1 });
@@ -62,7 +64,7 @@ export const listCows = async (_req, res, next) => {
   }
 };
 
-// Get single cow
+//  Get single cow
 export const getCow = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -77,28 +79,37 @@ export const getCow = async (req, res, next) => {
   }
 };
 
-// Update cow
+// 🟢 Update cow + regenerate QR
 export const updateCow = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updates = req.body;
 
+    // ✅ If new photo is uploaded
     if (req.file) {
       updates.photoUrl = await uploadToCloudinary(req.file.buffer, "smart_farm_cows");
     }
 
-    const cow = await Cow.findByIdAndUpdate(id, updates, {
+    // ✅ Update cow details first
+    let cow = await Cow.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
     });
+
     if (!cow) return res.status(404).json({ message: "Cow not found" });
+
+    // ✅ Regenerate QR after edit
+    cow.qrUrl = await generateCowQR(cow);
+    await cow.save();
+
     res.json(cow);
   } catch (err) {
     next(err);
   }
 };
 
-// Delete cow
+
+//  Delete cow
 export const deleteCow = async (req, res, next) => {
   try {
     const { id } = req.params;
