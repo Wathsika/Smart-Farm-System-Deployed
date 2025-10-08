@@ -1,38 +1,47 @@
+
 import mongoose from "mongoose";
 
 const TaskSchema = new mongoose.Schema(
   {
-    // Task එක assign කරපු user (employee)
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    // Task එකේ මාතෘකාව
     title: {
       type: String,
       required: true,
       trim: true,
     },
-    // Task එක ගැන විස්තරයක්
     description: {
       type: String,
       trim: true,
     },
-    // Task එක ඉවර කරන්න ඕන දවස
     dueDate: {
       type: Date,
       required: true,
     },
-    // Task එකේ තත්ත්වය
     status: {
       type: String,
       enum: ["To Do", "In Progress", "Completed"],
       default: "To Do",
     },
+    // Add completedAt field for more accurate performance tracking
+    completedAt: { // මෙම නව field එක එකතු කරන්න
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+// Pre-save hook to set completedAt when status changes to "Completed"
+TaskSchema.pre('save', function(next) {
+  if (this.isModified('status') && this.status === 'Completed' && !this.completedAt) {
+    this.completedAt = new Date();
+  }
+  next();
+});
 
 const Task = mongoose.model("Task", TaskSchema);
 export default Task;

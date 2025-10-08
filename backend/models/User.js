@@ -35,10 +35,12 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     role: {
+
       type: String,
       enum: ["Customer", "Employee", "Admin"], // The allowed roles
       required: true,
       default: "Customer",
+
     },
     // This field is for Employees only
     jobTitle: {
@@ -55,7 +57,9 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+
 // We name the model 'User'. Mongoose will automatically create a collection named 'users'.
 const User = mongoose.model("User", userSchema);
+
 
 export default User;

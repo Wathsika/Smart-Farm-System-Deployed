@@ -94,6 +94,7 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
 orderSchema.statics.generateOrderNumber = async function (date = new Date()) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -113,3 +114,4 @@ orderSchema.statics.generateOrderNumber = async function (date = new Date()) {
 const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);
 
 export default Order
+

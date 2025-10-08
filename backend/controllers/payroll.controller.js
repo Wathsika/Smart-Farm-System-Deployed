@@ -77,6 +77,7 @@ export const listPaymentSlips = async (req, res) => {
 
       return {
         id: String(doc._id),
+        slipId: doc.slipId || null,
         employee,
         month: doc.month,
         year: doc.year,
@@ -191,7 +192,26 @@ export const commitPayroll = async (req, res) => {
     const { month, year, items } = draft;
 
     const saved = [];
+    // Counter per requested period (year-month) to generate sequential slipId in format: SLP<YYYY><MM><n>
+    // Example: SLP2025101, SLP2025102, ... for Oct 2025
+    const slipMonth = String(month).padStart(2, "0");
+    const slipPrefix = `SLP${year}${slipMonth}`;
+    // Compute last sequence for this prefix
+    const existing = await PaymentSlip.find(
+      { year, month, slipId: new RegExp(`^${slipPrefix}`) },
+      { slipId: 1 }
+    ).lean();
+    let lastSequence = 0;
+    for (const d of existing) {
+      const suffix = String(d.slipId || "").slice(slipPrefix.length);
+      const n = Number(suffix);
+      if (Number.isFinite(n) && n > lastSequence) lastSequence = n;
+    }
+
     for (const it of items) {
+      lastSequence += 1;
+      const slipId = `${slipPrefix}${lastSequence}`;
+
       const doc = await PaymentSlip.findOneAndUpdate(
         { employee: it.employee.id, month, year },
         {
@@ -207,7 +227,8 @@ export const commitPayroll = async (req, res) => {
           etf: it.etf,
           gross: it.gross,
           net: it.net,
-          status: it.status || "PENDING",
+          status: "SAVED",
+          $setOnInsert: { slipId },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       ).lean();

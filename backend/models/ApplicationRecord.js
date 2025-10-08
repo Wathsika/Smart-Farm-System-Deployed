@@ -21,3 +21,4 @@ const applicationRecordSchema = new mongoose.Schema({
 const ApplicationRecord = mongoose.model('ApplicationRecord', applicationRecordSchema);
 
 export default ApplicationRecord;
+

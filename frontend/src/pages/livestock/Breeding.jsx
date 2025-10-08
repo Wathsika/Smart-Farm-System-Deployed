@@ -373,14 +373,11 @@ function ActionMenu({ onEdit, onDelete }) {
   const menuRef = React.useRef(null);
 
   useEffect(() => {
-    const onDocClick = (e) => {
-      if (!open) return;
-      if (menuRef.current?.contains(e.target)) return;
-      if (btnRef.current?.contains(e.target)) return;
-      setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+    const onScroll = () => setOpen(false);
+    if (open) {
+      window.addEventListener("scroll", onScroll, true);
+    }
+    return () => window.removeEventListener("scroll", onScroll, true);
   }, [open]);
 
   const computePos = (btn) => {
@@ -407,8 +404,8 @@ function ActionMenu({ onEdit, onDelete }) {
         createPortal(
           <div
             ref={menuRef}
-            className="fixed z-50 w-56 rounded-xl border bg-white shadow-xl overflow-hidden"
-            style={{ top: pos.top, left: pos.left }}
+            className="absolute z-50 w-56 rounded-xl border bg-white shadow-xl overflow-hidden"
+            style={{ top: pos.top, left: pos.left, position: "fixed" }}
           >
             <button
               onClick={() => {
@@ -556,7 +553,7 @@ function Breeding() {
             onClick={() => setAddOpen(true)}
             className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2"
           >
-            <FaPlus /> Add Breeding
+            <FaPlus /> Add Breeding Records
           </button>
         </div>
       </header>
@@ -652,4 +649,4 @@ function Breeding() {
   );
 }
 
-export default Breeding;
+export default Breeding;                 

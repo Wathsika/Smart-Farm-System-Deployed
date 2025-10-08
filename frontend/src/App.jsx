@@ -21,6 +21,8 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import OrderSuccessPage from "./pages/store/OrderSuccessPage";
 import OrderCancelPage from "./pages/store/OrderCancelPage";
 
+import MainDashboard from "./admin/MainDashboard.jsx";
+
 // --- EMPLOYEE ---
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 
@@ -43,6 +45,7 @@ import AddFieldPage from "./admin/AddFieldPage.jsx";
 import EditFieldPage from "./admin/EditFieldPage.jsx";
 import FieldDetailsPage from "./admin/FieldDetailsPage.jsx"; // ✅ IMPORT ADDED FOR THE NEW PAGE
 import AddPlan from "./admin/AddPlan.jsx";
+import EditPlanPage from "./admin/EditPlan.jsx";
 import PlanList from "./admin/PlanList.jsx";
 import InputListPage from "./admin/InputListPage.jsx";
 import AddInputPage from "./admin/AddInputPage.jsx";
@@ -71,9 +74,7 @@ const StoreDashboard = lazy(() => import("./admin/StoreDashboard"));
 const FarmDashboard = () => (
   <div className="p-6 text-2xl font-bold">Farm Overview Dashboard</div>
 );
-const LivestockPage = () => (
-  <div className="p-6 text-2xl font-bold">Livestock Management</div>
-);
+
 const StaffPage = () => (
   <div className="p-6 text-2xl font-bold">Staff Management</div>
 );
@@ -88,11 +89,10 @@ const CustomersPage = () => (
 const Private = ({ children }) =>
   auth.token ? children : <Navigate to="/login" replace />;
 
-const AdminOnly = ({ children }) =>
-  auth.user?.role === "Admin" ? children : <Navigate to="/" replace />;
-
-const EmployeeOnly = ({ children }) =>
-  auth.user?.role === "Employee" ? children : <Navigate to="/" replace />;
+const AdminOrEmployee = ({ children }) =>
+  auth.user?.role === "Admin" || auth.user?.role === "Employee"
+    ? children
+    : <Navigate to="/" replace />;
 
 export default function App() {
   return (
@@ -141,9 +141,9 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <EmployeeOnly>
+          <AdminOrEmployee>
             <EmployeeDashboard />
-          </EmployeeOnly>
+          </AdminOrEmployee>
         }
       />
 
@@ -151,7 +151,7 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <AdminOnly>
+          <AdminOrEmployee>
             <Suspense
               fallback={
                 <div className="w-full h-screen flex items-center justify-center text-lg">
@@ -161,14 +161,12 @@ export default function App() {
             >
               <AdminLayout />
             </Suspense>
-          </AdminOnly>
+          </AdminOrEmployee>
         }
       >
-        <Route index element={<FarmDashboard />} />
+        <Route index element={<MainDashboard />} />
 
-        {/* Farm management pages */}
-        <Route path="livestock" element={<LivestockPage />} />
-        {/* Livestock sub-pages */}
+        <Route path="livestock" element={<CowProfilePage />} />
         <Route path="livestock/profile" element={<CowProfilePage />} />
         <Route path="livestock/milk" element={<MilkProduction />} />
         <Route path="livestock/health" element={<HealthPage />} />
@@ -185,6 +183,9 @@ export default function App() {
         {/* Plan management */}
         <Route path="crop/plans" element={<PlanList />} />
         <Route path="crop/plan/new" element={<AddPlan />} />
+
+        <Route path="crop/plan/edit/:id" element={<EditPlanPage />} />
+        
 
         {/* Input Inventory management */}
         <Route path="crop/inputs" element={<InputListPage />} />

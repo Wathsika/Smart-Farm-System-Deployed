@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const PaymentSlipSchema = new mongoose.Schema(
   {
+    slipId: { type: String, unique: true, index: true },
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
@@ -24,7 +25,7 @@ const PaymentSlipSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["PENDING", "PAID", "CANCELLED"],
+      enum: ["PENDING", "SAVED", "PAID", "CANCELLED"],
       default: "PENDING",
     },
   },

@@ -1,4 +1,4 @@
-// backend/models/milk.js
+
 import mongoose from "mongoose";
 
 const oneDp = (v) => {
@@ -37,9 +37,12 @@ const milkSchema = new mongoose.Schema(
       min: [0, "Volume must be >= 0"],
       set: (v) => Math.round(Number(v) * 100) / 100, // keep 2 decimals max
     },
+
+
   },
   { timestamps: true, strict: true }
 );
+
 
 // Normalize date to midnight to ensure unique index works reliably
 milkSchema.pre("validate", function(next) {
@@ -51,6 +54,7 @@ milkSchema.pre("validate", function(next) {
 });
 
 // avoid duplicates for same cow + day + shift
+
 milkSchema.index({ cow: 1, date: 1, shift: 1 }, { unique: true });
 
 const Milk = mongoose.models.Milk || mongoose.model("Milk", milkSchema);

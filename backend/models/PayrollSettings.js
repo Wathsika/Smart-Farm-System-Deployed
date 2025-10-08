@@ -11,7 +11,7 @@ const PayrollSettingsSchema = new mongoose.Schema(
     // optional: lock to single-row via a fixed key
     key: { type: String, unique: true, default: "singleton" },
   },
-  { timestamps: true, versionKey: false }
-);
-
+  { timestamps: true, versionKey: false }   
+);   
+  
 export default mongoose.model("PayrollSettings", PayrollSettingsSchema);

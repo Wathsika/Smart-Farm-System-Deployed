@@ -16,7 +16,7 @@ import {
 
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+import { AuditLogPdfTemplate } from "../components/reports/AuditLogPdfTemplate";
 
 /* ---------- Helpers ---------- */
 const formatDateTime = (iso) => {
@@ -132,7 +132,8 @@ const actionBadgeClass = (action) => {
 };
 
 /* ---------- Change Block ---------- */
-function ChangeBlock({ originalData, newData }) {
+// Removed duplicate ChangeBlock definition
+function ChangeBlock({ originalData, newData, action }) {
   const [expanded, setExpanded] = useState(false);
   const diffs = useMemo(
     () => getAuditFieldDiffs(originalData, newData),
@@ -177,76 +178,84 @@ function ChangeBlock({ originalData, newData }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-red-50 border-b border-red-100 px-3 py-2">
-                <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  Original Data
+          <div
+            className={`grid grid-cols-1 ${
+              action === "UPDATE" ? "lg:grid-cols-2" : ""
+            } gap-4`}
+          >
+            {(action === "UPDATE" || action === "DELETE") && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-red-50 border-b border-red-100 px-3 py-2">
+                  <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    Original Data
+                  </div>
+                </div>
+                <div className="p-3">
+                  <dl className="divide-y divide-gray-100">
+                    {AUDIT_FIELDS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
+                          diffs[key] && action === "UPDATE"
+                            ? "bg-amber-50 border-l-2 border-amber-300"
+                            : ""
+                        }`}
+                      >
+                        <dt className="text-xs font-medium text-gray-600 col-span-1">
+                          {label}
+                        </dt>
+                        <dd className="text-xs text-gray-800 col-span-2">
+                          {formatAuditFieldValue(originalData?.[key], key)}
+                          {diffs[key] && action === "UPDATE" && (
+                            <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-amber-700">
+                              Prev
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
-              <div className="p-3">
-                <dl className="divide-y divide-gray-100">
-                  {AUDIT_FIELDS.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
-                        diffs[key]
-                          ? "bg-amber-50 border-l-2 border-amber-300"
-                          : ""
-                      }`}
-                    >
-                      <dt className="text-xs font-medium text-gray-600 col-span-1">
-                        {label}
-                      </dt>
-                      <dd className="text-xs text-gray-800 col-span-2">
-                        {formatAuditFieldValue(originalData?.[key], key)}
-                        {diffs[key] && (
-                          <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-amber-700">
-                            Prev
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
+            )}
 
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
-                <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  Updated Data
+            {(action === "UPDATE" || action === "ADD") && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-emerald-50 border-b border-emerald-100 px-3 py-2">
+                  <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    Updated Data
+                  </div>
+                </div>
+                <div className="p-3">
+                  <dl className="divide-y divide-gray-100">
+                    {AUDIT_FIELDS.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
+                          diffs[key] && action === "UPDATE"
+                            ? "bg-emerald-50 border-l-2 border-emerald-300"
+                            : ""
+                        }`}
+                      >
+                        <dt className="text-xs font-medium text-gray-600 col-span-1">
+                          {label}
+                        </dt>
+                        <dd className="text-xs text-gray-800 col-span-2">
+                          {formatAuditFieldValue(newData?.[key], key)}
+                          {diffs[key] && action === "UPDATE" && (
+                            <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-emerald-700">
+                              New
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
-              <div className="p-3">
-                <dl className="divide-y divide-gray-100">
-                  {AUDIT_FIELDS.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className={`py-2 grid grid-cols-3 gap-2 rounded-md px-2 -mx-2 ${
-                        diffs[key]
-                          ? "bg-emerald-50 border-l-2 border-emerald-300"
-                          : ""
-                      }`}
-                    >
-                      <dt className="text-xs font-medium text-gray-600 col-span-1">
-                        {label}
-                      </dt>
-                      <dd className="text-xs text-gray-800 col-span-2">
-                        {formatAuditFieldValue(newData?.[key], key)}
-                        {diffs[key] && (
-                          <span className="ml-2 inline-flex items-center text-[10px] font-semibold uppercase text-emerald-700">
-                            New
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -271,7 +280,7 @@ export default function AuditLogPage() {
       alert("No audit logs to export.");
       return;
     }
-    if (!pdfOrder) {
+    if (!pdfReportData) {
       alert("Report not ready.");
       return;
     }
@@ -362,12 +371,11 @@ export default function AuditLogPage() {
     return filteredLogs.slice(start, start + pageSize);
   }, [filteredLogs, page]);
 
-  const pdfOrder = useMemo(() => {
+  const pdfReportData = useMemo(() => {
     if (!filteredLogs.length) return null;
 
     const generatedAt = new Date();
     const filterDateLabel = formatDateOnly(filters.date) || "All Dates";
-
     const transactionFilterLabel = filters.transactionId
       ? `Matching "${filters.transactionId}"`
       : "All Transactions";
@@ -394,10 +402,6 @@ export default function AuditLogPage() {
       ? (totalFieldChanges / filteredLogs.length).toFixed(1)
       : "0";
 
-    const actionBreakdown = Object.entries(actionCounts)
-      .map(([action, count]) => `${action}: ${count}`)
-      .join(" | ");
-
     const uniqueUsers = Array.from(
       new Set(filteredLogs.map((log) => log.user).filter(Boolean))
     );
@@ -409,232 +413,49 @@ export default function AuditLogPage() {
       return latest;
     }, null);
 
-    const summaryLines = [
-      {
-        label: "Report Generated",
-        value: formatDateTime(generatedAt.toISOString()),
-      },
-      {
-        label: "Filter Date",
-        value: filterDateLabel,
-      },
-      {
-        label: "Transaction Filter",
-        value: transactionFilterLabel,
-      },
-      {
-        label: "Total Records",
-        value: filteredLogs.length,
-      },
-    ];
-
-    if (collectionsImpacted.length) {
-      summaryLines.push({
-        label: `Collections Impacted (${collectionsImpacted.length})`,
-        value: collectionsImpacted.join(", "),
-      });
-    }
-
-    if (uniqueUsers.length) {
-      summaryLines.push({
-        label: `Users Involved (${uniqueUsers.length})`,
-        value: uniqueUsers.join(", "),
-      });
-    }
-
-    if (actionBreakdown) {
-      summaryLines.push({
-        label: "Action Breakdown",
-        value: actionBreakdown,
-      });
-    }
-
-    summaryLines.push({
-      label: "Total Field Changes",
-      value: totalFieldChanges,
-    });
-
-    summaryLines.push({
-      label: "Avg Fields Changed / Record",
-      value: averageFieldChanges,
-    });
-
-    if (latestTimestamp) {
-      summaryLines.push({
-        label: "Most Recent Activity",
-        value: formatDateTime(new Date(latestTimestamp).toISOString()),
-      });
-    }
-
-    const renderChangeColumn = (data, variant, diffs) => {
-      const isOriginal = variant === "original";
-      const headerClasses = isOriginal
-        ? "bg-red-100 text-red-700"
-        : "bg-emerald-100 text-emerald-700";
-      const borderClasses = isOriginal
-        ? "border-red-200"
-        : "border-emerald-200";
-
-      return (
-        <div className={`border ${borderClasses} rounded-md overflow-hidden`}>
-          <div
-            className={`${headerClasses} px-2 py-1 text-xs font-semibold uppercase`}
-          >
-            {isOriginal ? "Original Data" : "Updated Data"}
-          </div>
-          <div className="p-2">
-            <dl className="space-y-1">
-              {AUDIT_FIELDS.map(({ key, label }) => (
-                <div
-                  key={key}
-                  className={`grid grid-cols-2 gap-2 text-[11px] leading-snug rounded px-2 -mx-2 ${
-                    diffs[key]
-                      ? isOriginal
-                        ? "bg-amber-50 border-l-2 border-amber-300"
-                        : "bg-emerald-50 border-l-2 border-emerald-300"
-                      : ""
-                  }`}
-                >
-                  <dt className="text-gray-600 font-medium">{label}</dt>
-                  <dd className="text-gray-800 text-right break-words">
-                    {formatAuditFieldValue(data?.[key], key)}
-                    {diffs[key] && (
-                      <span
-                        className={`ml-1 inline-flex items-center text-[9px] font-semibold uppercase ${
-                          isOriginal ? "text-amber-700" : "text-emerald-700"
-                        }`}
-                      >
-                        {isOriginal ? "Prev" : "New"}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
+    const logsForReport = filteredLogs.map((row, index) => {
+      const diffs = getAuditFieldDiffs(row.originalData, row.newData);
+      const changes = AUDIT_FIELDS.filter(({ key }) => diffs[key]).map(
+        ({ key, label }) => ({
+          label,
+          previous: formatAuditFieldValue(row.originalData?.[key], key),
+          next: formatAuditFieldValue(row.newData?.[key], key),
+        })
       );
-    };
 
-    const entriesLabel = filteredLogs.length === 1 ? "entry" : "entries";
-
-    const sectionContent = (
-      <table className="w-full text-xs border border-gray-200">
-        <thead className="bg-gray-100">
-          <tr className="text-left text-gray-700">
-            <th className="p-2 font-semibold">Timestamp</th>
-            <th className="p-2 font-semibold">Action</th>
-            <th className="p-2 font-semibold">User</th>
-            <th className="p-2 font-semibold">Collection</th>
-            <th className="p-2 font-semibold">Transaction ID</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
-          {filteredLogs.map((row) => {
-            const key =
-              row._id || row.recordId || row.transactionId || row.timestamp;
-            const diffs = getAuditFieldDiffs(row.originalData, row.newData);
-            const changedLabels = AUDIT_FIELDS.filter(
-              ({ key }) => diffs[key]
-            ).map(({ label }) => label);
-            return (
-              <React.Fragment key={key}>
-                <tr className="align-top">
-                  <td className="p-2 text-gray-800 align-top">
-                    {formatDateTime(row.timestamp)}
-                  </td>
-                  <td className="p-2 align-top">
-                    <span
-                      className={`inline-flex px-2 py-1 rounded-full font-semibold text-[11px] ${actionBadgeClass(
-                        row.action
-                      )}`}
-                    >
-                      {row.action || "—"}
-                    </span>
-                  </td>
-                  <td className="p-2 text-gray-800 align-top">
-                    {row.user || "—"}
-                  </td>
-                  <td className="p-2 text-gray-800 align-top">
-                    {row.collection || "—"}
-                  </td>
-                  <td className="p-2 text-gray-800 align-top">
-                    <code className="px-1.5 py-0.5 bg-gray-100 rounded">
-                      {row.transactionId || row.recordId || "—"}
-                    </code>
-                  </td>
-                </tr>
-                <tr>
-                  <td colSpan={5} className="p-0 bg-gray-50">
-                    <div className="p-3 border-t border-gray-200 space-y-2">
-                      <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">
-                        Detailed Changes
-                      </p>
-                      <div className="flex flex-wrap gap-1 text-[10px] text-gray-600">
-                        <span className="font-semibold uppercase tracking-wide text-gray-500">
-                          Fields:
-                        </span>
-                        {changedLabels.length ? (
-                          changedLabels.map((label) => (
-                            <span
-                              key={label}
-                              className="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full"
-                            >
-                              {label}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="italic text-gray-500">
-                            No differences detected
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderChangeColumn(
-                          row.originalData,
-                          "original",
-                          diffs
-                        )}
-                        {renderChangeColumn(row.newData, "updated", diffs)}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </React.Fragment>
-            );
-          })}
-        </tbody>
-      </table>
-    );
+      return {
+        id:
+          row._id ||
+          row.recordId ||
+          row.transactionId ||
+          `${row.timestamp || "audit"}-${index}`,
+        timestamp: formatDateTime(row.timestamp),
+        action: row.action || "—",
+        user: row.user || "—",
+        collection: row.collection || "—",
+        transactionId: row.transactionId || row.recordId || "—",
+        changes,
+      };
+    });
 
     return {
-      createdAt: generatedAt.toISOString(),
-      orderNumber: `AUD-${generatedAt
+      reportNumber: `AUD-${generatedAt
         .toISOString()
         .slice(0, 10)
         .replace(/-/g, "")}`,
-      customer: { name: "Finance Department" },
-      shippingAddress: {
-        addressLine1: "Audit Log Report",
-        city: "Smart Farm System",
-      },
-      orderItems: [],
-      totalPrice: 0,
-      discount: { amount: 0 },
-      templateOptions: {
-        showBillingDetails: false,
-        showOrderSummary: true,
-        showFooter: false,
-        showItemsTable: false,
-      },
-      summaryLines,
-      customSections: [
-        {
-          title: "Audit Activity Details",
-          description: `Showing ${filteredLogs.length} ${entriesLabel} for ${filterDateLabel} (${transactionFilterLabel}).`,
-          content: sectionContent,
-        },
-      ],
+      generatedAt,
+      filterDateLabel,
+      transactionFilterLabel,
+      totalRecords: filteredLogs.length,
+      collectionsImpacted,
+      uniqueUsers,
+      actionSummary: Object.entries(actionCounts).map(
+        ([action, count]) => `${action}: ${count}`
+      ),
+      totalFieldChanges,
+      averageFieldChanges,
+      latestActivity: latestTimestamp ? new Date(latestTimestamp) : null,
+      logs: logsForReport,
     };
   }, [filteredLogs, filters]);
 
@@ -771,9 +592,7 @@ export default function AuditLogPage() {
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <User size={14} className="inline mr-1" /> User
                       </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Collection
-                      </th>
+                      {/* Collection column removed */}
                       <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                         <Hash size={14} className="inline mr-1" /> Transaction
                         ID
@@ -799,9 +618,7 @@ export default function AuditLogPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm">{row.user || "—"}</td>
-                        <td className="px-6 py-4 text-sm">
-                          {row.collection || "—"}
-                        </td>
+                        {/* Collection cell removed */}
                         <td className="px-6 py-4 text-sm">
                           <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                             {row.transactionId || row.recordId || "—"}
@@ -811,6 +628,7 @@ export default function AuditLogPage() {
                           <ChangeBlock
                             originalData={row.originalData}
                             newData={row.newData}
+                            action={row.action}
                           />
                         </td>
                       </tr>
@@ -858,7 +676,9 @@ export default function AuditLogPage() {
         </div>
       </div>
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        {pdfOrder && <InvoiceTemplate ref={pdfRef} order={pdfOrder} />}
+        {pdfReportData && (
+          <AuditLogPdfTemplate ref={pdfRef} data={pdfReportData} />
+        )}
       </div>
     </div>
   );

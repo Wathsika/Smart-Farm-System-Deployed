@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+
 const cowSchema = new mongoose.Schema(
   {
     cowId: { type: String, unique: true, index: true }, // custom ID
@@ -24,13 +25,12 @@ const cowSchema = new mongoose.Schema(
         },
         message: 'Birth date cannot be in the future',
       }
+
     },
     photoUrl: { type: String, default: "" } 
   },
   { timestamps: true }
 );
-
-// Auto-generate COW-0001, COW-0002, ...
 cowSchema.pre('save', async function (next) {
   if (this.cowId) return next();
   try {

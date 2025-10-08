@@ -117,16 +117,20 @@ export default function OverviewPage() {
     };
   }, [transactions]);
 
+  const currentMonth = new Date().toISOString().slice(0, 7); // Get current month in YYYY-MM format
+
   const chartData = useMemo(() => {
     const map = new Map();
-    transactions.forEach((r) => {
-      const key = monthKey(r.date);
-      if (!key) return;
-      if (!map.has(key)) map.set(key, { month: key, income: 0, expense: 0 });
-      const t =
-        (r.type || "").toLowerCase() === "income" ? "income" : "expense";
-      map.get(key)[t] += Number(r.amount || 0);
-    });
+    transactions
+      .filter((r) => r.date.startsWith(currentMonth)) // Filter current month transactions
+      .forEach((r) => {
+        const key = monthKey(r.date);
+        if (!key) return;
+        if (!map.has(key)) map.set(key, { month: key, income: 0, expense: 0 });
+        const t =
+          (r.type || "").toLowerCase() === "income" ? "income" : "expense";
+        map.get(key)[t] += Number(r.amount || 0);
+      });
     return Array.from(map.values()).sort((a, b) =>
       a.month.localeCompare(b.month)
     );
@@ -134,19 +138,41 @@ export default function OverviewPage() {
 
   const cumulativeData = useMemo(() => {
     let running = 0;
-    return chartData.map((d) => {
-      running += d.income - d.expense;
-      return { month: d.month, net: running };
-    });
-  }, [chartData]);
+    const startDate = new Date(currentMonth + "-01"); // Start from the 1st of the current month
+    const today = new Date();
+
+    const dailyData = [];
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const dateKey = d.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+      const dailyTransactions = transactions.filter((r) =>
+        r.date.startsWith(dateKey)
+      );
+
+      const dailyNet = dailyTransactions.reduce((sum, r) => {
+        return (
+          sum +
+          ((r.type || "").toLowerCase() === "income"
+            ? Number(r.amount || 0)
+            : -Number(r.amount || 0))
+        );
+      }, 0);
+
+      running += dailyNet;
+      dailyData.push({ date: dateKey.slice(5, 10), net: running }); // Use MM-DD format for the chart
+    }
+
+    return dailyData;
+  }, [transactions, currentMonth]);
 
   const categoryData = useMemo(() => {
     const map = new Map();
-    transactions.forEach((r) => {
-      const cat = r.category || "others";
-      if (!map.has(cat)) map.set(cat, { name: cat, value: 0 });
-      map.get(cat).value += Number(r.amount || 0);
-    });
+    transactions
+      .filter((r) => r.date.startsWith(currentMonth)) // Filter current month transactions
+      .forEach((r) => {
+        const cat = r.category || "others";
+        if (!map.has(cat)) map.set(cat, { name: cat, value: 0 });
+        map.get(cat).value += Number(r.amount || 0);
+      });
     return Array.from(map.values())
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
@@ -335,14 +361,14 @@ export default function OverviewPage() {
                     stroke={theme.neutral[200]}
                   />
                   <XAxis
-                    dataKey="month"
+                    dataKey="date"
                     stroke={theme.neutral[600]}
                     fontSize={12}
                   />
                   <YAxis stroke={theme.neutral[600]} fontSize={12} />
                   <Tooltip
                     formatter={(v) => [currency(Number(v)), "Net Balance"]}
-                    labelFormatter={(label) => `Month: ${label}`}
+                    labelFormatter={(label) => `Date: ${label}`}
                     contentStyle={{
                       backgroundColor: "white",
                       border: `1px solid ${theme.neutral[200]}`,

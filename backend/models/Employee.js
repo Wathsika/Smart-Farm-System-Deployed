@@ -1,4 +1,4 @@
-// models/Employee.js
+
 import mongoose from "mongoose";
 
 const employeeSchema = new mongoose.Schema(
@@ -7,7 +7,7 @@ const employeeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // one employee per user
+      unique: true, 
     },
     jobTitle: {
       type: String,

@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
+
 export const DISCOUNT_APPLICATION_MODES = ["AUTO", "MANUAL"];
+
 
 
 const discountSchema = new mongoose.Schema(
@@ -15,10 +17,12 @@ const discountSchema = new mongoose.Schema(
     code: {
       type: String,
       required: [true, "Discount code is required."],
-      unique: true, // Each code must be unique
+      unique: true, 
       trim: true,
+
       uppercase: true, // Automatically converts codes like 'summer10' to 'SUMMER10'
       description: "The actual code customers will enter (e.g., 'SUMMER20').",
+
     },
     
     type: {

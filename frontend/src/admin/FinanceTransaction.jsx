@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { useReactToPrint } from "react-to-print";
-import { InvoiceTemplate } from "../components/common/InvoiceTemplate";
+import { TransactionPdfTemplate } from "../components/reports/TransactionPdfTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -17,6 +16,31 @@ function currency(n) {
 
 function monthKey(iso) {
   return (iso || "").slice(0, 7);
+}
+
+function formatMonthLabel(monthValue) {
+  if (!monthValue || monthValue === "all") return "All Months";
+  const [year, month] = monthValue.split("-");
+  const y = Number(year);
+  const m = Number(month) - 1;
+  if (!Number.isNaN(y) && !Number.isNaN(m)) {
+    const date = new Date(y, m, 1);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString("en-LK", { month: "long", year: "numeric" });
+    }
+  }
+  return monthValue;
+}
+
+function formatTypeLabel(typeValue) {
+  switch (typeValue) {
+    case "INCOME":
+      return "Income Only";
+    case "EXPENSE":
+      return "Expenses Only";
+    default:
+      return "All Types";
+  }
 }
 
 function escapeHtml(text) {
@@ -120,11 +144,13 @@ export default function FinanceTransaction() {
 
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all"); // "INCOME" | "EXPENSE" | "all"
-  const [monthFilter, setMonthFilter] = useState("all");
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [allMonths, setAllMonths] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(null); // stores mongoId or txnId
 
   const navigate = useNavigate();
-  const invoiceRef = useRef(null);
+  const pdfRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -183,10 +209,33 @@ export default function FinanceTransaction() {
     };
   }, [q, typeFilter, monthFilter]);
 
+  // Load all months once so the dropdown always shows the full list
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await api.get("/transactions");
+        const raw = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const set = new Set(raw.map((r) => monthKey(r.date)));
+        if (currentMonth) set.add(currentMonth);
+        const monthsList = Array.from(set).filter(Boolean).sort().reverse();
+        if (!ignore) setAllMonths(monthsList);
+      } catch {
+        // ignore months prefetch error; dropdown will fallback to current filtered list
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [currentMonth]);
+
   const months = useMemo(() => {
+    if (allMonths.length) return ["all", ...allMonths];
+    // Fallback to what we have in current transactions (e.g., if prefetch failed)
     const set = new Set(transactions.map((r) => monthKey(r.date)));
+    if (currentMonth) set.add(currentMonth);
     return ["all", ...Array.from(set).filter(Boolean).sort().reverse()];
-  }, [transactions]);
+  }, [allMonths, transactions, currentMonth]);
 
   const filtered = transactions;
 
@@ -209,70 +258,67 @@ export default function FinanceTransaction() {
     return `Transaction-${year}-${month}`;
   }, [exportDate]);
 
-  const pdfOrder = useMemo(() => {
+  const pdfReportData = useMemo(() => {
     if (!filtered.length) return null;
 
-    const items = filtered.map((txn) => {
-      const amountRaw = Number(txn.amount) || 0;
-      const amount =
-        txn.type === "EXPENSE" ? -Math.abs(amountRaw) : Math.abs(amountRaw);
+    let incomeTotal = 0;
+    let expenseTotal = 0;
+
+    const transactionsForReport = filtered.map((txn, index) => {
+      const rawAmount = Number(txn.amount) || 0;
+      if (txn.type === "INCOME") {
+        incomeTotal += Math.abs(rawAmount);
+      } else if (txn.type === "EXPENSE") {
+        expenseTotal += Math.abs(rawAmount);
+      }
+
+      const signedAmount =
+        txn.type === "EXPENSE" ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
+      // Use transaction_id if available, else fallback to a readable string
+      let pdfTxnId = txn.transaction_id && String(txn.transaction_id).trim();
+      if (!pdfTxnId) {
+        pdfTxnId = `TXN-${index + 1}`;
+      }
       return {
-        name: `${shortDate(txn.date)} • ${txn.type || "Transaction"} • ${
-          txn.category || "General"
-        }`,
-        qty: 1,
-        price: amount,
+        id: pdfTxnId,
+        date: shortDate(txn.date),
+        type: txn.type || "—",
+        category: txn.category || "—",
+        description: txn.description || "—",
+        signedAmount,
       };
     });
 
-    const totalPrice = items.reduce(
-      (sum, item) => sum + item.price * (item.qty || 1),
-      0
-    );
+    const netTotal = incomeTotal - expenseTotal;
+    const trimmedSearch = q.trim();
 
     return {
-      orderNumber: exportFileBase,
-      createdAt: exportDate,
-      status: "Approved",
-      paymentMethod: "Transactions",
-      customer: {
-        name: "Smart Farm Finance",
-        email: "finance@smartfarm.local",
+      reportNumber: exportFileBase,
+      generatedAt: new Date(),
+      reportingPeriod: formatMonthLabel(monthFilter),
+      typeFilterLabel: formatTypeLabel(typeFilter),
+      searchQuery: trimmedSearch,
+      totalRecords: transactionsForReport.length,
+      totals: {
+        income: incomeTotal,
+        expense: expenseTotal,
+        net: netTotal,
       },
-      shippingAddress: {
-        addressLine1: "Transaction Summary Report",
-        city: "",
-        postalCode: "",
-      },
-      orderItems: items,
-      totalPrice,
-      discount: { amount: 0 },
-      templateOptions: {
-        showBillingDetails: false,
-        showOrderSummary: false,
-        showFooter: false,
-      },
+      transactions: transactionsForReport,
     };
-  }, [filtered, exportDate, exportFileBase]);
-
-  const triggerPrint = useReactToPrint({
-    contentRef: invoiceRef,
-    documentTitle: exportFileBase,
-    removeAfterPrint: true,
-    suppressErrors: true,
-  });
+  }, [filtered, exportFileBase, monthFilter, typeFilter, q]);
 
   const handleExportPdf = async () => {
-    if (!filtered.length || !pdfOrder) {
+    if (!filtered.length || !pdfReportData) {
       alert("No transactions to export.");
       return;
     }
 
-    // Use invoiceRef to render the InvoiceTemplate
-    const input = invoiceRef.current;
+    const input = pdfRef.current;
 
     if (!input) {
-      alert("Invoice not ready.");
+      alert("Report not ready.");
       return;
     }
 
@@ -282,7 +328,6 @@ export default function FinanceTransaction() {
       const pdf = new jsPDF("p", "mm", "a4");
 
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
 
@@ -402,10 +447,17 @@ export default function FinanceTransaction() {
                     </svg>
                   </div>
                   <input
-                    placeholder="Search txn ID, category, description…"
+                    placeholder="Search txn ID, category"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-inner bg-white/80 backdrop-blur-sm transition-all duration-200"
                     value={q}
-                    onChange={(e) => setQ(e.target.value)}
+                    onChange={(e) => {
+                      // Allow only letters (a-z, A-Z), numbers (0-9), and spaces
+                      const value = e.target.value.replace(
+                        /[^a-zA-Z0-9 ]/g,
+                        ""
+                      );
+                      setQ(value);
+                    }}
                   />
                 </div>
               </div>
@@ -423,21 +475,6 @@ export default function FinanceTransaction() {
                     <option value="INCOME">💰 Income Only</option>
                     <option value="EXPENSE">💸 Expenses Only</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -452,25 +489,10 @@ export default function FinanceTransaction() {
                   >
                     {months.map((m) => (
                       <option key={m} value={m}>
-                        {m === "all" ? "📅 All Months" : `📅 ${m}`}
+                        {`📅 ${formatMonthLabel(m)}`}
                       </option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
                 </div>
               </div>
             </div>
@@ -654,7 +676,9 @@ export default function FinanceTransaction() {
                             {r.category || "—"}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {r.description || "—"}
+                            <span className="break-words whitespace-pre-line">
+                              {r.description || "—"}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {currency(r.amount)}
@@ -769,7 +793,9 @@ export default function FinanceTransaction() {
         </div>
       </div>
       <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        {pdfOrder && <InvoiceTemplate ref={invoiceRef} order={pdfOrder} />}
+        {pdfReportData ? (
+          <TransactionPdfTemplate ref={pdfRef} data={pdfReportData} />
+        ) : null}
       </div>
     </div>
   );

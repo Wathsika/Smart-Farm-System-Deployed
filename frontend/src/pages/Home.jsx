@@ -6,7 +6,9 @@ import heroImage from "../assets/ourstory.jpg";
 import produceImage from "../assets/produce.jpg";
 import dairyImage from "../assets/freshdiary.jpg";
 import cropImage from "../assets/crop.jpg";
+
 import ChatbotWidget from "../components/ChatbotWidget";
+
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -70,12 +72,13 @@ const contactDetails = [
   {
     icon: "fas fa-location-dot",
     title: "Visit our farm",
-    details: ["244/9, Dines Place, Kaduwela Rd", "Malabe, Sri Lanka"]
+    details: ["10/F, Ginimellagaha, Baddegama, Sri Lanka"]
   },
   {
     icon: "fas fa-phone",
     title: "Call us any day",
     details: ["+94 91 227 6246", "Open daily 7AM – 6PM"]
+
   },
   {
     icon: "fas fa-envelope-open-text",
@@ -87,8 +90,10 @@ const contactDetails = [
 const Home = () => {
   return (
     <main className="bg-white text-gray-900">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white pb-20 pt-24 sm:pt-28">
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-white pb-24 pt-32 sm:pb-28 sm:pt-36 lg:pb-32 lg:pt-40">
+
         <motion.span
           className="absolute -right-20 top-12 hidden h-72 w-72 rounded-full bg-green-100/60 blur-3xl lg:block"
           initial={{ opacity: 0, scale: 0.8 }}
@@ -101,6 +106,7 @@ const Home = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
         />
+
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 md:grid-cols-[1.05fr_minmax(0,_1fr)]">
           <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-6">
@@ -166,172 +172,91 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Our Story */}
-      <section id="story" className="relative bg-white py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-start gap-12 lg:grid-cols-[1.1fr_minmax(0,_0.9fr)]">
-            <motion.div
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.4 }}
-              className="space-y-6"
-            >
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                Our story is rooted in <span className="text-green-600">sustainable farming</span>
-              </h2>
-              <p className="text-lg text-gray-600">
-                GreenLeaf Farm began as a small family operation in 1998. What started with a few acres and a dream has grown into
-                a thriving, technology-enabled farm that serves our community with premium produce and dairy.
-              </p>
-              <p className="text-lg text-gray-600">
-                Today we combine generational knowledge with smart irrigation, soil monitoring, and ethical animal care to ensure
-                every harvest meets our high standards while protecting the environment we call home.
-              </p>
-              <div className="grid gap-6 sm:grid-cols-2">
-                {storyHighlights.map((highlight) => (
-                  <motion.div
-                    key={highlight.title}
-                    className="rounded-2xl border border-green-100 bg-white p-6 shadow-sm shadow-black/5 transition-transform duration-300 hover:-translate-y-1"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <h3 className="mb-2 text-lg font-semibold text-gray-900">{highlight.title}</h3>
-                    <p className="text-sm leading-relaxed text-gray-600">{highlight.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-              <div>
-                <Link
-                  to="/about"
-                  className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-green-600/25 transition-transform duration-300 hover:-translate-y-1 hover:bg-green-700"
-                >
-                  Discover our journey
-                  <i className="fas fa-arrow-up-right-from-square text-xs" />
-                </Link>
-              </div>
-            </motion.div>
+        {/* Our Story */}
+<section id="story" className="relative bg-gradient-to-b from-green-50 via-white to-white py-24">
+  <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.4 }}
+      className="space-y-12"
+    >
+      {/* Heading */}
+      <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl uppercase text-center">
+        Our story is rooted in <span className="text-green-600">sustainable farming</span>
+      </h2>
 
-            <motion.div
-              className="rounded-3xl border border-black/10 bg-black text-white"
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            >
-              <div className="space-y-6 p-8 sm:p-10">
-                <p className="text-sm uppercase tracking-[0.2em] text-white/70">From our fields</p>
-                <h3 className="text-2xl font-semibold">Smart, sustainable, and community driven</h3>
-                <p className="text-base text-white/80">
-                  Our integrated farm management system keeps every crop cycle transparent. We track soil health, rainfall, and animal
-                  wellbeing so you can trust every bite.
-                </p>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <span className="rounded-full bg-white/10 px-4 py-2">Eco-friendly inputs</span>
-                  <span className="rounded-full bg-white/10 px-4 py-2">Happy livestock</span>
-                  <span className="rounded-full bg-white/10 px-4 py-2">Local partnerships</span>
-                </div>
-                <a
-                  href="#trending"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition-transform duration-300 hover:-translate-y-1"
-                >
-                  Explore what's fresh
-                  <i className="fas fa-carrot text-xs" />
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* Paragraphs */}
+      <div className="max-w-4xl mx-auto space-y-6 text-center">
+        <p className="text-lg text-gray-700">
+          GreenLeaf Farm began as a small family operation in 1998. What started
+          with a few acres and a dream has grown into a thriving,
+          technology-enabled farm that serves our community with premium produce
+          and dairy.
+        </p>
+        <p className="text-lg text-gray-700">
+          Today we combine generational knowledge with smart irrigation, soil
+          monitoring, and ethical animal care to ensure every harvest meets our
+          high standards while protecting the environment we call home.
+        </p>
+      </div>
 
-      {/* Trending foods */}
-      <section id="trending" className="bg-green-50/60 py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      {/* Cards row */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {storyHighlights.map((highlight, idx) => (
           <motion.div
-            className="mb-12 flex flex-col items-start gap-6 text-left sm:flex-row sm:items-center sm:justify-between"
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="visible"
+            key={highlight.title}
+            className="rounded-2xl border border-green-100 bg-white p-6 shadow-md shadow-black/5 transition-transform duration-300 hover:-translate-y-2 hover:shadow-lg"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: idx * 0.1 }}
           >
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-green-700">Trending this week</p>
-              <h2 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">Seasonal picks customers love</h2>
-              <p className="mt-4 max-w-2xl text-base text-gray-600">
-                Discover fresh harvest favourites curated by our team. Every item below is available in limited batches inside the store.
-              </p>
-            </div>
-            <Link
-              to="/store"
-              className="inline-flex items-center gap-2 rounded-full border border-green-600 px-5 py-3 text-sm font-semibold text-green-700 transition-transform duration-300 hover:-translate-y-1 hover:bg-green-600 hover:text-white"
-            >
-              Browse full store
-              <i className="fas fa-shop text-xs" />
-            </Link>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              {highlight.title}
+            </h3>
+            <p className="text-sm leading-relaxed text-gray-600">
+              {highlight.description}
+            </p>
           </motion.div>
+        ))}
+      </div>
 
-          <motion.div
-            className="grid gap-8 md:grid-cols-2 xl:grid-cols-3"
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            {trendingFoods.map((item) => (
-              <motion.article
-                key={item.name}
-                variants={fadeInUp}
-                className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/5 transition-transform duration-300 hover:-translate-y-1"
-                whileHover={{ y: -6 }}
-              >
-                <div className="relative h-56 w-full overflow-hidden">
-                  <motion.img
-                    src={item.image}
-                    alt={item.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    initial={{ scale: 1.02 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                  />
-                  <span className="absolute left-4 top-4 rounded-full bg-green-600 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                    {item.badge}
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col gap-4 p-6">
-                  <h3 className="text-xl font-semibold text-gray-900">{item.name}</h3>
-                  <p className="flex-1 text-sm text-gray-600">{item.description}</p>
-                  <Link
-                    to="/store"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-green-700 transition-colors hover:text-green-800"
-                  >
-                    Add to basket
-                    <i className="fas fa-arrow-right" />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      {/* CTA button */}
+      <div className="flex justify-center">
+        <Link
+          to="/about"
+          className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-green-600/25 transition-transform duration-300 hover:-translate-y-1 hover:bg-green-700"
+        >
+          Discover our journey
+          <i className="fas fa-arrow-up-right-from-square text-xs" />
+        </Link>
+      </div>
+    </motion.div>
+  </div>
+</section>
 
       {/* Contact */}
       <section className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div
             className="mx-auto mb-12 max-w-3xl text-center"
+
             variants={fadeInUp}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
           >
+
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-gray-900">Stay connected</p>
             <h2 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">We're here to welcome you to the farm</h2>
             <p className="mt-4 text-base text-gray-600">
+
               Whether you're planning a visit, looking for wholesale partnerships, or have questions about our produce, our team is ready to help.
             </p>
           </motion.div>
+
 
           <div className="grid gap-8 md:grid-cols-3">
             {contactDetails.map((item) => (
@@ -350,11 +275,13 @@ const Home = () => {
                 <ul className="mt-3 space-y-1 text-sm text-gray-600">
                   {item.details.map((detail) => (
                     <li key={detail}>{detail}</li>
+
                   ))}
                 </ul>
               </motion.div>
             ))}
           </div>
+
 
           <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <div className="text-center sm:text-left">
@@ -364,19 +291,24 @@ const Home = () => {
             <Link
               to="/contact"
               className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 font-semibold text-white shadow-lg shadow-green-600/25 transition-transform duration-300 hover:-translate-y-1 hover:bg-green-700"
+
             >
               Contact our team
               <i className="fas fa-envelope" />
             </Link>
           </div>
+
           {/* ✅ Mount chatbot here so it's available on this page */}
                     <ChatbotWidget />
                  
         </div>
          </section>
+
     </main>
   );
 };
 
 
+
 export default Home;
+
