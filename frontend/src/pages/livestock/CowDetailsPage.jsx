@@ -2,16 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../lib/api";
-import {
-  FaArrowLeft,
-  FaVenus,
-  FaMars,
-  FaBirthdayCake,
-  FaEdit,
-  FaTimes,
-  FaSave,
-  FaQrcode,
-} from "react-icons/fa";
+import { FaArrowLeft, FaVenus, FaMars, FaBirthdayCake, FaEdit, FaTimes, FaSave, FaQrcode, FaDownload } from "react-icons/fa";
 
 // helper for age 
 const calculateAge = (dob) => {
@@ -153,6 +144,41 @@ export default function CowDetailsPage() {
       setSaving(false);
     }
   }
+
+  async function handleDownloadQR() {
+  if (!cow?.qrUrl) {
+    alert("No QR code available to download.");
+    return;
+  }
+
+  const qrUrl = cow.qrUrl.startsWith("http")
+    ? cow.qrUrl
+    : `${window.location.origin}${cow.qrUrl}`;
+
+  try {
+    // Fetch the image data as a blob
+    const response = await fetch(qrUrl, { mode: "cors" });
+    const blob = await response.blob();
+
+    // Create a temporary download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${cow.name || "cow"}_QR.png`;
+
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("QR download failed:", error);
+    alert("Failed to download QR image. Please try again.");
+  }
+}
+
     
   if (loading) { 
     return (
@@ -248,13 +274,19 @@ export default function CowDetailsPage() {
                         <p className="text-sm font-semibold text-blue-700 uppercase">Profile QR Code</p>
                     </div>
                     {cow.qrUrl ? (
-                        <div className="bg-white p-4 rounded-xl shadow-inner">
+                      <div className="bg-white p-4 rounded-xl shadow-inner flex flex-col items-center">
                         <img
-                            src={cow.qrUrl?.startsWith("http") ? cow.qrUrl : `${window.location.origin}${cow.qrUrl}`}
-                            alt={`${cow.name} QR`}
-                            className="w-full h-40 object-contain"
+                          src={cow.qrUrl?.startsWith("http") ? cow.qrUrl : `${window.location.origin}${cow.qrUrl}`}
+                          alt={`${cow.name} QR`}
+                          className="w-full h-40 object-contain mb-3"
                         />
-                        </div>
+                        <button
+                          onClick={handleDownloadQR}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-all"
+                        >
+                          <FaDownload className="text-xs" /> Download QR
+                        </button>
+                      </div>
                     ) : (
                         <div className="h-40 flex flex-col items-center justify-center bg-white rounded-xl text-gray-400 border-2 border-dashed border-gray-300">
                         <FaQrcode className="text-3xl mb-2" />
