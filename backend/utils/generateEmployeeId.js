@@ -4,10 +4,9 @@ const EMPLOYEE_ID_PREFIX = "EMP";
 const SEQUENCE_LENGTH = 3;
 
 const buildDateSegment = (date) => {
-  const year = date.getFullYear();
+  const year = String(date.getFullYear()).slice(-2);
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
+  return `${year}${month}`;
 };
 
 const extractSequence = (empId) => {
@@ -29,6 +28,11 @@ export const generateEmployeeId = async () => {
     .lean();
 
   const nextSequence = extractSequence(latestEmployee?.empId) + 1;
+
+  if (nextSequence >= 10 ** SEQUENCE_LENGTH) {
+    throw new Error("Monthly employee ID capacity exceeded. Please adjust the generator configuration.");
+  }
+
   const sequenceSegment = String(nextSequence).padStart(SEQUENCE_LENGTH, "0");
 
   return `${prefix}${sequenceSegment}`;
