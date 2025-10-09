@@ -125,9 +125,9 @@ app.use(express.urlencoded({ extended: true }));
 // --- API Routes ---
 app.use("/api/auth", authRoutes);
 
-app.use("/api/products", auth, requireRole("Admin", "Employee"), productRoutes);
-app.use("/api/orders", auth, requireRole("Admin", "Employee"), orderRoutes);
-app.use("/api/reports", auth, requireRole("Admin", "Employee"), reportRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", auth, requireRole("Admin", "Employee","Customer"), orderRoutes);
+app.use("/api/reports", auth, requireRole("Admin", "Employee","Customer"), reportRoutes);
 
 app.use("/api/admin", auth, requireRole("Admin", "Employee"), adminRoutes);
 
