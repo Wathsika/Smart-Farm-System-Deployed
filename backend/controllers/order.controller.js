@@ -9,6 +9,7 @@ import { generateInvoicePdf } from '../utils/invoice.js';
 import { sendOrderEmail } from '../utils/mailer.js';
 import { getStartOfDay } from '../utils/dateUtils.js';
 import { generateTransactionId } from '../utils/transactionId.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 // --- Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
@@ -358,7 +359,7 @@ const fulfillOrder = async (session) => {
     const createdOrder = await order.save();
 
     try {
-      await Transaction.create({
+      const transaction = await Transaction.create({
         type: 'INCOME',
         transaction_id: generateTransactionId(),
         amount: createdOrder.totalPrice,
@@ -366,6 +367,14 @@ const fulfillOrder = async (session) => {
         category: 'Store Orders',
         description: `Order ${createdOrder.orderNumber} payment received`,
       });
+      await logAudit({
+        action: 'ADD',
+        recordId: transaction._id,
+        transactionId: transaction.transaction_id,
+        user: createdOrder.customer?.email || 'system',
+        newData: transaction.toObject(),
+      });
+      
     } catch (error) {
       console.error('Failed to log transaction for fulfilled order:', error);
     }
