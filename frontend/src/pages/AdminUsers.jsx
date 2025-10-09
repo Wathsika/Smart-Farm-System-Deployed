@@ -59,13 +59,15 @@ const createInitialFormState = () => ({
 });
 
 const NAME_REGEX = /^[a-zA-Z\s-]+$/;
-const DEPARTMENT_REGEX = /^[a-zA-Z&\s-]+$/;
-const PHONE_REGEX = /^\+?\d{9,15}$/;
+const DEPARTMENT_REGEX = /^[a-zA-Z0-9\s]+$/; // letters, numbers, spaces only
+const PHONE_REGEX = /^\d{10}$/; // Replace PHONE_REGEX with strict 10-digit rule
 const NATIONAL_ID_REGEX = /^(?:\d{12}|\d{9}V)$/;
-const BANK_ACCOUNT_REGEX = /^\d{6,20}$/;
+const BANK_ACCOUNT_REGEX = /^\d{1,20}$/;     // 1-20 digits only
+const BANK_NAME_REGEX = /^[A-Za-z\s]+$/; // letters and spaces only
 const GENDERS = ["Male", "Female", "Other"];
 const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Intern"];
 const MINIMUM_EMPLOYEE_AGE = 18;
+const EMAIL_REGEX = /^[a-zA-Z0-9.]+@[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)+$/;
 
 export default function AdminUsers() {
   const [employees, setEmployees] = useState([]);
@@ -217,11 +219,11 @@ export default function AdminUsers() {
     if (!emailValue) {
       errors.email = "Email Address is required.";
       isValid = false;
-    } else if (!/^\S+@\S+\.\S+$/.test(emailValue)) {
-      errors.email = "Please enter a valid email address.";
-      isValid = false;
     } else if (emailValue.length > 255) {
       errors.email = "Email address cannot exceed 255 characters.";
+      isValid = false;
+    } else if (!EMAIL_REGEX.test(emailValue)) {
+      errors.email = "Email may contain letters, numbers, dots and exactly one @, with at least one dot in the domain.";
       isValid = false;
     }
 
@@ -309,10 +311,10 @@ export default function AdminUsers() {
 
     const phoneValue = form.phoneNumber.trim();
     if (!phoneValue) {
-      errors.phoneNumber = "Phone Number is required.";
+      errors.phoneNumber = "Phone number is required.";
       isValid = false;
     } else if (!PHONE_REGEX.test(phoneValue)) {
-      errors.phoneNumber = "Phone Number must contain 9 to 15 digits and may start with +.";
+      errors.phoneNumber = "Phone number must be exactly 10 digits.";
       isValid = false;
     }
 
@@ -321,27 +323,15 @@ export default function AdminUsers() {
       errors.contactPhoneNumber = "Contact Phone Number is required.";
       isValid = false;
     } else if (!PHONE_REGEX.test(contactPhoneValue)) {
-      errors.contactPhoneNumber = "Contact Phone Number must contain 9 to 15 digits and may start with +.";
+      errors.contactPhoneNumber = "Contact phone must be exactly 10 digits.";
       isValid = false;
     }
 
-    const departmentValue = form.department.trim();
-    if (!departmentValue) {
+    if (!form.department.trim()) {
       errors.department = "Department is required.";
       isValid = false;
-    } else if (departmentValue.length < 2) {
-      errors.department = "Department must be at least 2 characters.";
-      isValid = false;
-    } else if (departmentValue.length > 100) {
-      errors.department = "Department cannot exceed 100 characters.";
-      isValid = false;
-    } else if (!DEPARTMENT_REGEX.test(departmentValue)) {
-      errors.department = "Department can only contain letters, spaces, ampersands, and hyphens.";
-      isValid = false;
-    }
-
-    if (!EMPLOYMENT_TYPES.includes(form.employmentType)) {
-      errors.employmentType = "Please select an employment type.";
+    } else if (!DEPARTMENT_REGEX.test(form.department.trim())) {
+      errors.department = "Department can contain only letters, numbers and spaces.";
       isValid = false;
     }
 
@@ -449,8 +439,8 @@ export default function AdminUsers() {
     } else if (bankNameValue.length > 100) {
       errors.bankName = "Bank Name cannot exceed 100 characters.";
       isValid = false;
-    } else if (!DEPARTMENT_REGEX.test(bankNameValue)) {
-      errors.bankName = "Bank Name can only contain letters, spaces, ampersands, and hyphens.";
+    } else if (!BANK_NAME_REGEX.test(bankNameValue)) {
+      errors.bankName = "Bank name can contain only letters and spaces.";
       isValid = false;
     }
 
@@ -459,7 +449,7 @@ export default function AdminUsers() {
       errors.bankAccountNumber = "Bank Account Number is required.";
       isValid = false;
     } else if (!BANK_ACCOUNT_REGEX.test(bankAccountValue)) {
-      errors.bankAccountNumber = "Bank Account Number must be 6 to 20 digits.";
+      errors.bankAccountNumber = "Bank account must be 1–20 digits (numbers only).";
       isValid = false;
     }
 
@@ -619,10 +609,18 @@ export default function AdminUsers() {
     const { name, value } = e.target;
     let newValue = value;
 
-    // Prevent numbers and most symbols in Full Name and Job Title
-    if (name === 'fullName' || name === 'jobTitle') {
-        // Allow letters, spaces, and hyphens. Remove anything else (including periods).
-        newValue = value.replace(/[^a-zA-Z\s-]/g, '');
+    if (name === 'phoneNumber' || name === 'contactPhoneNumber') {
+      newValue = value.replace(/\D/g, '').slice(0, 10); // digits only, max 10
+    } else if (name === 'email') {
+      let cleaned = value.replace(/[^a-zA-Z0-9@.]/g, '');
+      const atIndex = cleaned.indexOf('@');
+      if (atIndex !== -1) {
+        cleaned = cleaned.slice(0, atIndex + 1) + cleaned.slice(atIndex + 1).replace(/@/g, '');
+      }
+      newValue = cleaned;
+    }
+    else if (name === 'fullName' || name === 'jobTitle') {
+      newValue = value.replace(/[^a-zA-Z\s-]/g, '');
     }
     else if (name === 'nationalId') {
         const upperValue = value.toUpperCase();
@@ -649,27 +647,6 @@ export default function AdminUsers() {
         }
 
         newValue = result;
-    }
-    else if (['phoneNumber', 'contactPhoneNumber'].includes(name)) {
-        let cleanedValue = value.replace(/[^0-9+]/g, '');
-        if (cleanedValue.startsWith('+')) {
-            cleanedValue = '+' + cleanedValue.slice(1).replace(/\+/g, '');
-        } else {
-            cleanedValue = cleanedValue.replace(/\+/g, '');
-        }
-        if (cleanedValue.length > 16) {
-            cleanedValue = cleanedValue.slice(0, 16);
-        }
-        newValue = cleanedValue;
-    }
-    else if (name === 'bankAccountNumber') {
-        newValue = value.replace(/[^0-9]/g, '').slice(0, 20);
-    }
-    else if (name === 'department' || name === 'bankName') {
-        newValue = value.replace(/[^a-zA-Z&\s-]/g, '').slice(0, 100);
-    }
-    else if (name === 'address') {
-        newValue = value.slice(0, 250);
     }
     // Special handling for number inputs to ensure only valid numbers are typed and respect length limits
     else if (['basicSalary', 'workingHours', 'allowance', 'loan'].includes(name)) {
@@ -706,16 +683,23 @@ export default function AdminUsers() {
         }
 
         newValue = cleanedValue;
+    } else if (name === 'department') {
+      newValue = value.replace(/[^a-zA-Z0-9\s]/g, ''); // strip specials
+    } else if (name === 'bankAccountNumber') {
+      newValue = value.replace(/\D/g, '').slice(0, 20); // digits only, max 20
+    }
+    else if (name === 'bankName') {
+      newValue = value.replace(/[^a-zA-Z\s]/g, '');
     }
 
     setForm((prev) => ({ ...prev, [name]: newValue }));
 
     // Clear the specific error for this field as the user types
     if (formValidationErrors[name]) {
-      setFormValidationErrors((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors[name];
-        return newErrors;
+      setFormValidationErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[name];
+        return copy;
       });
     }
   };
@@ -864,8 +848,10 @@ export default function AdminUsers() {
               inputMode="tel"
               value={form.phoneNumber}
               onChange={handleInputChange}
+              pattern="\d{10}"
+              maxLength={10}
+              placeholder="e.g. 0712345678"
               className={`w-full p-4 bg-white border ${formValidationErrors.phoneNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-              placeholder="Enter phone number"
               required
             />
             {formValidationErrors.phoneNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.phoneNumber}</p>}
@@ -883,8 +869,10 @@ export default function AdminUsers() {
               inputMode="tel"
               value={form.contactPhoneNumber}
               onChange={handleInputChange}
+              pattern="\d{10}"
+              maxLength={10}
+              placeholder="e.g. 0779876543"
               className={`w-full p-4 bg-white border ${formValidationErrors.contactPhoneNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-              placeholder="Enter emergency contact number"
               required
             />
             {formValidationErrors.contactPhoneNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.contactPhoneNumber}</p>}
@@ -943,8 +931,10 @@ export default function AdminUsers() {
               name="department"
               value={form.department}
               onChange={handleInputChange}
+              maxLength={50}
+              placeholder="Department"
+              pattern="[A-Za-z0-9\s]+"
               className={`w-full p-4 bg-white border ${formValidationErrors.department ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-              placeholder="Enter department"
               required
             />
             {formValidationErrors.department && <p className="text-red-500 text-xs mt-1">{formValidationErrors.department}</p>}
@@ -1109,8 +1099,10 @@ export default function AdminUsers() {
               name="bankName"
               value={form.bankName}
               onChange={handleInputChange}
+              maxLength={60}
+              placeholder="Bank Name"
+              pattern="[A-Za-z\s]+"
               className={`w-full p-4 bg-white border ${formValidationErrors.bankName ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-              placeholder="Enter bank name"
               required
             />
             {formValidationErrors.bankName && <p className="text-red-500 text-xs mt-1">{formValidationErrors.bankName}</p>}
@@ -1128,8 +1120,10 @@ export default function AdminUsers() {
               inputMode="numeric"
               value={form.bankAccountNumber}
               onChange={handleInputChange}
+              maxLength={20}
+              placeholder="Account Number"
+              pattern="\d{1,20}"
               className={`w-full p-4 bg-white border ${formValidationErrors.bankAccountNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200`}
-              placeholder="Enter bank account number"
               required
             />
             {formValidationErrors.bankAccountNumber && <p className="text-red-500 text-xs mt-1">{formValidationErrors.bankAccountNumber}</p>}
@@ -1615,6 +1609,7 @@ export default function AdminUsers() {
               >
                 <div className="flex items-center mb-6">
                   <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+
                     <XCircle className="w-6 h-6 text-red-600" />
                   </div>
                   <div className="ml-4">
@@ -1625,9 +1620,10 @@ export default function AdminUsers() {
                 
                 <div className="bg-gray-50 rounded-xl p-4 mb-6">
                   <div className="flex items-center">
+
                     <div className="flex-shrink-0 h-10 w-10">
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold">
-                        {deleteConfirm.fullName?.charAt(0).toUpperCase()}
+                                               {deleteConfirm.fullName?.charAt(0).toUpperCase()}
                       </div>
                     </div>
                     <div className="ml-3">
