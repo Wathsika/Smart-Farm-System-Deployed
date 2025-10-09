@@ -76,8 +76,25 @@ export default function CowPublicPage() {
   }, [id]);
 
   const ageText = useMemo(() => calculateAge(cow?.bday), [cow?.bday]);
-  const GenderIcon = cow?.gender ? genderStyles[cow.gender]?.icon : null;
-  const genderColor = genderStyles[cow?.gender]?.color || "text-gray-600";
+   const isFemale = useMemo(
+    () =>
+      String(cow?.gender || cow?.sex || "")
+        .trim()
+        .toLowerCase()
+        .startsWith("f"),
+    [cow?.gender, cow?.sex]
+  );
+  const isMale = useMemo(
+    () =>
+      String(cow?.gender || cow?.sex || "")
+        .trim()
+        .toLowerCase()
+        .startsWith("m"),
+    [cow?.gender, cow?.sex]
+  );
+  const genderKey = isFemale ? "Female" : isMale ? "Male" : cow?.gender;
+  const GenderIcon = genderKey ? genderStyles[genderKey]?.icon : null;
+  const genderColor = genderStyles[genderKey]?.color || "text-gray-600";
 
   if (loading)
     return (
@@ -136,8 +153,12 @@ export default function CowPublicPage() {
             <InfoItem
               icon={GenderIcon || FaMars}
               label="Gender"
-              value={<span className={genderColor}>{cow.gender || "N/A"}</span>}
-            />
+              value={
+                  <span className={genderColor}>
+                    {cow.gender || cow.sex || "N/A"}
+                  </span>
+                }
+               />
             <InfoItem
               icon={FaBirthdayCake}
               label="Birth Date"
@@ -151,7 +172,7 @@ export default function CowPublicPage() {
         {/* Extra Sections */}
         <div
           className={`p-8 border-t border-emerald-100 grid ${
-            cow.gender === "Female" ? "md:grid-cols-3" : "md:grid-cols-2"
+              isFemale ? "md:grid-cols-3" : "md:grid-cols-2"
           } gap-6`}
         >
           {/* Upcoming Vaccination */}
@@ -174,7 +195,7 @@ export default function CowPublicPage() {
           </div>
 
           {/* Today’s Milk → only show if female */}
-          {cow.gender === "Female" && (
+          {isFemale && (
             <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
               <h3 className="flex items-center gap-2 text-emerald-700 font-semibold mb-2">
                 <FaTint /> Today’s Milk

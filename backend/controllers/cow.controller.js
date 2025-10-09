@@ -1,7 +1,40 @@
 import mongoose from "mongoose";
 import Cow from "../models/cow.js";
+import Health from "../models/health.js";
+import Milk from "../models/milk.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import QRCode from "qrcode";
+
+function startOfDay(input) {
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(input) {
+  const d = startOfDay(input);
+  if (!d) return null;
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function pickSummary(record, fallbackTypeLabel = "") {
+  if (!record) return "";
+  const candidates = [
+    record.medication,
+    record.diagnosis,
+    Array.isArray(record.symptoms) ? record.symptoms.join(", ") : undefined,
+    record.notes,
+    fallbackTypeLabel,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return "";
+}
 
 function resolveFrontendBase(req) {
   const candidates = [
@@ -109,9 +142,91 @@ export const getCow = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid id" });
     }
-    const cow = await Cow.findById(id);
+
+    const cow = await Cow.findById(id).lean();
     if (!cow) return res.status(404).json({ message: "Cow not found" });
-    res.json(cow);
+
+    const todayStart = startOfDay(new Date());
+    const tomorrowStart = endOfDay(new Date());
+
+    const [latestHealth, upcomingVaccinationRaw, milkAggregation] = await Promise.all([
+      Health.findOne({ cow: cow._id })
+        .sort({ date: -1, createdAt: -1 })
+        .lean(),
+      (async () => {
+        const futureVaccination = await Health.findOne({
+          cow: cow._id,
+          type: "VACCINATION",
+          $or: [
+            { nextDueDate: { $gte: todayStart } },
+            { date: { $gte: todayStart } },
+          ],
+        })
+          .sort({ nextDueDate: 1, date: 1, createdAt: 1 })
+          .lean();
+
+        if (futureVaccination) return futureVaccination;
+
+        return Health.findOne({ cow: cow._id, type: "VACCINATION" })
+          .sort({ date: -1, nextDueDate: -1, createdAt: -1 })
+          .lean();
+      })(),
+      Milk.aggregate([
+        {
+          $match: {
+            cow: cow._id,
+            date: { $gte: todayStart, $lt: tomorrowStart },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$volumeLiters" },
+          },
+        },
+      ]),
+    ]);
+
+    const upcomingVaccination = (() => {
+      if (!upcomingVaccinationRaw) return null;
+      const dueDate = upcomingVaccinationRaw.nextDueDate || upcomingVaccinationRaw.date || null;
+      const fallbackLabel = (() => {
+        const type = (upcomingVaccinationRaw.type || "").toUpperCase();
+        if (type === "VACCINATION") return "Vaccination";
+        return upcomingVaccinationRaw.type || "Vaccination";
+      })();
+      const summary = pickSummary(upcomingVaccinationRaw, fallbackLabel);
+
+      return {
+        id: upcomingVaccinationRaw._id,
+        date: dueDate,
+        vaccineName: summary || "Scheduled vaccination",
+        vet: upcomingVaccinationRaw.vet || undefined,
+        notes: upcomingVaccinationRaw.notes || undefined,
+      };
+    })();
+
+    const lastHealthRecord = (() => {
+      if (!latestHealth) return null;
+      const summary = pickSummary(latestHealth, latestHealth.type || "Health record");
+
+      return {
+        id: latestHealth._id,
+        date: latestHealth.date,
+        condition: summary || "General checkup",
+        vet: latestHealth.vet || undefined,
+      };
+    })();
+
+    const todayMilkTotal = milkAggregation?.[0]?.total ?? 0;
+    const todayMilk = Math.round(Number(todayMilkTotal || 0) * 100) / 100;
+
+    res.json({
+      ...cow,
+      upcomingVaccination,
+      lastHealthRecord,
+      todayMilk,
+    });
   } catch (err) {
     next(err);
   }
