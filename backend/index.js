@@ -149,7 +149,12 @@ app.use(
 );
 
 app.use("/api/admin/users", auth, requireRole("Admin"), staffOwnerRoutes); // cleaner
-app.use("/api/employees", auth, requireRole("Employee"), employeeRoutes);
+app.use(
+  "/api/employees",
+  auth,
+  requireRole("Employee", "Admin"),
+  employeeRoutes
+);
 
 app.use(
   "/api/attendance",

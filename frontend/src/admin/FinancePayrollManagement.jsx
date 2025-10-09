@@ -268,8 +268,20 @@ export default function PayrollRunPage() {
   // 2) Calculate (backend preview → draft)
   async function handleCalculateAll() {
     if (!isYearValid) return;
-    const employeeIds = rows.map((r) => r.employee.id).filter(Boolean);
-    if (employeeIds.length === 0) return;
+
+    // only include employees with workingHours > 0
+    const employeeIds = rows
+      .filter(
+        (r) => Number(r.workingHours) > 0 && (r.employee?.id || r.employee?._id)
+      )
+      .map((r) => r.employee?.id || r.employee?._id)
+      .filter(Boolean);
+
+    if (employeeIds.length === 0) {
+      // nothing to calculate
+      alert("No employees with working hours > 0 to calculate.");
+      return;
+    }
     setCalculating(true);
     try {
       const res = await api.post("/payrolls/preview", {
@@ -400,6 +412,12 @@ export default function PayrollRunPage() {
     [buildPdfData]
   );
 
+  // whether there are any rows eligible for calculation
+  const hasWorkable = rows.some(
+    (r) =>
+      Number(r.workingHours) > 0 && Boolean(r.employee?.id || r.employee?._id)
+  );
+
   const valid = rows.filter((r) => r.netSalary != null);
   const totalGross = valid.reduce((s, r) => s + (r.gross || 0), 0);
   const totalNet = valid.reduce((s, r) => s + (r.netSalary || 0), 0);
@@ -471,7 +489,7 @@ export default function PayrollRunPage() {
 
               <button
                 onClick={handleCalculateAll}
-                disabled={calculating || rows.length === 0 || !isYearValid}
+                disabled={calculating || !hasWorkable || !isYearValid}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400"
               >
                 {calculating ? (
