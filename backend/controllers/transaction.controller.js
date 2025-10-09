@@ -21,7 +21,6 @@ function idFilter(idOrTxnId) {
     : { transaction_id: idOrTxnId };
 }
 
-
 /* ---------- CREATE ---------- */
 export const createTransaction = async (req, res) => {
   try {
@@ -54,7 +53,7 @@ export const createTransaction = async (req, res) => {
       action: "ADD",
       recordId: doc._id,
       transactionId: doc.transaction_id, // now properly stored
-      user: req.user?.username || "system",
+      user: req.user?.email || req.user?.username || "system",
       newData: doc.toObject(),
     });
 
@@ -157,7 +156,7 @@ export const updateTransaction = async (req, res) => {
       action: "UPDATE",
       recordId: item._id,
       transactionId: item.transaction_id,
-      user: req.user?.username || "system",
+      user: req.user?.email || req.user?.username || "system",
       originalData: oldRecord.toObject(),
       newData: item.toObject(),
     });
@@ -180,7 +179,7 @@ export const deleteTransaction = async (req, res) => {
       action: "DELETE",
       recordId: item._id,
       transactionId: item.transaction_id,
-      user: req.user?.username || "system",
+      user: req.user?.email || req.user?.username || "system",
       originalData: item.toObject(),
     });
 

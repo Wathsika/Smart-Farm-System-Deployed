@@ -92,6 +92,21 @@ export default function PayrollRunPage() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
 
+  // Helper to get valid months for the selected year
+  const validMonths = useMemo(() => {
+    // Only allow months up to current month for current year
+    const selectedYear = Number(year);
+    if (!selectedYear || selectedYear > today.getFullYear()) return [];
+    if (selectedYear === today.getFullYear()) {
+      return Array.from({ length: today.getMonth() + 1 }, (_, idx) => idx + 1);
+    }
+    // For previous years, allow all months
+    if (selectedYear < today.getFullYear()) {
+      return Array.from({ length: 12 }, (_, idx) => idx + 1);
+    }
+    return [];
+  }, [year, today]);
+
   const [employees, setEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [rows, setRows] = useState([]);
@@ -438,10 +453,11 @@ export default function PayrollRunPage() {
                 className="border rounded-lg px-3 py-2 text-sm"
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
+                disabled={validMonths.length === 0}
               >
-                {MONTH_NAMES.map((label, index) => (
-                  <option key={index + 1} value={index + 1}>
-                    {label}
+                {validMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {MONTH_NAMES[m - 1]}
                   </option>
                 ))}
               </select>
@@ -451,23 +467,33 @@ export default function PayrollRunPage() {
                 value={year}
                 onChange={(e) => {
                   let val = e.target.value;
-
                   // Allow empty (so user can clear)
                   if (val === "") {
                     setYear("");
                     return;
                   }
-
                   // Only digits & max 4 characters
                   if (!/^\d*$/.test(val) || val.length > 4) return;
-
                   // First digit must be 2
                   if (val.length === 1 && val[0] !== "2") return;
-
-                  setYear(Number(val));
+                  const numVal = Number(val);
+                  // Prevent future years
+                  if (numVal > today.getFullYear()) return;
+                  setYear(numVal);
+                  // If year is changed to a previous year, reset month to December if current month is greater
+                  if (numVal < today.getFullYear() && month > 12) {
+                    setMonth(12);
+                  }
+                  // If year is changed to current year and month is greater than current month, reset month
+                  if (
+                    numVal === today.getFullYear() &&
+                    month > today.getMonth() + 1
+                  ) {
+                    setMonth(today.getMonth() + 1);
+                  }
                 }}
-                min="2025"
-                max="2100"
+                min="2020"
+                max={today.getFullYear()}
                 onKeyDown={(e) => {
                   // Block invalid characters in number input
                   if (["e", "E", ".", "+", "-"].includes(e.key)) {
