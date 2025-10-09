@@ -1,12 +1,85 @@
 import mongoose from "mongoose";
 import Cow from "../models/cow.js";
+import Health from "../models/health.js";
+import Milk from "../models/milk.js";
 import { uploadToCloudinary } from "../config/cloudinary.config.js";
 import QRCode from "qrcode";
 
+function startOfDay(input) {
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(input) {
+  const d = startOfDay(input);
+  if (!d) return null;
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function pickSummary(record, fallbackTypeLabel = "") {
+  if (!record) return "";
+  const candidates = [
+    record.medication,
+    record.diagnosis,
+    Array.isArray(record.symptoms) ? record.symptoms.join(", ") : undefined,
+    record.notes,
+    fallbackTypeLabel,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return "";
+}
+
+function resolveFrontendBase(req) {
+  const candidates = [
+    process.env.FRONTEND_URL,
+    process.env.CLIENT_URL,
+    process.env.PUBLIC_FRONTEND_URL,
+  ];
+
+  for (const raw of candidates) {
+    if (typeof raw === "string" && raw.trim()) {
+      return raw.trim().replace(/\/$/, "");
+    }
+  }
+
+  if (req) {
+    const origin = req.get?.("origin");
+    if (origin && origin.trim()) {
+      return origin.trim().replace(/\/$/, "");
+    }
+
+    const host = req.get?.("host");
+    if (host && host.trim()) {
+      const forwardedProto = req.get?.("x-forwarded-proto");
+      const protocol = (forwardedProto?.split(",")[0] || req.protocol || "http").replace(/:$/, "");
+      return `${protocol}://${host.trim()}`.replace(/\/$/, "");
+    }
+  }
+
+  return "";
+}
+
 // helper: generate QR as buffer + upload
-async function generateCowQR(cow) {
-  const profileUrl = `${process.env.FRONTEND_URL}/admin/livestock/${cow._id}`;
-  const qrBuffer = await QRCode.toBuffer(profileUrl, { type: "png" });
+async function generateCowQR(cow, req) {
+  // Ensure the QR links to the dedicated public cow page
+  const frontendBase = resolveFrontendBase(req);
+  const profilePath = `/cow/${cow._id}`;
+  const profileUrl = frontendBase ? `${frontendBase}${profilePath}` : profilePath;
+
+  const qrBuffer = await QRCode.toBuffer(profileUrl, {
+    type: "png",
+    errorCorrectionLevel: "M",
+    width: 512,
+    margin: 1,
+  });
+
   const qrUrl = await uploadToCloudinary(qrBuffer, "smart_farm_qr");
   return qrUrl;
 }
@@ -27,7 +100,7 @@ export const addCow = async (req, res, next) => {
     let cow = await Cow.create({ name, breed, bday, gender, photoUrl });
 
     // generate QR
-    cow.qrUrl = await generateCowQR(cow);
+    cow.qrUrl = await generateCowQR(cow, req);
     await cow.save();
 
     res.status(201).json(cow);
@@ -43,7 +116,7 @@ export const regenerateCowQR = async (req, res, next) => {
     const cow = await Cow.findById(id);
     if (!cow) return res.status(404).json({ message: "Cow not found" });
 
-    cow.qrUrl = await generateCowQR(cow);
+    cow.qrUrl = await generateCowQR(cow, req);
     await cow.save();
 
     res.json({ qrUrl: cow.qrUrl });
@@ -69,9 +142,91 @@ export const getCow = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid id" });
     }
-    const cow = await Cow.findById(id);
+
+    const cow = await Cow.findById(id).lean();
     if (!cow) return res.status(404).json({ message: "Cow not found" });
-    res.json(cow);
+
+    const todayStart = startOfDay(new Date());
+    const tomorrowStart = endOfDay(new Date());
+
+    const [latestHealth, upcomingVaccinationRaw, milkAggregation] = await Promise.all([
+      Health.findOne({ cow: cow._id })
+        .sort({ date: -1, createdAt: -1 })
+        .lean(),
+      (async () => {
+        const futureVaccination = await Health.findOne({
+          cow: cow._id,
+          type: "VACCINATION",
+          $or: [
+            { nextDueDate: { $gte: todayStart } },
+            { date: { $gte: todayStart } },
+          ],
+        })
+          .sort({ nextDueDate: 1, date: 1, createdAt: 1 })
+          .lean();
+
+        if (futureVaccination) return futureVaccination;
+
+        return Health.findOne({ cow: cow._id, type: "VACCINATION" })
+          .sort({ date: -1, nextDueDate: -1, createdAt: -1 })
+          .lean();
+      })(),
+      Milk.aggregate([
+        {
+          $match: {
+            cow: cow._id,
+            date: { $gte: todayStart, $lt: tomorrowStart },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$volumeLiters" },
+          },
+        },
+      ]),
+    ]);
+
+    const upcomingVaccination = (() => {
+      if (!upcomingVaccinationRaw) return null;
+      const dueDate = upcomingVaccinationRaw.nextDueDate || upcomingVaccinationRaw.date || null;
+      const fallbackLabel = (() => {
+        const type = (upcomingVaccinationRaw.type || "").toUpperCase();
+        if (type === "VACCINATION") return "Vaccination";
+        return upcomingVaccinationRaw.type || "Vaccination";
+      })();
+      const summary = pickSummary(upcomingVaccinationRaw, fallbackLabel);
+
+      return {
+        id: upcomingVaccinationRaw._id,
+        date: dueDate,
+        vaccineName: summary || "Scheduled vaccination",
+        vet: upcomingVaccinationRaw.vet || undefined,
+        notes: upcomingVaccinationRaw.notes || undefined,
+      };
+    })();
+
+    const lastHealthRecord = (() => {
+      if (!latestHealth) return null;
+      const summary = pickSummary(latestHealth, latestHealth.type || "Health record");
+
+      return {
+        id: latestHealth._id,
+        date: latestHealth.date,
+        condition: summary || "General checkup",
+        vet: latestHealth.vet || undefined,
+      };
+    })();
+
+    const todayMilkTotal = milkAggregation?.[0]?.total ?? 0;
+    const todayMilk = Math.round(Number(todayMilkTotal || 0) * 100) / 100;
+
+    res.json({
+      ...cow,
+      upcomingVaccination,
+      lastHealthRecord,
+      todayMilk,
+    });
   } catch (err) {
     next(err);
   }
