@@ -171,6 +171,17 @@ export default function MainDashboard() {
     return { income, expenses, net, chart };
   }, [transactions]);
 
+  // Net profit trend: compare current month net (income-expense) vs previous month
+  const netProfitTrend = useMemo(() => {
+    if (!financeStats.chart || financeStats.chart.length < 2) return undefined;
+    const last = financeStats.chart[financeStats.chart.length - 1];
+    const prev = financeStats.chart[financeStats.chart.length - 2];
+    const lastNet = (last?.income || 0) - (last?.expense || 0);
+    const prevNet = (prev?.income || 0) - (prev?.expense || 0);
+    if (prevNet === 0) return undefined; // avoid meaningless % (would be ∞ or 0)
+    return ((lastNet - prevNet) / Math.abs(prevNet)) * 100;
+  }, [financeStats]);
+
   const topPerformer = useMemo(() => {
     if (!topSellers.length) return null;
     return topSellers.reduce((best, item) => {
@@ -241,6 +252,7 @@ export default function MainDashboard() {
           icon={FaMoneyBillWave}
           label="Net Profit"
           value={formatCurrency(financeStats.net)}
+          trend={typeof netProfitTrend === "number" ? netProfitTrend : undefined}
         />
         <StatTile
           icon={FaArrowTrendUp}
@@ -251,7 +263,6 @@ export default function MainDashboard() {
           icon={FaBagShopping}
           label="Top Product"
           value={topPerformer?.name || "Awaiting sales"}
-          trend={topPerformer ? 0 : undefined}
         />
       </div>
 
