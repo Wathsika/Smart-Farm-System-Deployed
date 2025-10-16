@@ -4,106 +4,64 @@
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
-        <mxCell id="crop" value="&lt;b&gt;Crop&lt;/b&gt;&#xa;+cropName: String&#xa;+plantingDate: Date&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#2E7D32;fillColor=#E8F5E9" vertex="1" parent="1">
-          <mxGeometry x="80" y="40" width="220" height="140" as="geometry"/>
+        <mxCell id="user" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;User&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+id: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+fullName: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+email: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+role: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+status: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="40" width="220" height="200" as="geometry"/>
         </mxCell>
-        <mxCell id="field" value="&lt;b&gt;Field&lt;/b&gt;&#xa;+fieldName: String&#xa;+areaValue: Number&#xa;+soilType: String&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#2E7D32;fillColor=#E8F5E9" vertex="1" parent="1">
-          <mxGeometry x="340" y="40" width="220" height="160" as="geometry"/>
+        <mxCell id="employee" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Employee&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+empId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+jobTitle: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+department: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+basicSalary: Number&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="220" height="180" as="geometry"/>
         </mxCell>
-        <mxCell id="input" value="&lt;b&gt;Input&lt;/b&gt;&#xa;+name: String&#xa;+category: String&#xa;+dosagePerAreaAmount: Number&#xa;+unit: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#2E7D32;fillColor=#E8F5E9" vertex="1" parent="1">
-          <mxGeometry x="600" y="40" width="220" height="160" as="geometry"/>
+        <mxCell id="paymentSlip" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;PaymentSlip&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+slipId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+employeeId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+month: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+year: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+net: Number&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="580" y="40" width="220" height="210" as="geometry"/>
         </mxCell>
-        <mxCell id="applicationPlan" value="&lt;b&gt;ApplicationPlan&lt;/b&gt;&#xa;+crop: ObjectId&#xa;+field: ObjectId&#xa;+product: ObjectId&#xa;+scheduleType: String&#xa;+assignedTo: ObjectId" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#2E7D32;fillColor=#E8F5E9" vertex="1" parent="1">
-          <mxGeometry x="860" y="40" width="240" height="180" as="geometry"/>
+        <mxCell id="transaction" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Transaction&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+transaction_id: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+type: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+category: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+amount: Number&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="840" y="40" width="220" height="190" as="geometry"/>
         </mxCell>
-        <mxCell id="applicationRecord" value="&lt;b&gt;ApplicationRecord&lt;/b&gt;&#xa;+date: Date&#xa;+product: ObjectId&#xa;+field: ObjectId&#xa;+method: String&#xa;+quantityUsedAmount: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#2E7D32;fillColor=#E8F5E9" vertex="1" parent="1">
-          <mxGeometry x="1140" y="40" width="240" height="180" as="geometry"/>
+        <mxCell id="crop" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Crop&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+cropName: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+plantingDate: Date&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+status: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="260" width="220" height="170" as="geometry"/>
         </mxCell>
-        <mxCell id="cow" value="&lt;b&gt;Cow&lt;/b&gt;&#xa;+cowId: String&#xa;+name: String&#xa;+breed: String&#xa;+gender: String&#xa;+bday: Date" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#1565C0;fillColor=#E3F2FD" vertex="1" parent="1">
-          <mxGeometry x="80" y="280" width="240" height="180" as="geometry"/>
+        <mxCell id="applicationPlan" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;ApplicationPlan&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+cropId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+fieldId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+productId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+scheduleType: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="260" width="220" height="190" as="geometry"/>
         </mxCell>
-        <mxCell id="health" value="&lt;b&gt;Health&lt;/b&gt;&#xa;+cow: ObjectId&#xa;+type: String&#xa;+temperatureC: Number&#xa;+diagnosis: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#1565C0;fillColor=#E3F2FD" vertex="1" parent="1">
-          <mxGeometry x="360" y="280" width="220" height="160" as="geometry"/>
+        <mxCell id="field" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Field&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+fieldName: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+areaValue: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+soilType: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+status: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="580" y="260" width="220" height="190" as="geometry"/>
         </mxCell>
-        <mxCell id="breeding" value="&lt;b&gt;Breeding&lt;/b&gt;&#xa;+cow: ObjectId&#xa;+eventType: String&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#1565C0;fillColor=#E3F2FD" vertex="1" parent="1">
-          <mxGeometry x="620" y="280" width="220" height="140" as="geometry"/>
+        <mxCell id="product" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Product&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+name: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+sku: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+category: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+price: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+unit: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="840" y="260" width="220" height="210" as="geometry"/>
         </mxCell>
-        <mxCell id="milk" value="&lt;b&gt;Milk&lt;/b&gt;&#xa;+cow: ObjectId&#xa;+date: Date&#xa;+volumeLiters: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#1565C0;fillColor=#E3F2FD" vertex="1" parent="1">
-          <mxGeometry x="880" y="280" width="220" height="140" as="geometry"/>
+        <mxCell id="cow" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Cow&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+cowId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+name: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+breed: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+gender: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+bday: Date&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="60" y="480" width="220" height="210" as="geometry"/>
         </mxCell>
-        <mxCell id="user" value="&lt;b&gt;User&lt;/b&gt;&#xa;+fullName: String&#xa;+email: String&#xa;+role: String&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#AD1457;fillColor=#FCE4EC" vertex="1" parent="1">
-          <mxGeometry x="80" y="520" width="220" height="160" as="geometry"/>
+        <mxCell id="health" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Health&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+cowId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+type: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+diagnosis: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="480" width="220" height="170" as="geometry"/>
         </mxCell>
-        <mxCell id="employee" value="&lt;b&gt;Employee&lt;/b&gt;&#xa;+empId: String&#xa;+jobTitle: String&#xa;+basicSalary: Number&#xa;+department: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#AD1457;fillColor=#FCE4EC" vertex="1" parent="1">
-          <mxGeometry x="340" y="520" width="220" height="160" as="geometry"/>
+        <mxCell id="order" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;Order&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+orderNumber: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+customerName: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+totalPrice: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+status: String&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="580" y="480" width="220" height="190" as="geometry"/>
         </mxCell>
-        <mxCell id="attendance" value="&lt;b&gt;Attendance&lt;/b&gt;&#xa;+user: ObjectId&#xa;+date: Date&#xa;+checkIn: Date&#xa;+checkOut: Date" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#AD1457;fillColor=#FCE4EC" vertex="1" parent="1">
-          <mxGeometry x="600" y="520" width="240" height="160" as="geometry"/>
+        <mxCell id="orderItem" value="&lt;table&gt;&lt;tr&gt;&lt;td style=&quot;font-weight:bold;font-size:14px;background-color:#E0E0E0;text-align:center;&quot;&gt;OrderItem&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+orderId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+productId: String&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+qty: Number&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;text-align:left;&quot;&gt;+price: Number&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="shape=table;html=1;whiteSpace=wrap;strokeColor=#000000;fillColor=#FFFFFF;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="840" y="480" width="220" height="190" as="geometry"/>
         </mxCell>
-        <mxCell id="task" value="&lt;b&gt;Task&lt;/b&gt;&#xa;+user: ObjectId&#xa;+title: String&#xa;+dueDate: Date&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#AD1457;fillColor=#FCE4EC" vertex="1" parent="1">
-          <mxGeometry x="880" y="520" width="220" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="leaveRequest" value="&lt;b&gt;LeaveRequest&lt;/b&gt;&#xa;+user: ObjectId&#xa;+leaveType: String&#xa;+startDate: Date&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#AD1457;fillColor=#FCE4EC" vertex="1" parent="1">
-          <mxGeometry x="1140" y="520" width="240" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="product" value="&lt;b&gt;Product&lt;/b&gt;&#xa;+name: String&#xa;+sku: String&#xa;+price: Number&#xa;+unit: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#6A1B9A;fillColor=#F3E5F5" vertex="1" parent="1">
-          <mxGeometry x="80" y="760" width="220" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="order" value="&lt;b&gt;Order&lt;/b&gt;&#xa;+orderNumber: String&#xa;+customerName: String&#xa;+totalPrice: Number&#xa;+status: String" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#6A1B9A;fillColor=#F3E5F5" vertex="1" parent="1">
-          <mxGeometry x="340" y="760" width="220" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="orderItem" value="&lt;b&gt;OrderItem&lt;/b&gt;&#xa;+product: ObjectId&#xa;+qty: Number&#xa;+price: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#6A1B9A;fillColor=#F3E5F5" vertex="1" parent="1">
-          <mxGeometry x="600" y="760" width="220" height="140" as="geometry"/>
-        </mxCell>
-        <mxCell id="discount" value="&lt;b&gt;Discount&lt;/b&gt;&#xa;+code: String&#xa;+type: String&#xa;+value: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#6A1B9A;fillColor=#F3E5F5" vertex="1" parent="1">
-          <mxGeometry x="860" y="760" width="220" height="140" as="geometry"/>
-        </mxCell>
-        <mxCell id="paymentSlip" value="&lt;b&gt;PaymentSlip&lt;/b&gt;&#xa;+slipId: String&#xa;+employee: ObjectId&#xa;+month: Number&#xa;+year: Number&#xa;+net: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#BF360C;fillColor=#FBE9E7" vertex="1" parent="1">
-          <mxGeometry x="80" y="1000" width="260" height="180" as="geometry"/>
-        </mxCell>
-        <mxCell id="payrollDraft" value="&lt;b&gt;PayrollDraft&lt;/b&gt;&#xa;+draftKey: String&#xa;+month: Number&#xa;+year: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#BF360C;fillColor=#FBE9E7" vertex="1" parent="1">
-          <mxGeometry x="360" y="1000" width="220" height="140" as="geometry"/>
-        </mxCell>
-        <mxCell id="payrollSettings" value="&lt;b&gt;PayrollSettings&lt;/b&gt;&#xa;+daysPerMonth: Number&#xa;+hoursPerDay: Number&#xa;+epfRate: Number&#xa;+etfRate: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#BF360C;fillColor=#FBE9E7" vertex="1" parent="1">
-          <mxGeometry x="620" y="1000" width="240" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="transaction" value="&lt;b&gt;Transaction&lt;/b&gt;&#xa;+transaction_id: String&#xa;+type: String&#xa;+category: String&#xa;+amount: Number" style="html=1;rounded=1;whiteSpace=wrap;strokeColor=#BF360C;fillColor=#FBE9E7" vertex="1" parent="1">
-          <mxGeometry x="900" y="1000" width="240" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="edgeUserEmployee" value="1 User &lt;-- 1 Employee" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="employee" target="user">
+        <mxCell id="relUserEmployee" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=none;strokeColor=#000000;" edge="1" parent="1" source="user" target="employee">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeEmployeePaymentSlip" value="1 Employee &lt;-- 0..* PaymentSlip" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="paymentSlip" target="employee">
+        <mxCell id="relEmployeePaymentSlip" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="employee" target="paymentSlip">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgePayrollDraftTransaction" value="1 PayrollDraft --&gt; 0..* Transaction" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="payrollDraft" target="transaction">
+        <mxCell id="relPaymentSlipTransaction" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="paymentSlip" target="transaction">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeCropApplicationPlan" value="1 Crop &lt;-- 0..* ApplicationPlan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="applicationPlan" target="crop">
+        <mxCell id="relCropApplicationPlan" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="crop" target="applicationPlan">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeFieldApplicationPlan" value="1 Field &lt;-- 0..* ApplicationPlan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="applicationPlan" target="field">
+        <mxCell id="relFieldApplicationPlan" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="field" target="applicationPlan">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeInputApplicationPlan" value="1 Input &lt;-- 0..* ApplicationPlan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="applicationPlan" target="input">
+        <mxCell id="relCowHealth" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="cow" target="health">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeCowHealth" value="1 Cow &lt;-- 0..* Health" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="health" target="cow">
+        <mxCell id="relProductOrderItem" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="product" target="orderItem">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="edgeCowBreeding" value="1 Cow &lt;-- 0..* Breeding" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="breeding" target="cow">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="edgeCowMilk" value="1 Cow &lt;-- 0..* Milk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="milk" target="cow">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="edgeOrderOrderItem" value="1 Order --&gt; 1..* OrderItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="order" target="orderItem">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="edgeProductOrderItem" value="1 Product &lt;-- 0..* OrderItem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="orderItem" target="product">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="edgeDiscountOrder" value="1 Discount &lt;-- 0..* Order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;endFill=0;strokeColor=#000000" edge="1" parent="1" source="order" target="discount">
+        <mxCell id="relOrderOrderItem" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=none;endArrow=crow;endFill=0;strokeColor=#000000;" edge="1" parent="1" source="order" target="orderItem">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
       </root>
