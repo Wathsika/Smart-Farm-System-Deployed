@@ -1,5 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.7">
   <diagram name="Class Diagram" id="smartfarm-class">
+<<<<<<< Updated upstream
     <mxGraphModel dx="1042" dy="608" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
@@ -260,6 +261,136 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="edge_ApplicationRecord_Worker" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_ApplicationRecord" target="class_Worker" parent="1">
+=======
+    <mxGraphModel dx="802" dy="468" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="class_User" value="User" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="40" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_User" value="&lt;div&gt;+fullName : String&lt;/div&gt;&lt;div&gt;+email : String&lt;/div&gt;&lt;div&gt;+authProvider : String&lt;/div&gt;&lt;div&gt;+role : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+googleId : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_User" vertex="1">
+          <mxGeometry y="26" width="200" height="134" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Employee" value="Employee" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="280" y="40" width="200" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Employee" value="&lt;div&gt;+empId : String&lt;/div&gt;&lt;div&gt;+jobTitle : String&lt;/div&gt;&lt;div&gt;+department : String&lt;/div&gt;&lt;div&gt;+employmentType : String&lt;/div&gt;&lt;div&gt;+basicSalary : Number&lt;/div&gt;&lt;div&gt;+accumulatedWorkingHours : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Employee" vertex="1">
+          <mxGeometry y="26" width="200" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Attendance" value="Attendance" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="520" y="40" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Attendance" value="&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+checkIn : Date&lt;/div&gt;&lt;div&gt;+checkOut : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+remarks : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Attendance" vertex="1">
+          <mxGeometry y="26" width="200" height="134" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Task" value="Task" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="760" y="40" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Task" value="&lt;div&gt;+title : String&lt;/div&gt;&lt;div&gt;+dueDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+completedAt : Date&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Task" vertex="1">
+          <mxGeometry y="26" width="200" height="134" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Crop" value="Crop" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="240" width="200" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Crop" value="&lt;div&gt;+cropName : String&lt;/div&gt;&lt;div&gt;+plantingDate : Date&lt;/div&gt;&lt;div&gt;+expectedHarvestDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Crop" vertex="1">
+          <mxGeometry y="26" width="200" height="134" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Field" value="Field" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="280" y="240" width="200" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Field" value="&lt;div&gt;+fieldName : String&lt;/div&gt;&lt;div&gt;+fieldCode : String&lt;/div&gt;&lt;div&gt;+areaValue : Number&lt;/div&gt;&lt;div&gt;+soilType : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+currentCrop : ObjectId&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Field" vertex="1">
+          <mxGeometry y="26" width="200" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Input" value="Input" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="520" y="240" width="200" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Input" value="&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+category : String&lt;/div&gt;&lt;div&gt;+unit : String&lt;/div&gt;&lt;div&gt;+stockQty : Number&lt;/div&gt;&lt;div&gt;+reorderLevel : Number&lt;/div&gt;&lt;div&gt;+expiryDate : Date&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Input" vertex="1">
+          <mxGeometry y="26" width="200" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Cow" value="Cow" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="760" y="240" width="200" height="192" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Cow" value="&lt;div&gt;+cowId : String&lt;/div&gt;&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+breed : String&lt;/div&gt;&lt;div&gt;+gender : String&lt;/div&gt;&lt;div&gt;+bday : Date&lt;/div&gt;&lt;div&gt;+photoUrl : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Cow" vertex="1">
+          <mxGeometry y="26" width="200" height="166" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Health" value="HealthRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="440" width="200" height="208" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Health" value="&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+type : String&lt;/div&gt;&lt;div&gt;+temperatureC : Number&lt;/div&gt;&lt;div&gt;+weightKg : Number&lt;/div&gt;&lt;div&gt;+diagnosis : String&lt;/div&gt;&lt;div&gt;+medication : String&lt;/div&gt;&lt;div&gt;+nextDueDate : Date&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Health" vertex="1">
+          <mxGeometry y="26" width="200" height="182" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Breeding" value="BreedingEvent" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="280" y="440" width="200" height="192" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Breeding" value="&lt;div&gt;+eventType : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+serviceDate : Date&lt;/div&gt;&lt;div&gt;+nextDueDate : Date&lt;/div&gt;&lt;div&gt;+notes : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Breeding" vertex="1">
+          <mxGeometry y="26" width="200" height="166" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Milk" value="MilkRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="520" y="440" width="200" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Milk" value="&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+shift : String&lt;/div&gt;&lt;div&gt;+volumeLiters : Number&lt;/div&gt;&lt;div&gt;+createdAt : Date&lt;/div&gt;&lt;div&gt;+updatedAt : Date&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Milk" vertex="1">
+          <mxGeometry y="26" width="200" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Product" value="Product" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="760" y="440" width="200" height="208" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Product" value="&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+sku : String&lt;/div&gt;&lt;div&gt;+category : String&lt;/div&gt;&lt;div&gt;+price : Number&lt;/div&gt;&lt;div&gt;+unit : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+stockQty : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Product" vertex="1">
+          <mxGeometry y="26" width="200" height="182" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Order" value="Order" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="40" y="640" width="200" height="208" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Order" value="&lt;div&gt;+orderNumber : String&lt;/div&gt;&lt;div&gt;+customerName : String&lt;/div&gt;&lt;div&gt;+customerEmail : String&lt;/div&gt;&lt;div&gt;+totalPrice : Number&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+paymentMethod : String&lt;/div&gt;&lt;div&gt;+isPaid : Boolean&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Order" vertex="1">
+          <mxGeometry y="26" width="200" height="182" as="geometry" />
+        </mxCell>
+        <mxCell id="class_PaymentSlip" value="PaymentSlip" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="280" y="640" width="200" height="208" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_PaymentSlip" value="&lt;div&gt;+slipId : String&lt;/div&gt;&lt;div&gt;+month : Number&lt;/div&gt;&lt;div&gt;+year : Number&lt;/div&gt;&lt;div&gt;+basicSalary : Number&lt;/div&gt;&lt;div&gt;+allowances : Number&lt;/div&gt;&lt;div&gt;+loan : Number&lt;/div&gt;&lt;div&gt;+net : Number&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_PaymentSlip" vertex="1">
+          <mxGeometry y="26" width="200" height="182" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Transaction" value="Transaction" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="520" y="640" width="200" height="192" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_Transaction" value="&lt;div&gt;+transaction_id : String&lt;/div&gt;&lt;div&gt;+type : String&lt;/div&gt;&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+category : String&lt;/div&gt;&lt;div&gt;+amount : Number&lt;/div&gt;&lt;div&gt;+description : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_Transaction" vertex="1">
+          <mxGeometry y="26" width="200" height="166" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ProductOrder" value="OrderItem" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="760" y="880" width="200" height="192" as="geometry" />
+        </mxCell>
+        <mxCell id="attr_ProductOrder" value="&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+qty : Number&lt;/div&gt;&lt;div&gt;+price : Number&lt;/div&gt;&lt;div&gt;+reviewRating : Number&lt;/div&gt;&lt;div&gt;+reviewComment : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="class_ProductOrder" vertex="1">
+          <mxGeometry y="26" width="200" height="166" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Employee_User" value="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Employee" target="class_User" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Attendance_User" value="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Attendance" target="class_User" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Task_User" value="user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Task" target="class_User" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_PaymentSlip_Employee" value="employee" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_PaymentSlip" target="class_Employee" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Field_Crop" value="currentCrop" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Field" target="class_Crop" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Health_Cow" value="cow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Health" target="class_Cow" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Breeding_Cow" value="cow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Breeding" target="class_Cow" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_Milk_Cow" value="cow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_Milk" target="class_Cow" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_OrderItem_Product" value="product" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_ProductOrder" target="class_Product" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_OrderItem_Order" value="order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;" parent="1" source="class_ProductOrder" target="class_Order" edge="1">
+>>>>>>> Stashed changes
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge_ApplicationRecord_Worker_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationRecord_Worker">
