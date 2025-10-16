@@ -1,0 +1,519 @@
+<?xml version="1.0" ?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.7">
+  <diagram name="Class Diagram" id="wz2TxgQ0MmqcxP7N4mX1">
+    <mxGraphModel dx="1042" dy="608" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="class_User" value="User" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_User_attrs" value="&lt;div&gt;+userId : String&lt;/div&gt;&lt;div&gt;+fullName : String&lt;/div&gt;&lt;div&gt;+email : String&lt;/div&gt;&lt;div&gt;+role : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_User">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Employee" value="Employee" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Employee_attrs" value="&lt;div&gt;+employeeId : String&lt;/div&gt;&lt;div&gt;+hireDate : Date&lt;/div&gt;&lt;div&gt;+employmentType : String&lt;/div&gt;&lt;div&gt;+salaryGrade : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Employee">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_PayrollRun" value="PayrollRun" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_PayrollRun_attrs" value="&lt;div&gt;+runCode : String&lt;/div&gt;&lt;div&gt;+periodStart : Date&lt;/div&gt;&lt;div&gt;+periodEnd : Date&lt;/div&gt;&lt;div&gt;+processedAt : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_PayrollRun">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Transaction" value="Transaction" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="40" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Transaction_attrs" value="&lt;div&gt;+transactionId : String&lt;/div&gt;&lt;div&gt;+type : String&lt;/div&gt;&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+amount : Number&lt;/div&gt;&lt;div&gt;+description : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Transaction">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Expense" value="Expense" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="40" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Expense_attrs" value="&lt;div&gt;+expenseId : String&lt;/div&gt;&lt;div&gt;+category : String&lt;/div&gt;&lt;div&gt;+vendor : String&lt;/div&gt;&lt;div&gt;+amount : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Expense">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Attendance" value="Attendance" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Attendance_attrs" value="&lt;div&gt;+attendanceId : String&lt;/div&gt;&lt;div&gt;+date : Date&lt;/div&gt;&lt;div&gt;+checkIn : Date&lt;/div&gt;&lt;div&gt;+checkOut : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Attendance">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Task" value="Task" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="240" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Task_attrs" value="&lt;div&gt;+taskId : String&lt;/div&gt;&lt;div&gt;+title : String&lt;/div&gt;&lt;div&gt;+dueDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Task">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ApplicationPlan" value="ApplicationPlan" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="240" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ApplicationPlan_attrs" value="&lt;div&gt;+planId : String&lt;/div&gt;&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+scheduleType : String&lt;/div&gt;&lt;div&gt;+startDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_ApplicationPlan">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_SalaryRecord" value="SalaryRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="240" width="200" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="class_SalaryRecord_attrs" value="&lt;div&gt;+recordId : String&lt;/div&gt;&lt;div&gt;+grossPay : Number&lt;/div&gt;&lt;div&gt;+deductions : Number&lt;/div&gt;&lt;div&gt;+netPay : Number&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_SalaryRecord">
+          <mxGeometry y="26" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Worker" value="Worker" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="240" width="200" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Worker_attrs" value="&lt;div&gt;+workerId : String&lt;/div&gt;&lt;div&gt;+assignment : String&lt;/div&gt;&lt;div&gt;+skillLevel : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Worker">
+          <mxGeometry y="26" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Crop" value="Crop" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="440" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Crop_attrs" value="&lt;div&gt;+cropId : String&lt;/div&gt;&lt;div&gt;+cropName : String&lt;/div&gt;&lt;div&gt;+plantingDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Crop">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Field" value="Field" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="440" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Field_attrs" value="&lt;div&gt;+fieldId : String&lt;/div&gt;&lt;div&gt;+fieldName : String&lt;/div&gt;&lt;div&gt;+areaHectares : Number&lt;/div&gt;&lt;div&gt;+soilType : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Field">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ApplicationRecord" value="ApplicationRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="440" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ApplicationRecord_attrs" value="&lt;div&gt;+recordId : String&lt;/div&gt;&lt;div&gt;+executedOn : Date&lt;/div&gt;&lt;div&gt;+quantityUsed : Number&lt;/div&gt;&lt;div&gt;+notes : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_ApplicationRecord">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Product" value="Product" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="440" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Product_attrs" value="&lt;div&gt;+productId : String&lt;/div&gt;&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+unit : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Product">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Category" value="Category" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="440" width="200" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Category_attrs" value="&lt;div&gt;+categoryId : String&lt;/div&gt;&lt;div&gt;+categoryName : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Category">
+          <mxGeometry y="26" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Animal" value="Animal" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Animal_attrs" value="&lt;div&gt;+animalId : String&lt;/div&gt;&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+gender : String&lt;/div&gt;&lt;div&gt;+birthDate : Date&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Animal">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Breed" value="Breed" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="640" width="200" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Breed_attrs" value="&lt;div&gt;+breedId : String&lt;/div&gt;&lt;div&gt;+breedName : String&lt;/div&gt;&lt;div&gt;+description : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Breed">
+          <mxGeometry y="26" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="class_HealthRecord" value="HealthRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="640" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_HealthRecord_attrs" value="&lt;div&gt;+recordId : String&lt;/div&gt;&lt;div&gt;+visitDate : Date&lt;/div&gt;&lt;div&gt;+temperatureC : Number&lt;/div&gt;&lt;div&gt;+diagnosis : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_HealthRecord">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ProductionRecord" value="ProductionRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="640" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_ProductionRecord_attrs" value="&lt;div&gt;+recordId : String&lt;/div&gt;&lt;div&gt;+collectedOn : Date&lt;/div&gt;&lt;div&gt;+shift : String&lt;/div&gt;&lt;div&gt;+yieldAmount : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_ProductionRecord">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_BreedingRecord" value="BreedingRecord" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="640" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_BreedingRecord_attrs" value="&lt;div&gt;+recordId : String&lt;/div&gt;&lt;div&gt;+eventDate : Date&lt;/div&gt;&lt;div&gt;+eventType : String&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_BreedingRecord">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Supplier" value="Supplier" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="840" width="200" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Supplier_attrs" value="&lt;div&gt;+supplierId : String&lt;/div&gt;&lt;div&gt;+supplierName : String&lt;/div&gt;&lt;div&gt;+contactEmail : String&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Supplier">
+          <mxGeometry y="26" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Order" value="Order" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="840" width="200" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="class_Order_attrs" value="&lt;div&gt;+orderId : String&lt;/div&gt;&lt;div&gt;+orderDate : Date&lt;/div&gt;&lt;div&gt;+status : String&lt;/div&gt;&lt;div&gt;+totalAmount : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_Order">
+          <mxGeometry y="26" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="class_OrderItem" value="OrderItem" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="840" width="200" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="class_OrderItem_attrs" value="&lt;div&gt;+orderItemId : String&lt;/div&gt;&lt;div&gt;+quantity : Number&lt;/div&gt;&lt;div&gt;+unitPrice : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_OrderItem">
+          <mxGeometry y="26" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="class_LivestockUnit" value="LivestockUnit" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="840" width="200" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="class_LivestockUnit_attrs" value="&lt;div&gt;+unitId : String&lt;/div&gt;&lt;div&gt;+name : String&lt;/div&gt;&lt;div&gt;+capacity : Number&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" connectable="0" parent="class_LivestockUnit">
+          <mxGeometry y="26" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_User_Employee" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_User" target="class_Employee" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_User_Employee_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Employee">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_User_Employee_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Employee">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_User_Attendance" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_User" target="class_Attendance" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_User_Attendance_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Attendance">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_User_Attendance_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Attendance">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_User_Task" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_User" target="class_Task" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_User_Task_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Task">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_User_Task_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_User_Task">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Task_Field" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Task" target="class_Field" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Task_Field_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Task_Field">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Task_Field_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Task_Field">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Task_ApplicationPlan" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToOne;endFill=0;" edge="1" source="class_Task" target="class_ApplicationPlan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Task_ApplicationPlan_start" value="0..1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Task_ApplicationPlan">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Task_ApplicationPlan_end" value="0..1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Task_ApplicationPlan">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Crop_Field" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Crop" target="class_Field" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Crop_Field_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Crop_Field">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Crop_Field_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Crop_Field">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Field_ApplicationPlan" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Field" target="class_ApplicationPlan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Field_ApplicationPlan_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Field_ApplicationPlan">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Field_ApplicationPlan_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Field_ApplicationPlan">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Crop_ApplicationPlan" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Crop" target="class_ApplicationPlan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Crop_ApplicationPlan_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Crop_ApplicationPlan">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Crop_ApplicationPlan_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Crop_ApplicationPlan">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_ApplicationPlan_Record" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_ApplicationPlan" target="class_ApplicationRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_ApplicationPlan_Record_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationPlan_Record">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_ApplicationPlan_Record_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationPlan_Record">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_ApplicationRecord_Worker" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_ApplicationRecord" target="class_Worker" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_ApplicationRecord_Worker_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationRecord_Worker">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_ApplicationRecord_Worker_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationRecord_Worker">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Animal_Breed" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Animal" target="class_Breed" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Animal_Breed_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_Breed">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Animal_Breed_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_Breed">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Animal_HealthRecord" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Animal" target="class_HealthRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Animal_HealthRecord_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_HealthRecord">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Animal_HealthRecord_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_HealthRecord">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Animal_ProductionRecord" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Animal" target="class_ProductionRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Animal_ProductionRecord_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_ProductionRecord">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Animal_ProductionRecord_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_ProductionRecord">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Animal_BreedingRecord" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Animal" target="class_BreedingRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Animal_BreedingRecord_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_BreedingRecord">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Animal_BreedingRecord_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Animal_BreedingRecord">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_HealthRecord_Worker" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_HealthRecord" target="class_Worker" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_HealthRecord_Worker_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_HealthRecord_Worker">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_HealthRecord_Worker_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_HealthRecord_Worker">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Employee_PayrollRun" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Employee" target="class_PayrollRun" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Employee_PayrollRun_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Employee_PayrollRun">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Employee_PayrollRun_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Employee_PayrollRun">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_PayrollRun_SalaryRecord" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_PayrollRun" target="class_SalaryRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_PayrollRun_SalaryRecord_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_PayrollRun_SalaryRecord">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_PayrollRun_SalaryRecord_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_PayrollRun_SalaryRecord">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Employee_SalaryRecord" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Employee" target="class_SalaryRecord" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Employee_SalaryRecord_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Employee_SalaryRecord">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Employee_SalaryRecord_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Employee_SalaryRecord">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Transaction_PayrollRun" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Transaction" target="class_PayrollRun" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Transaction_PayrollRun_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_PayrollRun">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Transaction_PayrollRun_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_PayrollRun">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Transaction_Expense" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Transaction" target="class_Expense" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Transaction_Expense_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_Expense">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Transaction_Expense_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_Expense">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Product_Category" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Product" target="class_Category" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Product_Category_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Product_Category">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Product_Category_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Product_Category">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Supplier_Product" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Supplier" target="class_Product" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Supplier_Product_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Supplier_Product">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Supplier_Product_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Supplier_Product">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Order_OrderItem" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandMany;endFill=0;" edge="1" source="class_Order" target="class_OrderItem" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Order_OrderItem_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Order_OrderItem">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Order_OrderItem_end" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Order_OrderItem">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_OrderItem_Product" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_OrderItem" target="class_Product" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_OrderItem_Product_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_OrderItem_Product">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_OrderItem_Product_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_OrderItem_Product">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Order_Transaction" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandOne;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Order" target="class_Transaction" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Order_Transaction_start" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Order_Transaction">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Order_Transaction_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Order_Transaction">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_ApplicationPlan_Product" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_ApplicationPlan" target="class_Product" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_ApplicationPlan_Product_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationPlan_Product">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_ApplicationPlan_Product_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_ApplicationPlan_Product">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Field_LivestockUnit" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToOne;endFill=0;" edge="1" source="class_Field" target="class_LivestockUnit" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Field_LivestockUnit_start" value="0..1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Field_LivestockUnit">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Field_LivestockUnit_end" value="0..1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Field_LivestockUnit">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="edge_Transaction_User" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmandMany;startFill=0;endArrow=ERmandOne;endFill=0;" edge="1" source="class_Transaction" target="class_User" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="edge_Transaction_User_start" value="*" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_User">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint x="-10" y="-20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+          <mxCell id="edge_Transaction_User_end" value="1" style="edgeLabel;resizable=0;html=1;" vertex="1" connectable="0" parent="edge_Transaction_User">
+            <mxGeometry x="0.1" relative="1" as="geometry">
+              <mxPoint x="10" y="20" as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
