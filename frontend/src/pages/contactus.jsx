@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import axios from "axios";
 import ChatbotWidget from "../components/ChatbotWidget";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [alertType, setAlertType] = useState('success'); // 'success' or 'error'
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("success"); // 'success' or 'error'
 
   const [formErrors, setFormErrors] = useState({}); // State to hold validation errors for each field
 
@@ -40,18 +40,21 @@ const ContactUs = () => {
     if (!formData.email.trim()) {
       errors.email = "Email is required.";
       isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) { // Basic regex for email format
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      // Basic regex for email format
       errors.email = "Please enter a valid email address.";
       isValid = false;
     }
 
     // Phone validation (optional field, validate only if present)
     if (formData.phone.trim()) {
-      const digitsOnly = formData.phone.replace(/\D/g, ''); // Ensure only digits are considered for length check
-      if (digitsOnly.length < 7) { // Minimum 7 digits for a valid number
+      const digitsOnly = formData.phone.replace(/\D/g, ""); // Ensure only digits are considered for length check
+      if (digitsOnly.length < 7) {
+        // Minimum 7 digits for a valid number
         errors.phone = "Phone number must have at least 7 digits.";
         isValid = false;
-      } else if (digitsOnly.length > 15) { // Maximum 15 digits
+      } else if (digitsOnly.length > 15) {
+        // Maximum 15 digits
         errors.phone = "Phone number cannot exceed 15 digits.";
         isValid = false;
       }
@@ -84,20 +87,21 @@ const ContactUs = () => {
     let newValue = value;
 
     // Specific handling for the phone number field: allow only digits
-    if (name === 'phone') {
-      newValue = value.replace(/\D/g, ''); // Remove all non-digit characters
-      if (newValue.length > 15) { // Prevent typing beyond 15 digits
+    if (name === "phone") {
+      newValue = value.replace(/\D/g, ""); // Remove all non-digit characters
+      if (newValue.length > 15) {
+        // Prevent typing beyond 15 digits
         newValue = newValue.substring(0, 15);
       }
     }
 
-    setFormData(prevFormData => ({
+    setFormData((prevFormData) => ({
       ...prevFormData,
-      [name]: newValue
+      [name]: newValue,
     }));
     // Clear the error for this field as the user types, if it exists
     if (formErrors[name]) {
-      setFormErrors(prevErrors => {
+      setFormErrors((prevErrors) => {
         const newErrors = { ...prevErrors };
         delete newErrors[name];
         return newErrors;
@@ -112,8 +116,8 @@ const ContactUs = () => {
 
     if (!validateForm()) {
       // If client-side validation fails, show an error alert and stop submission
-      setAlertMessage('Please correct the errors in the form.');
-      setAlertType('error');
+      setAlertMessage("Please correct the errors in the form.");
+      setAlertType("error");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 5000);
       return;
@@ -123,26 +127,32 @@ const ContactUs = () => {
 
     try {
       // Make a POST request to your backend API endpoint
-      const response = await axios.post('http://localhost:5001/api/contact', formData);
+      const response = await axios.post(
+        "https://smart-farm-system-deployed-backend.onrender.com/api/contact",
+        formData
+      );
 
-      console.log('Form submitted successfully:', response.data);
-      setAlertMessage('Thank you for your message! We\'ll get back to you within 24 hours.');
-      setAlertType('success');
+      console.log("Form submitted successfully:", response.data);
+      setAlertMessage(
+        "Thank you for your message! We'll get back to you within 24 hours."
+      );
+      setAlertType("success");
       setShowAlert(true);
 
       // Clear the form fields only on successful submission
-      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
     } catch (error) {
-      console.error('Error submitting form:', error.response ? error.response.data : error.message);
+      console.error(
+        "Error submitting form:",
+        error.response ? error.response.data : error.message
+      );
       setAlertMessage(
         error.response && error.response.data.message
           ? error.response.data.message
-          : 'There was an error submitting your message. Please try again later.'
+          : "There was an error submitting your message. Please try again later."
       );
-      setAlertType('error');
+      setAlertType("error");
       setShowAlert(true);
-
     } finally {
       setIsSubmitting(false);
       // Hide the alert after 5 seconds, regardless of success or error
@@ -158,9 +168,9 @@ const ContactUs = () => {
       y: 0,
       transition: {
         duration: 0.8,
-        ease: [0.25, 0.46, 0.45, 0.94]
-      }
-    }
+        ease: [0.25, 0.46, 0.45, 0.94],
+      },
+    },
   };
 
   const slideInLeft = {
@@ -170,9 +180,9 @@ const ContactUs = () => {
       x: 0,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
-      }
-    }
+        ease: "easeOut",
+      },
+    },
   };
 
   const slideInRight = {
@@ -182,18 +192,18 @@ const ContactUs = () => {
       x: 0,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
-      }
-    }
+        ease: "easeOut",
+      },
+    },
   };
 
   const staggerContainer = {
     animate: {
       transition: {
         staggerChildren: 0.2,
-        delayChildren: 0.1
-      }
-    }
+        delayChildren: 0.1,
+      },
+    },
   };
 
   const contactInfo = [
@@ -205,7 +215,7 @@ const ContactUs = () => {
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
       badge: "Location",
-      badgeColor: "bg-red-100 text-red-800"
+      badgeColor: "bg-red-100 text-red-800",
     },
     {
       icon: "fas fa-phone-alt",
@@ -215,7 +225,7 @@ const ContactUs = () => {
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
       badge: "Phone",
-      badgeColor: "bg-blue-100 text-blue-800"
+      badgeColor: "bg-blue-100 text-blue-800",
     },
     {
       icon: "fas fa-envelope-open",
@@ -225,7 +235,7 @@ const ContactUs = () => {
       bgColor: "bg-green-50",
       borderColor: "border-green-200",
       badge: "Email",
-      badgeColor: "bg-green-100 text-green-800"
+      badgeColor: "bg-green-100 text-green-800",
     },
     {
       icon: "fas fa-business-time",
@@ -235,41 +245,46 @@ const ContactUs = () => {
       bgColor: "bg-purple-50",
       borderColor: "border-purple-200",
       badge: "Hours",
-      badgeColor: "bg-purple-100 text-purple-800"
-    }
+      badgeColor: "bg-purple-100 text-purple-800",
+    },
   ];
 
   const faqData = [
     {
       question: "Can I visit the farm without an appointment?",
-      answer: "While we welcome visitors, we recommend scheduling in advance to ensure someone is available to show you around and answer your questions.",
-      icon: "fas fa-user-friends"
+      answer:
+        "While we welcome visitors, we recommend scheduling in advance to ensure someone is available to show you around and answer your questions.",
+      icon: "fas fa-user-friends",
     },
     {
       question: "Do you offer wholesale pricing for restaurants?",
-      answer: "Yes! We work with local restaurants and businesses. Contact us to discuss wholesale pricing and regular delivery schedules.",
-      icon: "fas fa-handshake"
+      answer:
+        "Yes! We work with local restaurants and businesses. Contact us to discuss wholesale pricing and regular delivery schedules.",
+      icon: "fas fa-handshake",
     },
     {
       question: "Are your products certified organic?",
-      answer: "Yes, we are certified organic and follow strict guidelines to ensure all our products meet organic standards.",
-      icon: "fas fa-seedling"
+      answer:
+        "Yes, we are certified organic and follow strict guidelines to ensure all our products meet organic standards.",
+      icon: "fas fa-seedling",
     },
     {
       question: "What's the best time to visit the farm?",
-      answer: "Early morning (8-10 AM) or late afternoon (4-6 PM) are ideal times when the farm is most active and the lighting is perfect for photos.",
-      icon: "fas fa-sun"
-    }
+      answer:
+        "Early morning (8-10 AM) or late afternoon (4-6 PM) are ideal times when the farm is most active and the lighting is perfect for photos.",
+      icon: "fas fa-sun",
+    },
   ];
 
   // Dynamic Tailwind CSS classes for the alert based on `alertType`
-  const alertClass = alertType === 'success'
-    ? 'border-green-200 bg-green-50 text-green-800'
-    : 'border-red-200 bg-red-50 text-red-800';
-  const alertIcon = alertType === 'success'
-    ? 'fas fa-check-circle text-green-600'
-    : 'fas fa-exclamation-triangle text-red-600';
-
+  const alertClass =
+    alertType === "success"
+      ? "border-green-200 bg-green-50 text-green-800"
+      : "border-red-200 bg-red-50 text-red-800";
+  const alertIcon =
+    alertType === "success"
+      ? "fas fa-check-circle text-green-600"
+      : "fas fa-exclamation-triangle text-red-600";
 
   return (
     <div className="min-h-screen bg-white">
@@ -312,7 +327,8 @@ const ContactUs = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.4 }}
             >
-              Get in touch with GreenLeaf Farm. We're here to answer your questions and welcome visitors to our Ginimallagaha location.
+              Get in touch with GreenLeaf Farm. We're here to answer your
+              questions and welcome visitors to our Ginimallagaha location.
             </motion.p>
           </motion.div>
         </div>
@@ -359,14 +375,16 @@ const ContactUs = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.8,
-                  delay: index * 0.2
+                  delay: index * 0.2,
                 }}
                 viewport={{ once: false, amount: 0.3 }}
               >
                 <div className="h-full bg-white rounded-xl border-2 border-gray-200 p-6 sm:p-8 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer group">
                   <div className="text-center">
                     <div className="flex justify-center mb-4">
-                      <span className={`${info.badgeColor} text-xs font-semibold px-3 py-1 rounded-full`}>
+                      <span
+                        className={`${info.badgeColor} text-xs font-semibold px-3 py-1 rounded-full`}
+                      >
                         {info.badge}
                       </span>
                     </div>
@@ -374,10 +392,12 @@ const ContactUs = () => {
                       className={`w-12 h-12 sm:w-16 sm:h-16 ${info.bgColor} ${info.borderColor} border-2 rounded-full flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform duration-300`}
                       whileHover={{
                         scale: 1.1,
-                        transition: { duration: 0.3 }
+                        transition: { duration: 0.3 },
                       }}
                     >
-                      <i className={`${info.icon} ${info.color} text-xl sm:text-2xl`}></i>
+                      <i
+                        className={`${info.icon} ${info.color} text-xl sm:text-2xl`}
+                      ></i>
                     </motion.div>
                     <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
                       {info.title}
@@ -405,11 +425,8 @@ const ContactUs = () => {
       >
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-
             {/* Contact Form */}
-            <motion.div
-              variants={slideInLeft}
-            >
+            <motion.div variants={slideInLeft}>
               <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -421,7 +438,9 @@ const ContactUs = () => {
                 <div className="p-6">
                   {/* Dynamic Alert Message Display */}
                   {showAlert && (
-                    <div className={`mb-6 p-4 border ${alertClass} rounded-lg flex items-center gap-3`}>
+                    <div
+                      className={`mb-6 p-4 border ${alertClass} rounded-lg flex items-center gap-3`}
+                    >
                       <i className={`${alertIcon} text-lg`}></i>
                       <p className="font-medium">
                         {alertMessage} {/* Display dynamic message */}
@@ -439,7 +458,12 @@ const ContactUs = () => {
                       viewport={{ once: false }}
                     >
                       <div className="space-y-2">
-                        <label htmlFor="name" className="text-sm font-medium text-gray-700">Name *</label>
+                        <label
+                          htmlFor="name"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Name *
+                        </label>
                         <input
                           id="name"
                           name="name"
@@ -447,13 +471,26 @@ const ContactUs = () => {
                           value={formData.name}
                           onChange={handleInputChange}
                           placeholder="Your full name"
-                          className={`w-full px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
+                          className={`w-full px-3 py-2 border ${
+                            formErrors.name
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                           required
                         />
-                        {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                        {formErrors.name && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {formErrors.name}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone</label>
+                        <label
+                          htmlFor="phone"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Phone
+                        </label>
                         <input
                           id="phone"
                           name="phone"
@@ -463,9 +500,17 @@ const ContactUs = () => {
                           placeholder="Your phone number (up to 15 digits)" // Updated placeholder
                           maxLength={10} // HTML5 max length for user typing
                           // inputmode="numeric" pattern="[0-9]*" can be added for mobile keyboards, but JS handles strictness
-                          className={`w-full px-3 py-2 border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
+                          className={`w-full px-3 py-2 border ${
+                            formErrors.phone
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         />
-                        {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+                        {formErrors.phone && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {formErrors.phone}
+                          </p>
+                        )}
                       </div>
                     </motion.div>
 
@@ -477,7 +522,12 @@ const ContactUs = () => {
                       transition={{ duration: 0.6, delay: 0.3 }}
                       viewport={{ once: false }}
                     >
-                      <label htmlFor="email" className="text-sm font-medium text-gray-700">Email *</label>
+                      <label
+                        htmlFor="email"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Email *
+                      </label>
                       <input
                         id="email"
                         name="email"
@@ -485,10 +535,18 @@ const ContactUs = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="your.email@example.com"
-                        className={`w-full px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
+                        className={`w-full px-3 py-2 border ${
+                          formErrors.email
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         required
                       />
-                      {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                      {formErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.email}
+                        </p>
+                      )}
                     </motion.div>
 
                     {/* Subject */}
@@ -499,23 +557,40 @@ const ContactUs = () => {
                       transition={{ duration: 0.6, delay: 0.4 }}
                       viewport={{ once: false }}
                     >
-                      <label htmlFor="subject" className="text-sm font-medium text-gray-700">Subject *</label>
+                      <label
+                        htmlFor="subject"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Subject *
+                      </label>
                       <select
                         id="subject"
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border ${formErrors.subject ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
+                        className={`w-full px-3 py-2 border ${
+                          formErrors.subject
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300`}
                         required
                       >
                         <option value="">Select a subject</option>
                         <option value="farm-visit">Farm Visit Inquiry</option>
-                        <option value="product-inquiry">Product Information</option>
+                        <option value="product-inquiry">
+                          Product Information
+                        </option>
                         <option value="wholesale">Wholesale Orders</option>
-                        <option value="partnership">Partnership Opportunity</option>
+                        <option value="partnership">
+                          Partnership Opportunity
+                        </option>
                         <option value="general">General Question</option>
                       </select>
-                      {formErrors.subject && <p className="text-red-500 text-xs mt-1">{formErrors.subject}</p>}
+                      {formErrors.subject && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.subject}
+                        </p>
+                      )}
                     </motion.div>
 
                     {/* Message */}
@@ -526,7 +601,12 @@ const ContactUs = () => {
                       transition={{ duration: 0.6, delay: 0.5 }}
                       viewport={{ once: false }}
                     >
-                      <label htmlFor="message" className="text-sm font-medium text-gray-700">Message *</label>
+                      <label
+                        htmlFor="message"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Message *
+                      </label>
                       <textarea
                         id="message"
                         name="message"
@@ -534,10 +614,18 @@ const ContactUs = () => {
                         onChange={handleInputChange}
                         rows={5}
                         placeholder="Tell us more about your inquiry..."
-                        className={`w-full px-3 py-2 border ${formErrors.message ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 resize-none`}
+                        className={`w-full px-3 py-2 border ${
+                          formErrors.message
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 resize-none`}
                         required
                       />
-                      {formErrors.message && <p className="text-red-500 text-xs mt-1">{formErrors.message}</p>}
+                      {formErrors.message && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.message}
+                        </p>
+                      )}
                     </motion.div>
 
                     {/* Submit Button */}
@@ -572,9 +660,7 @@ const ContactUs = () => {
             </motion.div>
 
             {/* Map Section */}
-            <motion.div
-              variants={slideInRight}
-            >
+            <motion.div variants={slideInRight}>
               <div className="bg-white rounded-xl border-2 border-gray-200 shadow-xl">
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -594,12 +680,15 @@ const ContactUs = () => {
                     <div className="flex items-start gap-3 mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
                       <i className="fas fa-map-pin text-green-600 text-lg flex-shrink-0 mt-1"></i>
                       <div>
-                        <p className="font-semibold text-gray-900">10/F,Ginimallagaha</p>
+                        <p className="font-semibold text-gray-900">
+                          10/F,Ginimallagaha
+                        </p>
                         <p className="text-gray-600">Baddegama, Sri Lanka</p>
                       </div>
                     </div>
                     <p className="text-gray-600 leading-relaxed">
-                      Located in Malabe, our farm is easily accessible and welcomes visitors throughout the week.
+                      Located in Malabe, our farm is easily accessible and
+                      welcomes visitors throughout the week.
                     </p>
                   </motion.div>
 
@@ -630,7 +719,9 @@ const ContactUs = () => {
                           <i className="fas fa-tractor text-white text-sm"></i>
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-900 text-sm">GreenLeaf Farm</h4>
+                          <h4 className="font-bold text-gray-900 text-sm">
+                            GreenLeaf Farm
+                          </h4>
                           <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block">
                             Organic & Sustainable
                           </span>
@@ -649,13 +740,17 @@ const ContactUs = () => {
                   >
                     <button
                       // Corrected Google Maps URL to directly open directions
-                      onClick={() => window.open('https://www.google.com/maps/dir/?api=1&destination=Baddegama,Sri lanka', '_blank')}
+                      onClick={() =>
+                        window.open(
+                          "https://www.google.com/maps/dir/?api=1&destination=Baddegama,Sri lanka",
+                          "_blank"
+                        )
+                      }
                       className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md font-semibold transition-all duration-300 hover:shadow-md"
                     >
                       <i className="fas fa-route"></i>
                       Get Directions
                     </button>
-
                   </motion.div>
                 </div>
               </div>
@@ -714,7 +809,9 @@ const ContactUs = () => {
                     {faq.question}
                   </h4>
                   <div className="my-3 h-px bg-gray-200"></div>
-                  <p className="text-gray-600 leading-relaxed pl-13">{faq.answer}</p>
+                  <p className="text-gray-600 leading-relaxed pl-13">
+                    {faq.answer}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -747,7 +844,8 @@ const ContactUs = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             viewport={{ once: false }}
           >
-            Join us for a farm tour, taste our fresh produce, and learn about sustainable farming practices.
+            Join us for a farm tour, taste our fresh produce, and learn about
+            sustainable farming practices.
           </motion.p>
           <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center"
@@ -758,15 +856,14 @@ const ContactUs = () => {
           >
             <button className="bg-white text-green-600 hover:bg-gray-50 px-6 py-3 sm:px-8 sm:py-4 rounded-md font-semibold text-base sm:text-lg shadow-lg transition-all duration-300 hover:shadow-xl">
               <i className="fas fa-phone-volume mr-2"></i>
-               Call Now: +94 91 227 6246
+              Call Now: +94 91 227 6246
             </button>
-            
           </motion.div>
         </div>
       </motion.section>
-    {/* ✅ Mount chatbot here so it's available on this page */}
-          <ChatbotWidget />
-       </div>
+      {/* ✅ Mount chatbot here so it's available on this page */}
+      <ChatbotWidget />
+    </div>
   );
 };
 
