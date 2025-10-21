@@ -76,7 +76,7 @@ export default function OverviewPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get("/transactions"); // GET http://localhost:5001/api/transactions
+        const res = await api.get("/transactions");
         const rows = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setTransactions(
           rows.map((r) => ({
