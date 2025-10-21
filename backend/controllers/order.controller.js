@@ -10,9 +10,6 @@ import { sendOrderEmail } from "../utils/mailer.js";
 import { getStartOfDay } from "../utils/dateUtils.js";
 import { generateTransactionId } from "../utils/transactionId.js";
 import { logAudit } from "../utils/auditLogger.js";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // --- Create Stripe Checkout Session ---
 export const createCheckoutSession = async (req, res, next) => {
